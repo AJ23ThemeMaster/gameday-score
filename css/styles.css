@@ -1,0 +1,328 @@
+/* Root Variables & Colors - Premium Dark Mode Theme */
+:root {
+    --bg-main: #0a0e17;
+    /* Deep muted blue-black */
+    --bg-surface: #141b2d;
+    --text-main: #f8f9fa;
+    --text-muted: #8b98a5;
+    --primary: #1d9bf0;
+    /* vibrant blue */
+    --primary-hover: #177cc0;
+    --accent: #00ba7c;
+    /* mint green */
+    --glass-bg: rgba(20, 27, 45, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: 'Outfit', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+    /* Prevents pull-to-refresh on mobile */
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+    /* App-like feel */
+}
+
+/* App Container constraint */
+.app-container {
+    max-width: 480px;
+    margin: 0 auto;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-main);
+    position: relative;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    /* For desktop preview container */
+}
+
+/* Navbar */
+.custom-navbar {
+    background: rgba(10, 14, 23, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--glass-border);
+    padding: 1rem 0;
+    z-index: 1000;
+}
+
+.custom-navbar .navbar-brand {
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 1.25rem;
+    letter-spacing: 0.5px;
+}
+
+.custom-navbar .navbar-brand i {
+    color: var(--primary);
+    margin-right: 4px;
+}
+
+.btn-icon {
+    color: var(--text-main);
+    font-size: 1.5rem;
+    padding: 0;
+    line-height: 1;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.btn-icon:hover,
+.btn-icon:active {
+    background: var(--glass-bg);
+    color: var(--primary);
+}
+
+/* Content Area */
+.content-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1.5rem;
+    position: relative;
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.content-wrapper::-webkit-scrollbar {
+    display: none;
+    /* Chrome */
+}
+
+/* View Animations */
+.slide-in {
+    animation: slideInCustom 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+@keyframes slideInCustom {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hero Section */
+.hero-icon {
+    font-size: 4.5rem;
+    color: var(--primary);
+    background: -webkit-linear-gradient(45deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 10px 15px rgba(29, 155, 240, 0.2));
+}
+
+.header-section .title {
+    font-weight: 700;
+    font-size: 2rem;
+    letter-spacing: -0.5px;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--primary);
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:active,
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: scale(0.98);
+}
+
+.btn-glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-main);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.btn-glass:active,
+.btn-glass:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--text-main);
+    transform: scale(0.98);
+}
+
+.icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-primary .icon-box {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.icon-accent i {
+    color: var(--primary);
+}
+
+/* Forms & Inputs */
+.glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.form-label {
+    letter-spacing: 1px;
+    font-size: 0.75rem;
+}
+
+.form-control,
+.form-select {
+    background-color: rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(29, 155, 240, 0.25) !important;
+    border-color: var(--primary) !important;
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.input-group-text {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-muted);
+}
+
+.input-group:focus-within .input-group-text {
+    border-color: var(--primary) !important;
+    color: var(--primary);
+}
+
+.input-group:focus-within .form-control {
+    border-color: var(--primary) !important;
+}
+
+select option {
+    background-color: var(--bg-surface);
+    color: white;
+}
+
+/* Empty State */
+.empty-state-icon i {
+    font-size: 4rem;
+    color: rgba(255, 255, 255, 0.05);
+}
+
+/* --- LIGHT THEME OVERRIDES --- */
+[data-bs-theme="light"] {
+    --bg-main: #f0f2f5;
+    --bg-surface: #ffffff;
+    --text-main: #212529;
+    --text-muted: #6c757d;
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(0, 0, 0, 0.08);
+}
+
+[data-bs-theme="light"] .custom-navbar {
+    background: rgba(255, 255, 255, 0.85);
+}
+
+[data-bs-theme="light"] .text-white {
+    color: var(--text-main) !important;
+}
+
+[data-bs-theme="light"] .text-white-50 {
+    color: var(--text-muted) !important;
+}
+
+[data-bs-theme="light"] .bg-dark {
+    background-color: var(--bg-surface) !important;
+}
+
+[data-bs-theme="light"] .bg-black {
+    background-color: #e9ecef !important;
+}
+
+[data-bs-theme="light"] .border-secondary {
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-bs-theme="light"] .table-dark {
+    --bs-table-bg: #ffffff;
+    --bs-table-color: #212529;
+    --bs-table-border-color: #dee2e6;
+    --bs-table-striped-bg: rgba(0, 0, 0, 0.03);
+    color: var(--text-main);
+}
+
+[data-bs-theme="light"] .btn-outline-light {
+    color: #495057;
+    border-color: #ced4da;
+}
+
+[data-bs-theme="light"] .btn-outline-light:hover {
+    color: #fff;
+    background-color: #495057;
+    border-color: #495057;
+}
+
+[data-bs-theme="light"] .form-control,
+[data-bs-theme="light"] .form-select {
+    background-color: #ffffff !important;
+    border: 1px solid #ced4da !important;
+    color: var(--text-main) !important;
+}
+
+[data-bs-theme="light"] select option {
+    background-color: #ffffff;
+    color: var(--text-main);
+}
+
+[data-bs-theme="light"] .form-control::placeholder {
+    color: #adb5bd !important;
+}
+
+[data-bs-theme="light"] .input-group-text {
+    background-color: #f8f9fa;
+    border-color: #ced4da !important;
+}
+
+[data-bs-theme="light"] .btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(50%) opacity(0.5);
+    /* Make close button dark */
+}
+
+[data-bs-theme="light"] .modal-content {
+    background-color: #ffffff !important;
+    color: var(--text-main) !important;
+}
+
+[data-bs-theme="light"] .empty-state-icon i {
+    color: rgba(0, 0, 0, 0.05);
+}

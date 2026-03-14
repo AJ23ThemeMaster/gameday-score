@@ -1,0 +1,17 @@
+{
+  "name": "Gameday Score",
+  "short_name": "Gameday",
+  "description": "Baseball Scorekeeping Application",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0e17",
+  "theme_color": "#141b2d",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

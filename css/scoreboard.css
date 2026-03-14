@@ -1,0 +1,170 @@
+/* Scoreboard CSS Additions */
+
+/* Inning Table Styling */
+.inning-table th {
+    background-color: #4CAF50 !important;
+    /* Green like in the image */
+    color: white;
+    font-size: 1.25rem;
+    padding: 0.5rem;
+    border: 1px solid white !important;
+}
+
+.inning-table td {
+    background-color: #000 !important;
+    border: 1px solid white !important;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+    height: 50px;
+}
+
+.inning-cell {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.inning-cell:active {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Bottom Controls Wrapper */
+.controls-panel {
+    border: 2px solid white;
+    border-radius: 4px;
+    padding: 10px;
+    background-color: #000;
+}
+
+/* B S O Indicators - Following the Image Layout */
+.bso-row {
+    font-size: 2rem;
+    color: white;
+    font-family: Arial, sans-serif;
+    justify-content: space-between;
+}
+
+.indicator-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #333;
+    transition: background-color 0.3s;
+    margin: 0 5px;
+}
+
+.bso-row[data-type="balls"] .indicator-circle.active {
+    background-color: #4CAF50;
+    /* Verde */
+}
+
+.bso-row[data-type="strikes"] .indicator-circle.active {
+    background-color: #FFEB3B;
+    /* Amarillo */
+}
+
+.bso-row[data-type="outs"] .indicator-circle.active {
+    background-color: #F44336;
+    /* Rojo */
+}
+
+.bso-btn {
+    background-color: #888;
+    color: black;
+    font-weight: bold;
+    border: none;
+    font-size: 1.5rem;
+    height: 45px;
+    width: 40px;
+    border-radius: 4px;
+}
+
+/* Diamond */
+.diamond-container {
+    width: 100px;
+    height: 100px;
+    position: relative;
+    margin: 0 auto;
+}
+
+.base {
+    width: 30px;
+    height: 30px;
+    background-color: #333;
+    position: absolute;
+    transform: rotate(45deg);
+    transition: background-color 0.3s;
+}
+
+.base.active {
+    background-color: #ffcc00;
+}
+
+.base-1 {
+    right: 0;
+    top: 35px;
+}
+
+.base-2 {
+    left: 35px;
+    top: 0;
+}
+
+.base-3 {
+    left: 0;
+    top: 35px;
+}
+
+.home-plate {
+    width: 30px;
+    height: 30px;
+    background-color: white;
+    position: absolute;
+    left: 35px;
+    bottom: 0;
+    clip-path: polygon(0 0, 100% 0, 100% 50%, 50% 100%, 0 50%);
+    transform: none;
+}
+
+/* Modals / Settings Override */
+.ext-indicator {
+    font-size: 1.25rem;
+}
+
+/* --- LIGHT THEME OVERRIDES --- */
+[data-bs-theme="light"] .inning-table th {
+    border-color: #dee2e6 !important;
+}
+
+[data-bs-theme="light"] .inning-table td {
+    background-color: #ffffff !important;
+    border-color: #dee2e6 !important;
+    color: #212529 !important;
+}
+
+[data-bs-theme="light"] .bso-row {
+    color: var(--text-main);
+}
+
+[data-bs-theme="light"] .indicator-circle {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-bs-theme="light"] .controls-panel {
+    border-color: #ced4da;
+    background-color: #f8f9fa;
+}
+
+[data-bs-theme="light"] .diamond-container {
+    border-color: rgba(0, 0, 0, 0.15);
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+[data-bs-theme="light"] .base,
+[data-bs-theme="light"] .home-plate {
+    background-color: #ced4da;
+}
+
+[data-bs-theme="light"] .base.active {
+    background-color: #ffc107;
+}

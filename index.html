@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gameday Score - Beisbol</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#141b2d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Gameday">
+    <link rel="apple-touch-icon" href="assets/icon.svg">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Remix Icons (for icons) -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/scoreboard.css">
+</head>
+
+<body>
+
+    <!-- App Container (Mobile First Layout) -->
+    <main class="app-container">
+
+        <!-- Navbar -->
+        <nav class="navbar custom-navbar">
+            <div class="container-fluid justify-content-center position-relative">
+                <button type="button" class="btn btn-icon position-absolute start-0 ms-2 d-none" id="back-btn">
+                    <i class="ri-arrow-left-s-line"></i>
+                </button>
+                <span class="navbar-brand mb-0 h1">
+                    <i class="ri-baseball-line"></i> Gameday Score
+                </span>
+                <button type="button" class="btn btn-icon position-absolute end-0 me-2 d-none" id="share-btn">
+                    <i class="ri-share-forward-line"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Dynamic Content Area -->
+        <div class="content-wrapper" id="app-content">
+            <!-- Views will be injected here by JS, starting with Home View -->
+        </div>
+
+    </main>
+
+    <!-- Templates -->
+
+    <!-- Home View Template -->
+    <template id="tmpl-home-view">
+        <div class="view-container d-flex flex-column justify-content-center h-100">
+            <div class="header-section text-center mb-5">
+                <i class="ri-baseball-fill hero-icon"></i>
+                <h2 class="title mt-3">Play Ball</h2>
+                <p class="text-muted">Gestiona el score de tus juegos</p>
+            </div>
+
+            <div class="menu-actions d-grid gap-3">
+                <button class="btn btn-primary d-flex align-items-center rounded-4 shadow-sm py-3 px-4"
+                    data-action="new-game">
+                    <div class="icon-box me-3"><i class="ri-add-line"></i></div>
+                    <span class="fs-5 fw-medium">Crear Nuevo Juego</span>
+                    <i class="ri-arrow-right-s-line ms-auto"></i>
+                </button>
+
+                <button class="btn btn-glass d-flex align-items-center rounded-4 py-3 px-4" data-action="past-games">
+                    <div class="icon-box icon-accent me-3"><i class="ri-history-line"></i></div>
+                    <span class="fs-5 fw-medium">Juegos Pasados</span>
+                    <i class="ri-arrow-right-s-line ms-auto"></i>
+                </button>
+
+                <button class="btn btn-glass d-flex align-items-center rounded-4 py-3 px-4" data-action="settings">
+                    <div class="icon-box icon-accent me-3"><i class="ri-settings-4-line"></i></div>
+                    <span class="fs-5 fw-medium">Configuración</span>
+                    <i class="ri-arrow-right-s-line ms-auto"></i>
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <!-- New Game View Template -->
+    <template id="tmpl-new-game-view">
+        <div class="view-container slide-in">
+            <div class="title-bar mb-4">
+                <h3 class="fw-bold m-0">Nuevo Juego</h3>
+                <p class="text-muted small">Ingresa los detalles del partido</p>
+            </div>
+
+            <form id="new-game-form" class="custom-form">
+                <div class="card glass-card mb-4 rounded-4 border-0">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label text-uppercase text-muted small fw-bold tracking-wide">Equipo
+                                Local</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-end-0"><i
+                                        class="ri-home-4-line"></i></span>
+                                <input type="text" class="form-control border-start-0" placeholder="Nombre local"
+                                    required>
+                            </div>
+                        </div>
+                        <div class="mb-0">
+                            <div class="d-flex align-items-center justify-content-center mb-3">
+                                <span class="badge bg-secondary rounded-pill px-3">VS</span>
+                            </div>
+                            <label class="form-label text-uppercase text-muted small fw-bold tracking-wide">Equipo
+                                Visitante</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-end-0"><i
+                                        class="ri-flight-takeoff-line"></i></span>
+                                <input type="text" class="form-control border-start-0" placeholder="Nombre visitante"
+                                    required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card glass-card mb-4 rounded-4 border-0">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label text-uppercase text-muted small fw-bold tracking-wide">Estadio
+                                (Opcional)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-end-0"><i
+                                        class="ri-map-pin-line"></i></span>
+                                <input type="text" class="form-control border-start-0" id="game-stadium"
+                                    placeholder="Nombre completo" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label
+                                class="form-label text-uppercase text-muted small fw-bold tracking-wide">Categoría</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-end-0"><i
+                                        class="ri-medal-fill"></i></span>
+                                <input type="text" class="form-control border-start-0" list="category-options"
+                                    id="game-category" placeholder="Selecciona o escribe una" required
+                                    autocomplete="off">
+                                <datalist id="category-options">
+                                    <option value="Semillita"></option>
+                                    <option value="Preparatorio"></option>
+                                    <option value="Pre-Infantil"></option>
+                                    <option value="Infantil"></option>
+                                    <option value="Pre-Junior"></option>
+                                    <option value="Junior"></option>
+                                </datalist>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label
+                                    class="form-label text-uppercase text-muted small fw-bold tracking-wide">Fecha</label>
+                                <input type="date" class="form-control" id="game-date" required>
+                            </div>
+                            <div class="col-6">
+                                <label
+                                    class="form-label text-uppercase text-muted small fw-bold tracking-wide">Hora</label>
+                                <input type="time" class="form-control" id="game-time" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card glass-card mb-4 mt-2">
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <label
+                                class="form-label text-uppercase text-info small fw-bold tracking-wide d-flex align-items-center mb-2">
+                                <i class="ri-equalizer-line me-2"></i> Reglas de Partido
+                            </label>
+                            <select class="form-select bg-black text-white border-secondary fw-medium"
+                                id="game-rule-select" required>
+                                <!-- JS will populate options -->
+                            </select>
+                            <div class="form-text text-white-50 mt-2 small">Selecciona una plantilla configurada en
+                                Ajustes.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 rounded-pill py-3 fw-bold fs-5 shadow-sm mt-2 mb-4">
+                    Comenzar Partido
+                </button>
+            </form>
+        </div>
+    </template>
+
+    <!-- Scoreboard View Template -->
+    <template id="tmpl-scoreboard-view">
+        <div class="view-container slide-in d-flex flex-column h-100">
+
+            <!-- Game Info (Category and DateTime) -->
+            <div class="text-center mb-3">
+                <h6 class="fw-bold mb-2 text-white d-none" id="game-stadium-display"><i
+                        class="ri-map-pin-2-fill text-primary"></i> <span></span></h6>
+                <span class="badge bg-primary text-uppercase tracking-wider px-3 py-2 mb-2 rounded-pill shadow-sm"
+                    style="letter-spacing: 1px;" id="game-category-display">Categoría</span>
+                <p class="text-muted small mb-0 fw-medium d-flex align-items-center justify-content-center gap-2">
+                    <span><i class="ri-calendar-event-line"></i> <span id="game-date-display">Fecha</span></span>
+                    <span class="text-white-50 px-1">&bull;</span>
+                    <span><i class="ri-time-line"></i> <span id="game-time-display">Hora</span></span>
+                </p>
+            </div>
+
+            <!-- Header (Scores) -->
+            <div class="row text-center mb-3">
+                <div class="col-6">
+                    <h4 class="text-uppercase tracking-wide fw-bold mb-1" id="team-local-name">Local</h4>
+                    <div class="display-3 fw-bold mb-2" id="score-local">0</div>
+                    <button
+                        class="btn btn-sm btn-outline-light d-inline-flex align-items-center justify-content-center gap-1 roster-btn shadow-sm w-75"
+                        data-team="local" data-bs-toggle="modal" data-bs-target="#rosterModal">
+                        <i class="ri-team-line"></i> Roster / Alineación
+                    </button>
+                </div>
+                <div class="col-6">
+                    <h4 class="text-uppercase tracking-wide fw-bold mb-1" id="team-visitante-name">Visitante</h4>
+                    <div class="display-3 fw-bold mb-2" id="score-visitante">0</div>
+                    <button
+                        class="btn btn-sm btn-outline-light d-inline-flex align-items-center justify-content-center gap-1 roster-btn shadow-sm w-75"
+                        data-team="visitante" data-bs-toggle="modal" data-bs-target="#rosterModal">
+                        <i class="ri-team-line"></i> Roster / Alineación
+                    </button>
+                </div>
+            </div>
+
+            <!-- Inning Table -->
+            <div class="table-responsive">
+                <table class="table table-bordered table-dark text-center align-middle inning-table">
+                    <thead>
+                        <tr id="inning-headers">
+                            <!-- JS Will populate 1 to 9 automatically -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="inning-visitante">
+                            <!-- Visitor runs -->
+                        </tr>
+                        <tr id="inning-local">
+                            <!-- Local runs -->
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Inning Status Indicator -->
+            <div class="text-center mb-3 mt-1" id="inning-status-text">
+                <h6 class="mb-0 fw-bold text-uppercase tracking-wider text-white">Parte Alta del 1er Inning</h6>
+                <p class="text-warning small mb-0 fw-medium">Batea <span id="current-batting-team">Visitante</span></p>
+
+                <div id="pitch-count-container" class="d-none mt-2 d-flex align-items-center justify-content-center">
+                    <div class="badge bg-dark rounded-pill border border-secondary px-3 py-1 d-flex align-items-center">
+                        <i class="ri-focus-2-line text-warning me-2"></i>
+                        <span class="text-white-50 me-1">Pitcheos:</span>
+                        <strong id="pitch-count-current" class="text-white fs-6">0</strong>
+                        <span class="text-white-50 ms-1">/ <span id="pitch-count-max">85</span></span>
+                    </div>
+                    <button
+                        class="btn btn-sm btn-outline-warning rounded-circle ms-2 d-flex align-items-center justify-content-center"
+                        style="width:32px; height:32px; padding:0" id="btn-foul-pitch" title="Foul (+1 Pitcheo extra)">
+                        <i class="ri-add-line fs-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bottom Indicators -->
+            <div class="row g-2 flex-grow-1">
+                <!-- B S O -->
+                <div class="col-7">
+                    <div class="card glass-card h-100 p-2 d-flex flex-column justify-content-center">
+                        <div class="d-flex align-items-center mb-2 bso-row" data-type="balls">
+                            <span class="fw-bold me-2 fs-5">B</span>
+                            <div class="indicator-circle"></div>
+                            <div class="indicator-circle"></div>
+                            <div class="indicator-circle"></div>
+                            <button class="btn btn-sm btn-secondary ms-auto bso-btn">C</button>
+                        </div>
+                        <div class="d-flex align-items-center mb-2 bso-row" data-type="strikes">
+                            <span class="fw-bold me-2 fs-5">S</span>
+                            <div class="indicator-circle"></div>
+                            <div class="indicator-circle"></div>
+                            <button class="btn btn-sm btn-secondary ms-auto bso-btn">C</button>
+                        </div>
+                        <div class="d-flex align-items-center bso-row" data-type="outs">
+                            <span class="fw-bold me-2 fs-5">O</span>
+                            <div class="indicator-circle"></div>
+                            <div class="indicator-circle"></div>
+                            <button class="btn btn-sm btn-secondary ms-auto mt-2 bso-btn"
+                                style="align-self: flex-end; margin-top:0 !important">C</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bases -->
+                <div class="col-5">
+                    <div
+                        class="card glass-card h-100 p-2 d-flex align-items-center justify-content-center position-relative">
+                        <div class="diamond-container">
+                            <div class="base base-2" id="base-2"></div>
+                            <div class="base base-1" id="base-1"></div>
+                            <div class="base base-3" id="base-3"></div>
+                            <div class="base home-plate"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 text-center d-flex gap-2" id="action-buttons-container">
+                <button class="btn btn-primary w-50 rounded-pill py-2 fw-medium" id="btn-next-play"
+                    style="font-size: 0.9rem;">Sig. Jugada / Inning</button>
+                <button class="btn btn-danger w-50 rounded-pill py-2 fw-medium" id="btn-finish-game"
+                    style="font-size: 0.9rem;">Finalizar Juego</button>
+            </div>
+
+            <div class="mt-2 text-center d-none" id="delete-game-container">
+                <button class="btn btn-outline-danger w-100 rounded-pill py-2 fw-medium" id="btn-delete-game">
+                    <i class="ri-delete-bin-line me-1"></i> Eliminar Este Juego
+                </button>
+            </div>
+
+
+        </div>
+    </template>
+
+    <!-- Past Games View Template -->
+    <template id="tmpl-past-games-view">
+        <div class="view-container slide-in d-flex flex-column h-100">
+            <h4 class="fw-bold mb-4 text-center view-title">Juegos Pasados</h4>
+
+            <div id="history-actions" class="d-none mb-3 d-flex justify-content-between align-items-center px-1">
+                <button class="btn btn-outline-danger btn-sm rounded-pill px-3" id="btn-delete-selected" disabled>
+                    <i class="ri-delete-bin-line me-1"></i> Seleccionados
+                </button>
+                <button class="btn btn-danger btn-sm rounded-pill px-3 shadow-sm" id="btn-delete-all">
+                    <i class="ri-delete-bin-5-fill me-1"></i> Borrar Todos
+                </button>
+            </div>
+
+            <div id="history-list" class="flex-grow-1 overflow-auto px-1 pb-4">
+                <!-- History items injected here -->
+            </div>
+        </div>
+    </template>
+
+    <!-- Settings View Template -->
+    <template id="tmpl-settings-view">
+        <div class="view-container slide-in d-flex flex-column h-100">
+            <h4 class="fw-bold mb-4 text-center view-title">Configuración</h4>
+            <div class="flex-grow-1 overflow-auto px-1 pb-4">
+                <div class="card glass-card mb-4 mt-3">
+                    <div class="card-body">
+                        <h5 class="fw-bold text-white mb-3 d-flex align-items-center">
+                            <i class="ri-equalizer-line text-primary me-2"></i> Reglas de Juego
+                        </h5>
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <h6 class="fw-bold text-white mb-0">Plantillas de Reglas</h6>
+                                    <div class="form-text text-white-50 small mt-0">Límites para tus partidos.</div>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3"
+                                    id="btn-create-rule">
+                                    <i class="ri-add-line me-1"></i> Nueva Regla
+                                </button>
+                            </div>
+                            <!-- List of rules -->
+                            <div id="settings-rules-list" class="d-flex flex-column gap-2">
+                                <!-- Rules rendered by JS -->
+                            </div>
+                        </div>
+
+                        <div class="mb-3 d-flex justify-content-between align-items-center">
+                            <div class="me-3">
+                                <label class="form-label text-muted small fw-bold tracking-wide mb-1"
+                                    for="setting-show-hits">Mostrar Columna de Hits (H)</label>
+                                <div class="form-text text-white-50 small mt-0">Añadir registro de hits al terminar las
+                                    celdas de inning.</div>
+                            </div>
+                            <div class="form-check form-switch fs-4 mb-0">
+                                <input class="form-check-input bg-secondary border-secondary mt-0" type="checkbox"
+                                    role="switch" id="setting-show-hits" checked>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 d-flex justify-content-between align-items-center">
+                            <div class="me-3">
+                                <label class="form-label text-muted small fw-bold tracking-wide mb-1"
+                                    for="setting-show-errors">Mostrar Columna de Errores (E)</label>
+                                <div class="form-text text-white-50 small mt-0">Añadir registro de errores al terminar
+                                    las celdas de inning.</div>
+                            </div>
+                            <div class="form-check form-switch fs-4 mb-0">
+                                <input class="form-check-input bg-secondary border-secondary mt-0" type="checkbox"
+                                    role="switch" id="setting-show-errors" checked>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 d-flex justify-content-between align-items-center">
+                            <div class="me-3">
+                                <label class="form-label text-muted small fw-bold tracking-wide mb-1"
+                                    for="setting-enable-roster">Habilitar Roster / Alineación</label>
+                                <div class="form-text text-white-50 small mt-0">Permitir la configuración de la
+                                    alineación de
+                                    cada equipo durante el juego.</div>
+                            </div>
+                            <div class="form-check form-switch fs-4 mb-0">
+                                <input class="form-check-input bg-secondary border-secondary mt-0" type="checkbox"
+                                    role="switch" id="setting-enable-roster" checked>
+                            </div>
+                        </div>
+
+                        <hr class="border-secondary my-4">
+
+                        <h5 class="fw-bold text-white mb-3 d-flex align-items-center">
+                            <i class="ri-palette-line text-primary me-2"></i> Apariencia
+                        </h5>
+                        <div class="mb-3 d-flex justify-content-between align-items-center">
+                            <div class="me-3">
+                                <label class="form-label text-muted small fw-bold tracking-wide mb-1"
+                                    for="setting-theme">Tema Visual</label>
+                                <div class="form-text text-white-50 small mt-0">Selecciona el modo de color.</div>
+                            </div>
+                            <div style="width: 140px;">
+                                <select class="form-select bg-dark text-white border-secondary fw-medium"
+                                    id="setting-theme">
+                                    <option value="dark">🌙 Oscuro</option>
+                                    <option value="light">☀️ Claro</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <hr class="border-secondary my-4">
+
+                        <h5 class="fw-bold text-white mb-3 d-flex align-items-center">
+                            <i class="ri-delete-bin-5-line text-danger me-2"></i> Gestión de Historial
+                        </h5>
+                        <div class="mb-3 d-flex justify-content-between align-items-center">
+                            <div class="me-3">
+                                <label class="form-label text-muted small fw-bold tracking-wide mb-1"
+                                    for="setting-allow-delete">Permitir Eliminar Juegos</label>
+                                <div class="form-text text-white-50 small mt-0">Habilitar borrado manual y masivo de
+                                    juegos pasados.</div>
+                            </div>
+                            <div class="form-check form-switch fs-4 mb-0">
+                                <input class="form-check-input bg-secondary border-secondary mt-0" type="checkbox"
+                                    role="switch" id="setting-allow-delete">
+                            </div>
+                        </div>
+
+                        <hr class="border-secondary my-4">
+
+                        <h5 class="fw-bold text-white mb-3 d-flex align-items-center">
+                            <i class="ri-information-line text-info me-2"></i> Acerca de la App
+                        </h5>
+                        <div class="mb-3 d-flex justify-content-between align-items-center">
+                            <div class="me-3">
+                                <label class="form-label text-muted small fw-bold tracking-wide mb-1">Versión
+                                    Instalada</label>
+                                <div class="fw-bold text-white fs-5" id="app-version-display">v1.1.3</div>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-outline-info btn-sm rounded-pill px-3"
+                                    id="btn-check-updates">
+                                    <i class="ri-refresh-line me-1"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="mt-auto">
+                <button class="btn btn-primary w-100 rounded-pill py-3 fw-bold fs-5 shadow-sm" id="btn-save-settings">
+                    Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <!-- Placeholder View Template -->
+    <template id="tmpl-placeholder-view">
+        <div
+            class="view-container d-flex flex-column align-items-center justify-content-center h-100 slide-in text-center">
+            <div class="empty-state-icon mb-4">
+                <i class="ri-tools-fill"></i>
+            </div>
+            <h3 class="fw-bold mb-2 view-title">Título</h3>
+            <p class="text-muted">Esta sección está en desarrollo.</p>
+        </div>
+    </template>
+
+    <!-- Roster Modal -->
+    <div class="modal fade" id="rosterModal" tabindex="-1" aria-labelledby="rosterModalLabel" aria-hidden="true"
+        data-bs-theme="dark">
+        <div class="modal-dialog modal-fullscreen-sm-down modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div
+                class="modal-content bg-dark text-white text-start shadow-lg border border-secondary border-opacity-50">
+                <div class="modal-header border-secondary border-opacity-50">
+                    <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="rosterModalLabel">
+                        <i class="ri-team-fill text-primary"></i> Roster - <span id="modal-team-name"
+                            class="text-warning text-uppercase">Equipo</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped table-bordered align-middle mb-0"
+                            id="roster-table">
+                            <thead class="bg-black text-center small text-white-50 tracking-wide">
+                                <tr>
+                                    <th width="12%">ORD</th>
+                                    <th width="18%">POS</th>
+                                    <th width="15%">NO.</th>
+                                    <th width="55%">NOMBRE DEL ATLETA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="roster-tbody" class="text-center">
+                                <!-- JS genera filas -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-50 justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                        data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-medium"
+                        id="btn-save-roster">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rule Modal -->
+    <div class="modal fade" id="ruleModal" tabindex="-1" aria-labelledby="ruleModalLabel" aria-hidden="true"
+        data-bs-theme="dark">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div
+                class="modal-content bg-dark text-white text-start shadow-lg border border-secondary border-opacity-50">
+                <div class="modal-header border-secondary border-opacity-50">
+                    <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="ruleModalLabel">
+                        <i class="ri-settings-4-line text-primary"></i> <span id="modal-rule-title">Ajustes de
+                            Regla</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-rule">
+                        <input type="hidden" id="rule-id">
+
+                        <div class="mb-3">
+                            <label for="rule-name" class="form-label text-muted small fw-bold">Nombre de la
+                                Plantilla</label>
+                            <input type="text" class="form-control bg-black text-white border-secondary" id="rule-name"
+                                placeholder="Ej. Infantil 9-10 Años" required>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label for="rule-max-innings" class="form-label text-muted small fw-bold">Tope de
+                                    Innings</label>
+                                <input type="number" class="form-control bg-black text-white border-secondary"
+                                    id="rule-max-innings" value="6" min="1" required>
+                            </div>
+                            <div class="col-6">
+                                <label for="rule-max-runs" class="form-label text-muted small fw-bold">Tope
+                                    Carreras/Inning</label>
+                                <select class="form-select bg-black text-white border-secondary" id="rule-max-runs">
+                                    <option value="0">Sin Límite</option>
+                                    <option value="3">3 Carreras</option>
+                                    <option value="4">4 Carreras</option>
+                                    <option value="5" selected>5 Carreras</option>
+                                    <option value="6">6 Carreras</option>
+                                    <option value="7">7 Carreras</option>
+                                    <option value="8">8 Carreras</option>
+                                    <option value="10">10 Carreras</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 card bg-black border-secondary border-opacity-50">
+                            <div class="card-body py-2 px-3">
+                                <div
+                                    class="form-check form-switch d-flex justify-content-between align-items-center mb-0 px-0">
+                                    <label class="form-check-label fw-bold text-white mb-0" for="rule-mercy-enabled">
+                                        <i class="ri-forbid-line text-danger me-1"></i> Regla del Nocaut (Mercy)
+                                    </label>
+                                    <input class="form-check-input bg-secondary border-secondary mt-0 ms-2"
+                                        type="checkbox" role="switch" id="rule-mercy-enabled">
+                                </div>
+                                <div id="rule-mercy-options" class="row g-2 mt-2 d-none">
+                                    <div class="col-6">
+                                        <label for="rule-mercy-diff" class="form-label text-white-50 small mb-1">Dif.
+                                            (Carreras)</label>
+                                        <input type="number"
+                                            class="form-control form-control-sm bg-dark text-white border-secondary"
+                                            id="rule-mercy-diff" value="10" min="1">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="rule-mercy-inning" class="form-label text-white-50 small mb-1">A
+                                            partir Inning</label>
+                                        <input type="number"
+                                            class="form-control form-control-sm bg-dark text-white border-secondary"
+                                            id="rule-mercy-inning" value="4" min="1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-2 card bg-black border-secondary border-opacity-50">
+                            <div class="card-body py-2 px-3">
+                                <div
+                                    class="form-check form-switch d-flex justify-content-between align-items-center px-0 mb-0">
+                                    <label class="form-check-label fw-bold text-white mb-0" for="rule-pitch-enabled">
+                                        <i class="ri-focus-2-line text-warning me-1"></i> Límite de Pitcheos
+                                    </label>
+                                    <input class="form-check-input bg-secondary border-secondary mt-0 ms-2"
+                                        type="checkbox" role="switch" id="rule-pitch-enabled">
+                                </div>
+                                <div id="rule-pitch-options" class="mt-2 d-none">
+                                    <label for="rule-pitch-limit" class="form-label text-white-50 small mb-1">Máximo
+                                        lanzamientos</label>
+                                    <input type="number"
+                                        class="form-control form-control-sm bg-dark text-white border-secondary"
+                                        id="rule-pitch-limit" value="85" min="1">
+                                </div>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-50 justify-content-between">
+                    <button type="button" class="btn btn-outline-danger rounded-pill px-3 d-none"
+                        id="btn-delete-rule">Borrar</button>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-3"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary rounded-pill px-4 fw-medium"
+                            id="btn-save-rule">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Bootstrap JS (bundle includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Custom App Logic -->
+    <script src="js/app.js"></script>
+    <script src="js/scoreboard.js"></script>
+</body>
+
+</html>
