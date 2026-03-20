@@ -258,6 +258,53 @@ function setupIndicators() {
 
     const appContent = document.getElementById('app-content');
 
+    // Setup Delete Game Button
+    const delContainer = appContent.querySelector('#delete-game-container');
+    const btnDeleteGame = appContent.querySelector('#btn-delete-game');
+
+    if (delContainer && btnDeleteGame) {
+        if (state.settings.allowDelete && state.currentGame.isFinished) {
+            delContainer.classList.remove('d-none');
+            // Clone to avoid multiple listeners
+            const clonedBtn = btnDeleteGame.cloneNode(true);
+            btnDeleteGame.parentNode.replaceChild(clonedBtn, btnDeleteGame);
+
+            clonedBtn.addEventListener('click', async () => {
+                const res = await Swal.fire({
+                    title: '¿Eliminar Juego?',
+                    text: 'Se borrará de forma permanente del historial.',
+                    icon: 'error',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar'
+                });
+
+                if (res.isConfirmed) {
+                    await DB.deleteFromHistory(state.currentGame.id);
+                    state.currentGame = null;
+                    await DB.removeCurrentGame();
+
+                    Swal.fire({
+                        title: 'Eliminado',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+
+                    if (typeof renderView === 'function') {
+                        renderView('home-view', 'tmpl-home-view');
+                        const backBtn = document.getElementById('back-btn');
+                        if (backBtn) backBtn.classList.add('d-none');
+                    }
+                }
+            });
+        } else {
+            delContainer.classList.add('d-none');
+        }
+    }
+
     // Disable interactions if game is finished
     if (state.currentGame.isFinished) {
         const actionBtnContainer = appContent.querySelector('#action-buttons-container');
@@ -354,55 +401,7 @@ function setupIndicators() {
         });
     }
 
-    // Setup Delete Game Button
-    const delContainer = appContent.querySelector('#delete-game-container');
-    const btnDeleteGame = appContent.querySelector('#btn-delete-game');
 
-    if (delContainer && btnDeleteGame) {
-        if (state.settings.allowDelete) {
-            delContainer.classList.remove('d-none');
-            // Clone to avoid multiple listeners
-            const clonedBtn = btnDeleteGame.cloneNode(true);
-            btnDeleteGame.parentNode.replaceChild(clonedBtn, btnDeleteGame);
-
-            clonedBtn.addEventListener('click', async () => {
-                const res = await Swal.fire({
-                    title: '¿Eliminar Juego?',
-                    text: 'Se borrará de forma permanente del historial.',
-                    icon: 'error',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Sí, eliminar',
-                    cancelButtonText: 'Cancelar'
-                });
-
-                if (res.isConfirmed) {
-                    let history = JSON.parse(localStorage.getItem('gameHistory') || '[]');
-                    history = history.filter(g => g.id !== state.currentGame.id);
-                    localStorage.setItem('gameHistory', JSON.stringify(history));
-
-                    state.currentGame = null;
-                    localStorage.removeItem('currentGameState');
-
-                    Swal.fire({
-                        title: 'Eliminado',
-                        icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-
-                    if (typeof renderView === 'function') {
-                        renderView('home-view', 'tmpl-home-view');
-                        const backBtn = document.getElementById('back-btn');
-                        if (backBtn) backBtn.classList.add('d-none');
-                    }
-                }
-            });
-        } else {
-            delContainer.classList.add('d-none');
-        }
-    }
 }
 
 function advanceHalfInning() {
@@ -614,7 +613,7 @@ function updateIndicatorVisuals(circles, value) {
 }
 
 function saveState() {
-    localStorage.setItem('currentGameState', JSON.stringify(state.currentGame));
+    DB.saveCurrentGame(state.currentGame);
     if (typeof saveToHistory === 'function') {
         saveToHistory(state.currentGame);
     }

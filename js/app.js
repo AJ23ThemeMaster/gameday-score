@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.1.3'; // Update this when releasing new versions
+const APP_VERSION = 'v1.1.4'; // Update this when releasing new versions
 
 // Application state
 const state = {
@@ -86,17 +86,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initialize the app
-    initApp();
-
-    // Initialize Rule Modal
-    initRuleModalLogic();
+    initApp().then(() => {
+        // Initialize Rule Modal
+        initRuleModalLogic();
+    });
 });
 
-function initApp() {
-    // Load settings from local storage
-    const savedSettings = localStorage.getItem('appSettings');
+/**
+ * Migration from localStorage to IndexedDB
+ */
+async function migrateFromLocalStorage() {
+    const migrationFlag = 'indexeddb_migrated';
+    if (localStorage.getItem(migrationFlag)) return;
+
+    console.log('Starting migration from localStorage to IndexedDB...');
+
+    try {
+        // 1. Settings
+        const savedSettings = localStorage.getItem('appSettings');
+        if (savedSettings) {
+            await DB.saveSettings(JSON.parse(savedSettings));
+        }
+
+        // 2. Current Game State
+        const currentGameState = localStorage.getItem('currentGameState');
+        if (currentGameState) {
+            await DB.saveCurrentGame(JSON.parse(currentGameState));
+        }
+
+        // 3. Game History
+        const gameHistory = localStorage.getItem('gameHistory');
+        if (gameHistory) {
+            const historyArray = JSON.parse(gameHistory);
+            for (const game of historyArray) {
+                await DB.saveToHistory(game);
+            }
+        }
+
+        // Set migration flag
+        localStorage.setItem(migrationFlag, 'true');
+        console.log('Migration completed successfully.');
+
+        // Optional: Clean up localStorage (clean only specific keys)
+        // localStorage.removeItem('appSettings');
+        // localStorage.removeItem('currentGameState');
+        // localStorage.removeItem('gameHistory');
+    } catch (error) {
+        console.error('Migration failed:', error);
+    }
+}
+
+async function initApp() {
+    // Migrate from localStorage if needed
+    await migrateFromLocalStorage();
+
+    // Load settings from IndexedDB
+    const savedSettings = await DB.getSettings();
     if (savedSettings) {
-        state.settings = { ...state.settings, ...JSON.parse(savedSettings) };
+        state.settings = { ...state.settings, ...savedSettings };
     }
 
     // Apply Theme
@@ -219,9 +266,10 @@ function attachViewListeners(viewId) {
                 rosterVisitante: Array.from({ length: 11 }, () => ({ order: '', pos: '', number: '', name: '' }))
             };
 
-            // Save to localStorage
-            localStorage.setItem('currentGameState', JSON.stringify(state.currentGame));
-            saveToHistory(state.currentGame);
+            // Save to IndexedDB
+            DB.saveCurrentGame(state.currentGame).then(() => {
+                saveToHistory(state.currentGame);
+            });
 
             const btn = form.querySelector('button[type="submit"]');
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Preparando...';
@@ -246,164 +294,167 @@ function attachViewListeners(viewId) {
         const appContent = document.getElementById('app-content');
         const historyList = appContent.querySelector('#history-list');
         const historyActions = appContent.querySelector('#history-actions');
-        let history = JSON.parse(localStorage.getItem('gameHistory') || '[]');
 
-        if (history.length === 0) {
-            historyList.innerHTML = `<div class="text-center text-muted mt-5"><i class="ri-history-line display-1 block mb-3"></i><p class="fs-5">No hay juegos registrados.</p></div>`;
-            if (historyActions) historyActions.classList.add('d-none');
-            return;
-        }
-
-        if (historyActions) {
-            if (state.settings.allowDelete) {
-                historyActions.classList.remove('d-none');
-            } else {
-                historyActions.classList.add('d-none');
+        DB.getHistory().then(history => {
+            if (history.length === 0) {
+                historyList.innerHTML = `<div class="text-center text-muted mt-5"><i class="ri-history-line display-1 block mb-3"></i><p class="fs-5">No hay juegos registrados.</p></div>`;
+                if (historyActions) historyActions.classList.add('d-none');
+                return;
             }
-        }
 
-        // Sort descending by ID (newest first)
-        history.sort((a, b) => b.id - a.id);
-
-        let html = '';
-        history.forEach(game => {
-            const dateStr = game.date ? game.date.split('-').reverse().join('-') : '--';
-            const statusBadge = game.isFinished
-                ? '<span class="badge bg-danger shadow-sm ms-1" style="font-size: 0.70rem;">FINAL</span>'
-                : `<span class="badge bg-secondary shadow-sm ms-1" style="font-size: 0.70rem;">INNING ${game.inning || 1} ${game.half === 'Top' ? '▲' : '▼'}</span>`;
-
-            const checkboxHtml = state.settings.allowDelete ?
-                `<div class="form-check custom-checkbox ms-1 me-2" style="z-index: 10;">
-                    <input class="form-check-input game-select-cb" type="checkbox" value="${game.id}" id="cb-${game.id}">
-                 </div>` : '';
-
-            html += `
-            <div class="card glass-card mb-3 game-history-card position-relative" data-id="${game.id}" style="cursor: pointer; transition: transform 0.2s;">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="d-flex align-items-center">
-                            ${checkboxHtml}
-                            <span class="badge bg-primary text-uppercase tracking-wider px-2 py-1">${game.category || 'General'}</span>
-                            ${statusBadge}
-                        </div>
-                        <small class="text-muted"><i class="ri-calendar-event-line"></i> ${dateStr}</small>
-                    </div>
-                    <div class="row text-center fw-bold fs-5 mt-3">
-                        <div class="col-5 text-truncate" title="${game.visitante}">${game.visitante}</div>
-                        <div class="col-2 text-muted fw-normal" style="font-size: 0.9rem;">vs</div>
-                        <div class="col-5 text-truncate" title="${game.local}">${game.local}</div>
-                    </div>
-                    <div class="row text-center display-5 fw-bold mt-1 text-white">
-                        <div class="col-5">${game.runsVisitante || 0}</div>
-                        <div class="col-2">-</div>
-                        <div class="col-5">${game.runsLocal || 0}</div>
-                    </div>
-                </div>
-            </div>`;
-        });
-
-        historyList.innerHTML = html;
-
-        // Add listeners
-        appContent.querySelectorAll('.game-history-card').forEach(card => {
-            card.addEventListener('click', function (e) {
-                // Ignore clicks if they landed exactly on the checkbox wrapper to prevent false triggers
-                if (e.target.closest('.custom-checkbox')) return;
-
-                const gameId = parseInt(this.getAttribute('data-id'));
-                const selectedGame = history.find(g => g.id === gameId);
-                if (selectedGame) {
-                    state.currentGame = selectedGame;
-                    localStorage.setItem('currentGameState', JSON.stringify(state.currentGame));
-                    renderView('scoreboard-view', 'tmpl-scoreboard-view');
+            if (historyActions) {
+                if (state.settings.allowDelete) {
+                    historyActions.classList.remove('d-none');
+                } else {
+                    historyActions.classList.add('d-none');
                 }
+            }
+
+            // Sort descending by ID (newest first)
+            history.sort((a, b) => b.id - a.id);
+
+            let html = '';
+            history.forEach(game => {
+                const dateStr = game.date ? game.date.split('-').reverse().join('-') : '--';
+                const statusBadge = game.isFinished
+                    ? '<span class="badge bg-danger shadow-sm ms-1" style="font-size: 0.70rem;">FINAL</span>'
+                    : `<span class="badge bg-secondary shadow-sm ms-1" style="font-size: 0.70rem;">INNING ${game.inning || 1} ${game.half === 'Top' ? '▲' : '▼'}</span>`;
+
+                const checkboxHtml = state.settings.allowDelete ?
+                    `<div class="form-check custom-checkbox ms-1 me-2" style="z-index: 10;">
+                        <input class="form-check-input game-select-cb" type="checkbox" value="${game.id}" id="cb-${game.id}">
+                     </div>` : '';
+
+                html += `
+                <div class="card glass-card mb-3 game-history-card position-relative" data-id="${game.id}" style="cursor: pointer; transition: transform 0.2s;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center">
+                                ${checkboxHtml}
+                                <span class="badge bg-primary text-uppercase tracking-wider px-2 py-1">${game.category || 'General'}</span>
+                                ${statusBadge}
+                            </div>
+                            <small class="text-muted"><i class="ri-calendar-event-line"></i> ${dateStr}</small>
+                        </div>
+                        <div class="row text-center fw-bold fs-5 mt-3">
+                            <div class="col-5 text-truncate" title="${game.visitante}">${game.visitante}</div>
+                            <div class="col-2 text-muted fw-normal" style="font-size: 0.9rem;">vs</div>
+                            <div class="col-5 text-truncate" title="${game.local}">${game.local}</div>
+                        </div>
+                        <div class="row text-center display-5 fw-bold mt-1 text-white">
+                            <div class="col-5">${game.runsVisitante || 0}</div>
+                            <div class="col-2">-</div>
+                            <div class="col-5">${game.runsLocal || 0}</div>
+                        </div>
+                    </div>
+                </div>`;
             });
-        });
 
-        if (state.settings.allowDelete) {
-            appContent.querySelectorAll('.game-select-cb').forEach(cb => {
-                cb.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                });
-                cb.addEventListener('change', () => {
-                    const anyChecked = Array.from(appContent.querySelectorAll('.game-select-cb')).some(c => c.checked);
-                    const btnDeleteSelected = appContent.querySelector('#btn-delete-selected');
-                    if (btnDeleteSelected) btnDeleteSelected.disabled = !anyChecked;
+            historyList.innerHTML = html;
+
+            // Add listeners
+            appContent.querySelectorAll('.game-history-card').forEach(card => {
+                card.addEventListener('click', function (e) {
+                    // Ignore clicks if they landed exactly on the checkbox wrapper to prevent false triggers
+                    if (e.target.closest('.custom-checkbox')) return;
+
+                    const gameId = parseInt(this.getAttribute('data-id'));
+                    const selectedGame = history.find(g => g.id === gameId);
+                    if (selectedGame) {
+                        state.currentGame = selectedGame;
+                        DB.saveCurrentGame(state.currentGame).then(() => {
+                            renderView('scoreboard-view', 'tmpl-scoreboard-view');
+                        });
+                    }
                 });
             });
 
-            const btnDeleteSelected = appContent.querySelector('#btn-delete-selected');
-            const btnDeleteAll = appContent.querySelector('#btn-delete-all');
+            if (state.settings.allowDelete) {
+                appContent.querySelectorAll('.game-select-cb').forEach(cb => {
+                    cb.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                    });
+                    cb.addEventListener('change', () => {
+                        const anyChecked = Array.from(appContent.querySelectorAll('.game-select-cb')).some(c => c.checked);
+                        const btnDeleteSelected = appContent.querySelector('#btn-delete-selected');
+                        if (btnDeleteSelected) btnDeleteSelected.disabled = !anyChecked;
+                    });
+                });
 
-            if (btnDeleteSelected) {
-                const newBtnSel = btnDeleteSelected.cloneNode(true);
-                btnDeleteSelected.parentNode.replaceChild(newBtnSel, btnDeleteSelected);
-                newBtnSel.addEventListener('click', async () => {
-                    const checkedIds = Array.from(appContent.querySelectorAll('.game-select-cb:checked')).map(cb => parseInt(cb.value));
-                    if (checkedIds.length > 0) {
+                const btnDeleteSelected = appContent.querySelector('#btn-delete-selected');
+                const btnDeleteAll = appContent.querySelector('#btn-delete-all');
+
+                if (btnDeleteSelected) {
+                    const newBtnSel = btnDeleteSelected.cloneNode(true);
+                    btnDeleteSelected.parentNode.replaceChild(newBtnSel, btnDeleteSelected);
+                    newBtnSel.addEventListener('click', async () => {
+                        const checkedIds = Array.from(appContent.querySelectorAll('.game-select-cb:checked')).map(cb => parseInt(cb.value));
+                        if (checkedIds.length > 0) {
+                            const res = await Swal.fire({
+                                title: '¿Eliminar seleccionados?',
+                                text: `Se borrarán ${checkedIds.length} juegos permanentemente.`,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#dc3545',
+                                cancelButtonColor: '#6c757d',
+                                confirmButtonText: 'Sí, eliminar',
+                                cancelButtonText: 'Cancelar'
+                            });
+
+                            if (res.isConfirmed) {
+                                for (const id of checkedIds) {
+                                    await DB.deleteFromHistory(id);
+                                }
+
+                                if (state.currentGame && checkedIds.includes(state.currentGame.id)) {
+                                    state.currentGame = null;
+                                    await DB.removeCurrentGame();
+                                }
+                                renderView('past-games-view', 'tmpl-past-games-view');
+
+                                Swal.fire({
+                                    title: 'Eliminados',
+                                    icon: 'success',
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                            }
+                        }
+                    });
+                }
+
+                if (btnDeleteAll) {
+                    const newBtnAll = btnDeleteAll.cloneNode(true);
+                    btnDeleteAll.parentNode.replaceChild(newBtnAll, btnDeleteAll);
+                    newBtnAll.addEventListener('click', async () => {
                         const res = await Swal.fire({
-                            title: '¿Eliminar seleccionados?',
-                            text: `Se borrarán ${checkedIds.length} juegos permanentemente.`,
-                            icon: 'warning',
+                            title: '¿ELIMINAR TODOS?',
+                            text: "Esta acción borrará todo tu historial por completo.",
+                            icon: 'error',
                             showCancelButton: true,
                             confirmButtonColor: '#dc3545',
                             cancelButtonColor: '#6c757d',
-                            confirmButtonText: 'Sí, eliminar',
+                            confirmButtonText: 'Sí, borrar todo',
                             cancelButtonText: 'Cancelar'
                         });
 
                         if (res.isConfirmed) {
-                            history = history.filter(g => !checkedIds.includes(g.id));
-                            localStorage.setItem('gameHistory', JSON.stringify(history));
-
-                            if (state.currentGame && checkedIds.includes(state.currentGame.id)) {
-                                state.currentGame = null;
-                                localStorage.removeItem('currentGameState');
-                            }
+                            await DB.clearHistory();
+                            state.currentGame = null;
+                            await DB.removeCurrentGame();
                             renderView('past-games-view', 'tmpl-past-games-view');
 
                             Swal.fire({
-                                title: 'Eliminados',
+                                title: 'Historial vacío',
                                 icon: 'success',
                                 timer: 1500,
                                 showConfirmButton: false
                             });
                         }
-                    }
-                });
-            }
-
-            if (btnDeleteAll) {
-                const newBtnAll = btnDeleteAll.cloneNode(true);
-                btnDeleteAll.parentNode.replaceChild(newBtnAll, btnDeleteAll);
-                newBtnAll.addEventListener('click', async () => {
-                    const res = await Swal.fire({
-                        title: '¿ELIMINAR TODOS?',
-                        text: "Esta acción borrará todo tu historial por completo.",
-                        icon: 'error',
-                        showCancelButton: true,
-                        confirmButtonColor: '#dc3545',
-                        cancelButtonColor: '#6c757d',
-                        confirmButtonText: 'Sí, borrar todo',
-                        cancelButtonText: 'Cancelar'
                     });
-
-                    if (res.isConfirmed) {
-                        localStorage.setItem('gameHistory', JSON.stringify([]));
-                        state.currentGame = null;
-                        localStorage.removeItem('currentGameState');
-                        renderView('past-games-view', 'tmpl-past-games-view');
-
-                        Swal.fire({
-                            title: 'Historial vacío',
-                            icon: 'success',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    }
-                });
+                }
             }
-        }
+        });
     }
 
     if (viewId === 'settings-view') {
@@ -503,7 +554,7 @@ function attachViewListeners(viewId) {
                 state.settings.showErrors = sErrors;
                 state.settings.enableRoster = eRoster;
                 state.settings.theme = selectedTheme;
-                localStorage.setItem('appSettings', JSON.stringify(state.settings));
+                DB.saveSettings(state.settings);
 
                 // Apply immediately
                 document.documentElement.setAttribute('data-bs-theme', selectedTheme);
@@ -524,14 +575,7 @@ function attachViewListeners(viewId) {
 
 function saveToHistory(gameState) {
     if (!gameState) return;
-    let history = JSON.parse(localStorage.getItem('gameHistory') || '[]');
-    const existingIdx = history.findIndex(g => g.id === gameState.id);
-    if (existingIdx >= 0) {
-        history[existingIdx] = gameState;
-    } else {
-        history.push(gameState);
-    }
-    localStorage.setItem('gameHistory', JSON.stringify(history));
+    DB.saveToHistory(gameState);
 }
 
 function showBackButton() {
@@ -721,7 +765,7 @@ function initRuleModalLogic() {
         }
 
         // Save
-        localStorage.setItem('appSettings', JSON.stringify(state.settings));
+        DB.saveSettings(state.settings);
 
         bootstrap.Modal.getInstance(modalEl).hide();
         renderRulesList();
@@ -746,7 +790,7 @@ function initRuleModalLogic() {
         }).then((result) => {
             if (result.isConfirmed) {
                 state.settings.gameRules = state.settings.gameRules.filter(r => r.id !== id);
-                localStorage.setItem('appSettings', JSON.stringify(state.settings));
+                DB.saveSettings(state.settings);
 
                 bootstrap.Modal.getInstance(modalEl).hide();
                 renderRulesList();

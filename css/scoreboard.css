@@ -28,6 +28,34 @@
     background-color: rgba(255, 255, 255, 0.2) !important;
 }
 
+/* Mobile Responsiveness for Inning Table */
+@media (max-width: 576px) {
+    .table-responsive {
+        margin: 0 -1.5rem; /* Negate content-wrapper padding for full width if needed */
+        padding: 0 0.5rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .inning-table th {
+        font-size: 0.85rem !important;
+        padding: 6px 4px !important;
+        min-width: 30px;
+    }
+
+    .inning-table td {
+        font-size: 1.1rem !important;
+        height: 40px !important;
+        min-width: 30px;
+    }
+    
+    /* Sticky first col if needed, but here we just want it to fit better */
+    .inning-table th:last-child, 
+    .inning-table td:last-child {
+        min-width: 40px;
+    }
+}
+
 /* Bottom Controls Wrapper */
 .controls-panel {
     border: 2px solid white;
@@ -67,6 +95,8 @@
     background-color: #F44336;
     /* Rojo */
 }
+
+
 
 .bso-btn {
     background-color: #888;
@@ -126,9 +156,53 @@
     transform: none;
 }
 
-/* Modals / Settings Override */
-.ext-indicator {
-    font-size: 1.25rem;
+/* --- MOBILE SCOREBOARD ADAPTATIONS --- */
+@media (max-width: 480px) {
+    .display-3 {
+        font-size: 3rem !important; /* Smaller scores */
+    }
+    
+    .roster-btn {
+        font-size: 0.75rem !important;
+        padding: 4px 8px !important;
+        width: 100% !important;
+    }
+    
+    .bso-row {
+        font-size: 1.5rem !important;
+    }
+    
+    .indicator-circle {
+        width: 32px !important;
+        height: 32px !important;
+        margin: 0 3px !important;
+    }
+    
+    .bso-btn {
+        font-size: 1.25rem !important;
+        height: 38px !important;
+        width: 35px !important;
+    }
+    
+    .diamond-container {
+        width: 80px !important;
+        height: 80px !important;
+    }
+    
+    .base {
+        width: 25px !important;
+        height: 25px !important;
+    }
+    
+    .home-plate {
+        width: 25px !important;
+        height: 25px !important;
+    }
+
+    .btn-lg-custom {
+        padding: 12px 16px !important;
+        font-size: 0.9rem !important;
+    }
 }
 
 /* --- LIGHT THEME OVERRIDES --- */

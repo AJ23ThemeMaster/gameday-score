@@ -1,8 +1,9 @@
-const CACHE_NAME = 'gameday-score-v1.1.3';
+const CACHE_NAME = 'gameday-score-v1.1.4';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
     './css/styles.css',
+    './js/db.js',
     './js/app.js',
     './js/scoreboard.js',
     './manifest.json',
