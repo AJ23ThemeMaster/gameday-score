@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gameday-score-v1.1.4';
+const CACHE_NAME = 'gameday-score-v1.1.5';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -8,6 +8,7 @@ const ASSETS_TO_CACHE = [
     './js/scoreboard.js',
     './manifest.json',
     './assets/icon.svg',
+    './assets/icon-512.png',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
     'https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js',
