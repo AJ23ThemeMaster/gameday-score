@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.1.5'; // Update this when releasing new versions
+const APP_VERSION = 'v1.1.6'; // Update this when releasing new versions
 
 // Application state
 const state = {
