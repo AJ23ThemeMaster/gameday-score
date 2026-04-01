@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.1.7'; // Update this when releasing new versions
+const APP_VERSION = 'v1.1.8'; // Update this when releasing new versions
 
 // Application state
 const state = {
@@ -260,6 +260,10 @@ function attachViewListeners(viewId) {
                 errorsVisitante: 0,
                 ruleSet: gameRule,
                 pitchCount: { local: 0, visitante: 0 },
+                currentPitcher: { 
+                    local: { name: 'Lanzador', count: 0 }, 
+                    visitante: { name: 'Lanzador', count: 0 } 
+                },
                 inningsData: Array.from({ length: gameRule.maxInnings }, () => ({ local: '', visitante: '' })),
                 bases: { 1: false, 2: false, 3: false },
                 rosterLocal: Array.from({ length: 11 }, () => ({ order: '', pos: '', number: '', name: '' })),

@@ -1,41 +1,43 @@
-# ⚾ Gameday Score - Beisbol
+# ⚾ Gameday Score - Beisbol & Sófbol
 
-Esta es la documentación oficial sobre las funcionalidades y características técnicas implementadas en la aplicación de control de marcadores (**Scoreboard**) de Gameday Score.
+**Gameday Score** es una Progressive Web App (PWA) de alto rendimiento diseñada para el control profesional de marcadores y estadísticas de béisbol y sófbol. Esta documentación detalla las funcionalidades actuales y la arquitectura técnica del sistema.
 
 ## 🌟 Funcionalidades Principales
 
 ### 1. Gestión Integral de Partidos
-- **Creación Múltiple**: Inicia nuevos juegos asignando nombres a los equipos Local y Visitante, Estadio, Categoría de juego (Pre-Infantil, Infantil, etc.), Fecha y Hora.
-- **Pizarra en Vivo (Scoreboard)**: Interfaz dinámica que muestra el marcador carrera por carrera organizada por *Innings* (episodios).
-- **Control de Inning y Turno**: Indicador inteligente ("Parte Alta / Parte Baja" y "Batea X Equipo") que se actualiza al avanzar la jugada o completar los Outs.
-- **Panel Interactivo (B-S-O)**: Botones táctiles para registrar de forma rápida **Bolas (B)**, **Strikes (S)** y **Outs (O)**.
-- **Bases Visuales**: Representación gráfica del diamante con bases interactivas que se iluminan al ser ocupadas.
-- **Totalización Automática**: El sistema suma en tiempo real las Carreras (C) general por equipo. Los **Hits (H)** y **Errores (E)** se calculan y se ingresan de forma manual o automática de acuerdo a la configuración.
+- **Configuración Detallada**: Inicia juegos personalizando equipos (Local/Visitante), Estadio, Categoría (Pre-Infantil hasta Profesional), Fecha, Hora y Reglas de juego.
+- **Pizarra Dinámica (Scoreboard)**: Interfaz de tiempo real que rastrea carreras inning por inning.
+- **Control de Inning Inteligente**: Cambio automático entre "Parte Alta" y "Parte Baja", con indicadores visuales de turno al bate.
+- **Panel B-S-O & Diamante**: Registro rápido de Bolas, Strikes y Outs con representación gráfica de corredores en bases.
+- **Regla del Nocaut (Mercy Rule)**: Validación automática de diferencia de carreras según la categoría para finalizar juegos de forma reglamentaria.
 
-### 2. Roster y Alineaciones 👥
-- **Gestión por Equipo**: Cada equipo cuenta con su propia plantilla de jugadores o "Lineup".
-- **Datos Detallados**: Permite ingresar Orden al bate, Posición defensiva (1B, SS, CF, etc.), Número de dorsal y Nombre de cada jugador.
-- **Configurable**: El manejo de Roster puede ser desactivado globalmente para juegos más rápidos y casuales.
+### 2. Roster 2.0 y Alineaciones 👥
+- **Estructura Dual**: Separación clara entre **Titulares (Lineup)** y **Sustituciones (Suplentes)**.
+- **Posiciones Pre-definidas**: Inicialización automática con las 9 posiciones estándar (P, C, 1B, 2B, 3B, SS, LF, CF, RF) para agilizar el proceso.
+- **Drag & Drop Nativo**: Reordenamiento intuitivo de jugadores dentro del lineup o entre secciones mediante arrastrar y soltar.
+- **Validación de Integridad**: El sistema asegura que el roster cuente con al menos 9 nombres antes de permitir el guardado, garantizando un registro completo.
 
-### 3. Histórico de Juegos 📅
-- **Autoguardado Persistente**: Si se cierra el navegador por accidente, al volver a abrir la app el juego seguirá en la misma cuenta de bolas, strikes y carreras exactamente donde se dejó.
-- **Gestión de Archivo**: Sección dedicada a "Juegos Pasados", desde donde puedes revisar resultados o **reanudar** partidos que fueron pausados previamente.
-- **Borrado Inteligente**: Puedes borrar partidos históricos si habilitas la opción secreta desde Configuración, con opciones masivas de selección o borrado individual.
+### 3. Control de Pitcheo Profesional 📈
+- **Seguimiento Individual**: Rastreo de conteo de lanzamientos por **lanzador específico**, no solo por equipo.
+- **Gestión de Relevos**: Al realizar un cambio de lanzador, el sistema solicita el nombre del nuevo atleta y reinicia el conteo automáticamente.
+- **Alertas de Límite**: Notificaciones visuales inmediatas cuando un lanzador alcanza el límite de pitcheos configurado según las reglas de la categoría.
 
-### 4. Personalización y Ajustes ⚙️
-- **Innings Personalizables**: Escoge la longitud del partido por defecto (ej. a 6, 7 o 9 episodios).
-- **Temas (Modo Oscuro / Claro)**: Cambia a voluntad la apariencia del sistema. El tema Oscuro maximiza el ahorro de batería, mientras que el tema Claro ofrece máxima legibilidad bajo el sol durante los juegos diurnos.
-- **Visibilidad Opcional**: Puedes escoger mostrar u ocultar libremente las columnas de "Hits" y "Errores".
+### 4. Histórico y Persistencia 📅
+- **Autoguardado Seguro**: Persistencia total del estado del juego en `localStorage`. Si el navegador se cierra o refresca, el partido continúa exactamente donde quedó.
+- **Archivo de Juegos**: Sección de "Juegos Pasados" para revisar resultados históricos o reanudar partidos pausados.
+- **Gestión de Datos**: Opciones para borrar partidos individuales o limpiar el historial completo desde los ajustes avanzados.
 
-### 5. Compartir y Exportar 📸
-- **Motor Fotográfico Integrado**: Botón para exportar el marcador actual como una imagen de alta calidad, perfecta e inmaculada sin los botones de control intrusivos.
-- **Web Share nativo**: Al capturar, la app lanza la ventana nativa de tu celular (WhatsApp, Instagram, Twitter) para presumir el resultado, incluyendo el fondo temático que hayas elegido.
+### 5. Personalización y UX ⚙️
+- **Temas Dinámicos**: Modo Oscuro (ahorro de batería/noche) y Modo Claro (alta visibilidad bajo el sol) con estética premium.
+- **Visualización Flexible**: Configura la visibilidad de columnas de Hits (H) y Errores (E) según la necesidad del torneo.
+- **Exportación Social**: Motor de generación de imágenes que crea una captura limpia del marcador (sin botones de control) optimizada para compartir en WhatsApp, Instagram o Twitter.
 
-## 🚀 Capacidades Técnicas Avanzadas
+## 🚀 Capacidades Técnicas
 
-- **PWA (Progressive Web App)**: La aplicación incluye diseño de íconos adaptativos y `manifest.json`. Es **100% Instalable** de forma paralela a cualquier App de la tienda oficial (apareciendo en la pantalla principal del dispositivo) sin requerir paso por tiendas de aplicaciones.
-- **Soporte Offline Robusto**: Incorpora un **Service Worker (`sw.js`)** y caché semántico (Semantic Versioning), el cual descarga la app a la memoria. Una vez instalada, funcionará a la velocidad de la luz en condiciones donde la conexión a internet sea inestable o nula dentro del campo deportivo.
-- **Almacenamiento Local Silencioso**: Toda la persistencia de datos descansa sobre una estructura optimizada conectada permanentemente a `localStorage`, lo que significa que el consumo de datos es $0.
-- **Smart Updates & Versioning**: 
-  - **Detección Automática Silenciosa**: El Service Worker rastrea proactivamente los atributos del proyecto base (`sw.js`). En cuanto se efectúa un nuevo despliegue de versión por el desarrollador, emite una notificación Push local al celular del usuario (SweetAlert2) para que aplique y recargue el nuevo parche instantáneamente.
-  - **Búsqueda Forzada de Actualizaciones**: Integración de un módulo informativo "Acerca de la App" en la ventana de Configuración. En este panel, no solo se expone la versión semántica local instalada (Ej. `v1.0.1`), sino que se dispone de un botón dedicado para **Buscar Novedades**. Dicho botón elude los tiempos de respuesta del caché del sistema e interroga en tiempo real al servidor en busca de un nuevo Service Worker, garantizando estar siempre al día.
+- **PWA (Progressive Web App)**: 100% instalable en Android, iOS y Escritorio. Proporciona una experiencia de aplicación nativa sin pasar por tiendas oficiales.
+- **Arquitectura Offline-First**: Utiliza un **Service Worker (`sw.js`)** con caché semántico. Una vez cargada, la app funciona sin conexión a internet, ideal para estadios con cobertura limitada.
+- **Rendimiento Óptimo**: Construida con Vanilla JS y CSS moderno, garantizando tiempos de carga instantáneos y animaciones fluidas a 60fps.
+- **Sistema de Actualizaciones**: Notificaciones automáticas (SweetAlert2) cuando hay una nueva versión disponible (v1.1.8+), permitiendo al usuario actualizar con un solo clic.
+
+---
+*Desarrollado para anotadores que buscan precisión y velocidad en el diamante.*

@@ -508,16 +508,23 @@ function updateActiveBattingTeam() {
                 <h6 class="mb-0 fw-bold text-uppercase tracking-wider text-white">Parte ${parte} del ${ordinal} Inning</h6>
                 <p class="text-warning small mb-0 fw-medium">Batea <span id="current-batting-team" class="fw-bold">${activeTeamName}</span></p>
                 
-                <div id="pitch-count-container" class="d-none mt-2 d-flex align-items-center justify-content-center">
-                    <div class="badge bg-dark rounded-pill border border-secondary px-3 py-1 d-flex align-items-center">
-                        <i class="ri-focus-2-line text-warning me-2"></i> 
-                        <span class="text-white-50 me-1">Pitcheos:</span> 
-                        <strong id="pitch-count-current" class="text-white fs-6">0</strong> 
-                        <span class="text-white-50 ms-1">/ <span id="pitch-count-max">85</span></span>
+                <div id="pitch-count-container" class="d-none mt-2 d-flex flex-column align-items-center">
+                    <div class="text-secondary small mb-1">
+                        <i class="ri-user-voice-line me-1"></i> <span id="pitcher-name-display" class="fw-bold text-white-50">Lanzador</span>
                     </div>
-                    <button class="btn btn-sm btn-outline-warning rounded-circle ms-2 d-flex align-items-center justify-content-center" style="width:32px; height:32px; padding:0" id="btn-foul-pitch" title="Foul (+1 Pitcheo extra)">
-                        <i class="ri-add-line fs-5"></i>
-                    </button>
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="badge bg-dark rounded-pill border border-secondary px-3 py-1 d-flex align-items-center shadow-sm">
+                            <i class="ri-focus-2-line text-warning me-2"></i> 
+                            <strong id="pitch-count-current" class="text-white fs-5">0</strong> 
+                            <span class="text-white-50 ms-1">/ <span id="pitch-count-max">85</span></span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-warning rounded-circle ms-2 d-flex align-items-center justify-content-center" style="width:32px; height:32px; padding:0" id="btn-foul-pitch" title="Foul (+1 Pitcheo extra)">
+                            <i class="ri-add-line fs-5"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary rounded-circle ms-2 d-flex align-items-center justify-content-center" style="width:32px; height:32px; padding:0" id="btn-change-pitcher" title="Cambiar Lanzador">
+                            <i class="ri-user-shared-line fs-5"></i>
+                        </button>
+                    </div>
                 </div>
             `;
             updatePitchCountUI();
@@ -628,16 +635,95 @@ function setupRoster() {
     // Hide roster buttons if disabled in settings
     if (state.settings.enableRoster === false) {
         rosterBtns.forEach(btn => btn.classList.add('d-none'));
-        return; // Don't bind events
+        return;
     } else {
         rosterBtns.forEach(btn => btn.classList.remove('d-none'));
     }
 
     const modalTeamName = document.querySelector('#modal-team-name');
-    const rosterTbody = document.querySelector('#roster-tbody');
+    const startersTbody = document.querySelector('#roster-starters-tbody');
+    const subsTbody = document.querySelector('#roster-subs-tbody');
     const btnSaveRoster = document.querySelector('#btn-save-roster');
 
     let currentRosterTeam = null;
+    const standardPos = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'];
+
+    const createRowHtml = (player, index, isStarter) => {
+        const posPlaceholder = isStarter ? (standardPos[index] || 'POS') : 'SUB';
+        const posVal = player.pos || (isStarter ? posPlaceholder : '');
+
+        return `
+            <tr draggable="true" class="roster-row">
+                <td class="p-1 align-middle text-center">
+                    <div class="drag-handle"><i class="ri-drag-move-2-line"></i></div>
+                </td>
+                <td class="p-1 align-middle">
+                    <input type="text" class="form-control form-control-sm text-center bg-dark text-white border-secondary roster-input-pos" value="${posVal}" placeholder="${posPlaceholder}">
+                </td>
+                <td class="p-1 align-middle">
+                    <input type="number" class="form-control form-control-sm text-center bg-dark text-white border-secondary roster-input-number" value="${player.number || ''}" placeholder="00">
+                </td>
+                <td class="p-1 align-middle">
+                    <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary roster-input-name" value="${player.name || ''}" placeholder="Nombre del atleta...">
+                </td>
+            </tr>
+        `;
+    };
+
+    const initRosterDragAndDrop = () => {
+        const rows = document.querySelectorAll('.roster-row');
+        let dragSrcEl = null;
+
+        rows.forEach(row => {
+            row.addEventListener('dragstart', function (e) {
+                dragSrcEl = this;
+                e.dataTransfer.effectAllowed = 'move';
+                this.classList.add('roster-row-dragging');
+                e.dataTransfer.setData('text/html', this.innerHTML);
+            });
+
+            row.addEventListener('dragover', function (e) {
+                if (e.preventDefault) e.preventDefault();
+                this.classList.add('roster-drop-target');
+                return false;
+            });
+
+            row.addEventListener('dragleave', function () {
+                this.classList.remove('roster-drop-target');
+            });
+
+            row.addEventListener('drop', function (e) {
+                if (e.stopPropagation) e.stopPropagation();
+
+                if (dragSrcEl !== this) {
+                    const sourceParent = dragSrcEl.parentNode;
+                    const targetParent = this.parentNode;
+
+                    if (sourceParent === targetParent) {
+                        const allRows = Array.from(sourceParent.children);
+                        const sourceIdx = allRows.indexOf(dragSrcEl);
+                        const targetIdx = allRows.indexOf(this);
+
+                        if (sourceIdx < targetIdx) {
+                            sourceParent.insertBefore(dragSrcEl, this.nextSibling);
+                        } else {
+                            sourceParent.insertBefore(dragSrcEl, this);
+                        }
+                    } else {
+                        targetParent.insertBefore(dragSrcEl, this);
+                    }
+                }
+                return false;
+            });
+
+            row.addEventListener('dragend', function () {
+                document.querySelectorAll('.roster-row').forEach(r => {
+                    r.classList.remove('roster-row-dragging');
+                    r.classList.remove('roster-drop-target');
+                });
+            });
+        });
+    };
 
     rosterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -645,45 +731,73 @@ function setupRoster() {
             const teamName = state.currentGame[currentRosterTeam === 'local' ? 'local' : 'visitante'];
             if (modalTeamName) modalTeamName.textContent = teamName;
 
-            // Render table rows based on state
-            const rosterArray = state.currentGame[currentRosterTeam === 'local' ? 'rosterLocal' : 'rosterVisitante'] || [];
+            const rosterData = state.currentGame[currentRosterTeam === 'local' ? 'rosterLocal' : 'rosterVisitante'] || [];
 
-            let html = '';
-            for (let i = 0; i < 11; i++) {
-                const player = rosterArray[i] || { order: '', pos: '', number: '', name: '' };
-                const orderVal = player.order || (i + 1); // default order text
-                html += `
-                    <tr data-index="${i}">
-                        <td class="p-1 align-middle"><input type="text" class="form-control form-control-sm text-center bg-dark text-white border-secondary roster-input-order" value="${orderVal}"></td>
-                        <td class="p-1 align-middle"><input type="text" class="form-control form-control-sm text-center bg-dark text-white border-secondary roster-input-pos" value="${player.pos}" placeholder="1B"></td>
-                        <td class="p-1 align-middle"><input type="number" class="form-control form-control-sm text-center bg-dark text-white border-secondary roster-input-number" value="${player.number}"></td>
-                        <td class="p-1 align-middle"><input type="text" class="form-control form-control-sm bg-dark text-white border-secondary roster-input-name" value="${player.name}" placeholder="Nombre del jugador..."></td>
-                    </tr>
-                `;
+            // Render starters (1-9)
+            let startersHtml = '';
+            for (let i = 0; i < 9; i++) {
+                startersHtml += createRowHtml(rosterData[i] || {}, i, true);
             }
-            if (rosterTbody) rosterTbody.innerHTML = html;
+            if (startersTbody) startersTbody.innerHTML = startersHtml;
+
+            // Render subs (9+)
+            let subsHtml = '';
+            const actualSubs = rosterData.slice(9);
+            const subCount = Math.max(6, actualSubs.length + 1); // At least 6 rows or one more than current
+            for (let i = 0; i < subCount; i++) {
+                subsHtml += createRowHtml(actualSubs[i] || {}, i, false);
+            }
+            if (subsTbody) subsTbody.innerHTML = subsHtml;
+
+            initRosterDragAndDrop();
         });
     });
 
     if (btnSaveRoster) {
-        // Prevent multiple listeners if re-initialized
         const clonedBtn = btnSaveRoster.cloneNode(true);
         btnSaveRoster.parentNode.replaceChild(clonedBtn, btnSaveRoster);
 
         clonedBtn.addEventListener('click', () => {
             if (!currentRosterTeam) return;
 
-            const rows = document.querySelectorAll('#roster-tbody tr');
+            const startersRows = document.querySelectorAll('#roster-starters-tbody tr');
+            const subsRows = document.querySelectorAll('#roster-subs-tbody tr');
             const newRoster = [];
 
-            rows.forEach(row => {
-                newRoster.push({
-                    order: row.querySelector('.roster-input-order').value.trim(),
-                    pos: row.querySelector('.roster-input-pos').value.trim().toUpperCase(),
-                    number: row.querySelector('.roster-input-number').value.trim(),
-                    name: row.querySelector('.roster-input-name').value.trim()
+            const processRows = (rows, isStarter) => {
+                rows.forEach((row, idx) => {
+                    const pos = row.querySelector('.roster-input-pos').value.trim();
+                    const num = row.querySelector('.roster-input-number').value.trim();
+                    const name = row.querySelector('.roster-input-name').value.trim();
+
+                    if (name || num || pos) {
+                        newRoster.push({
+                            order: isStarter ? (newRoster.length + 1) : ('S' + (newRoster.length - 8)),
+                            pos: pos.toUpperCase(),
+                            number: num,
+                            name: name
+                        });
+                    }
                 });
-            });
+            };
+
+            processRows(startersRows, true);
+            processRows(subsRows, false);
+
+            // Validation: Ensure at least 9 players TOTAL have a name filled in
+            const playersWithNames = newRoster.filter(p => p.name && p.name.trim() !== "");
+            
+            if (playersWithNames.length < 9) {
+                Swal.fire({
+                    title: 'Roster Incompleto',
+                    text: 'Debes ingresar al menos 9 nombres de atletas antes de guardar.',
+                    icon: 'warning',
+                    confirmButtonColor: '#0d6efd',
+                    background: '#212529',
+                    color: '#fff'
+                });
+                return;
+            }
 
             if (currentRosterTeam === 'local') {
                 state.currentGame.rosterLocal = newRoster;
@@ -693,7 +807,6 @@ function setupRoster() {
 
             saveState();
 
-            // Hide modal using bootstrap
             const rosterModalEl = document.getElementById('rosterModal');
             if (rosterModalEl) {
                 const modal = bootstrap.Modal.getInstance(rosterModalEl) || new bootstrap.Modal(rosterModalEl);
@@ -1006,13 +1119,25 @@ function updatePitchCountUI() {
         container.classList.remove('d-none');
         const pitchCurrentEl = document.getElementById('pitch-count-current');
         const pitchMaxEl = document.getElementById('pitch-count-max');
+        const pitcherNameEl = document.getElementById('pitcher-name-display');
 
         // Defensive team throws the pitches
         const defenseTeam = game.half === 'Top' ? 'local' : 'visitante';
-        const currentCount = game.pitchCount ? (game.pitchCount[defenseTeam] || 0) : 0;
+        
+        // Use currentPitcher specific count
+        if (!game.currentPitcher) {
+            game.currentPitcher = { 
+                local: { name: 'Lanzador', count: game.pitchCount?.local || 0 }, 
+                visitante: { name: 'Lanzador', count: game.pitchCount?.visitante || 0 } 
+            };
+        }
+
+        const pitcherInfo = game.currentPitcher[defenseTeam];
+        const currentCount = pitcherInfo.count || 0;
 
         if (pitchCurrentEl) pitchCurrentEl.textContent = currentCount;
         if (pitchMaxEl) pitchMaxEl.textContent = game.ruleSet.pitchCountLimit;
+        if (pitcherNameEl) pitcherNameEl.textContent = pitcherInfo.name || 'Lanzador';
 
         // Bind foul button securely
         const btnFoul = document.getElementById('btn-foul-pitch');
@@ -1021,6 +1146,16 @@ function updatePitchCountUI() {
             btnFoul.parentNode.replaceChild(newBtnFoul, btnFoul);
             newBtnFoul.addEventListener('click', () => {
                 incrementPitchCount();
+            });
+        }
+
+        // Bind change pitcher button
+        const btnChange = document.getElementById('btn-change-pitcher');
+        if (btnChange) {
+            const newBtnChange = btnChange.cloneNode(true);
+            btnChange.parentNode.replaceChild(newBtnChange, btnChange);
+            newBtnChange.addEventListener('click', () => {
+                window.changePitcher(defenseTeam);
             });
         }
     } else {
@@ -1032,18 +1167,29 @@ function incrementPitchCount() {
     const game = state.currentGame;
     if (!game || !game.ruleSet || game.ruleSet.pitchCountLimit <= 0) return;
 
-    if (!game.pitchCount) game.pitchCount = { local: 0, visitante: 0 };
+    if (!game.currentPitcher) {
+        game.currentPitcher = { 
+            local: { name: 'Lanzador', count: game.pitchCount?.local || 0 }, 
+            visitante: { name: 'Lanzador', count: game.pitchCount?.visitante || 0 } 
+        };
+    }
 
     const defenseTeam = game.half === 'Top' ? 'local' : 'visitante';
+    
+    // Increment specific pitcher count
+    game.currentPitcher[defenseTeam].count++;
+    
+    // Also keep global team count for stats if needed
+    if (!game.pitchCount) game.pitchCount = { local: 0, visitante: 0 };
     game.pitchCount[defenseTeam]++;
 
     updatePitchCountUI();
     saveState();
 
-    if (game.pitchCount[defenseTeam] >= game.ruleSet.pitchCountLimit) {
+    if (game.currentPitcher[defenseTeam].count >= game.ruleSet.pitchCountLimit) {
         Swal.fire({
             title: 'Límite de Pitcheos',
-            text: `El lanzador ha alcanzado el límite máximo permitido (${game.ruleSet.pitchCountLimit} pitcheos).`,
+            html: `El lanzador <b>${game.currentPitcher[defenseTeam].name}</b> ha alcanzado el límite máximo permitido (${game.ruleSet.pitchCountLimit} pitcheos).`,
             icon: 'warning',
             toast: true,
             position: 'top-end',
@@ -1052,3 +1198,49 @@ function incrementPitchCount() {
         });
     }
 }
+
+window.changePitcher = async function(team) {
+    const game = state.currentGame;
+    if (!game) return;
+
+    const teamName = game[team];
+    const currentName = game.currentPitcher[team].name;
+
+    const { value: newName } = await Swal.fire({
+        title: 'Cambio de Lanzador',
+        text: `Equipo: ${teamName}`,
+        input: 'text',
+        inputLabel: 'Nombre del nuevo lanzador',
+        inputValue: currentName === 'Lanzador' ? '' : currentName,
+        showCancelButton: true,
+        confirmButtonText: 'Realizar Cambio',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#0d6efd',
+        inputValidator: (value) => {
+            if (!value) {
+                return '¡Debes ingresar un nombre!';
+            }
+        }
+    });
+
+    if (newName) {
+        // Reset count for the new pitcher
+        game.currentPitcher[team] = {
+            name: newName,
+            count: 0
+        };
+
+        Swal.fire({
+            title: 'Lanzador Actualizado',
+            text: `${newName} entra al relevo. Conteo reiniciado.`,
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+
+        updatePitchCountUI();
+        saveState();
+    }
+};

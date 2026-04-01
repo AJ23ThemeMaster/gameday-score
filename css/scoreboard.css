@@ -242,3 +242,51 @@
 [data-bs-theme="light"] .base.active {
     background-color: #ffc107;
 }
+
+/* --- ROSTER / LINEUP ENHANCEMENTS --- */
+#roster-table .form-control {
+    border-radius: 6px;
+    padding: 0.4rem 0.5rem;
+}
+
+.roster-header-section {
+    background-color: rgba(255, 255, 255, 0.05);
+    font-weight: bold;
+    color: var(--bs-primary);
+}
+
+.drag-handle {
+    cursor: grab;
+    color: #6c757d;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.roster-row-dragging {
+    opacity: 0.5;
+    background-color: rgba(13, 110, 253, 0.2) !important;
+    border: 2px dashed #0d6efd !important;
+}
+
+.roster-drop-target {
+    border-top: 2px solid #0d6efd !important;
+}
+
+[data-bs-theme="light"] .roster-header-section {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Starters and Subs distinct BG */
+#roster-starters-tbody tr {
+    background-color: rgba(13, 110, 253, 0.03);
+}
+
+#roster-subs-tbody tr {
+    background-color: transparent;
+}
