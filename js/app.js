@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.1.8'; // Update this when releasing new versions
+const APP_VERSION = 'v1.1.12'; // Update this when releasing new versions
 
 // Application state
 const state = {
@@ -127,10 +127,10 @@ async function migrateFromLocalStorage() {
         localStorage.setItem(migrationFlag, 'true');
         console.log('Migration completed successfully.');
 
-        // Optional: Clean up localStorage (clean only specific keys)
-        // localStorage.removeItem('appSettings');
-        // localStorage.removeItem('currentGameState');
-        // localStorage.removeItem('gameHistory');
+        // Clean up localStorage
+        localStorage.removeItem('appSettings');
+        localStorage.removeItem('currentGameState');
+        localStorage.removeItem('gameHistory');
     } catch (error) {
         console.error('Migration failed:', error);
     }
@@ -175,6 +175,11 @@ function renderView(viewId, templateId) {
     } else {
         appContent.innerHTML = template.innerHTML;
     }
+
+    // Sync version strings in the view
+    appContent.querySelectorAll('.app-version-text').forEach(el => {
+        el.textContent = APP_VERSION;
+    });
 
     attachViewListeners(viewId);
 }
@@ -488,10 +493,7 @@ function attachViewListeners(viewId) {
         if (inputEnableRoster) inputEnableRoster.checked = state.settings.enableRoster !== false;
         if (inputTheme) inputTheme.value = state.settings.theme || 'dark';
 
-        const versionDisplay = appContent.querySelector('#app-version-display');
         const btnCheckUpdates = appContent.querySelector('#btn-check-updates');
-
-        if (versionDisplay) versionDisplay.textContent = APP_VERSION;
 
         if (btnCheckUpdates) {
             // Remove previous listeners
@@ -577,9 +579,9 @@ function attachViewListeners(viewId) {
     }
 }
 
-function saveToHistory(gameState) {
+async function saveToHistory(gameState) {
     if (!gameState) return;
-    DB.saveToHistory(gameState);
+    await DB.saveToHistory(gameState);
 }
 
 function showBackButton() {

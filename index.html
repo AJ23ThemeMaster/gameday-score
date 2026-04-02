@@ -67,7 +67,7 @@
         </nav>
 
         <!-- Dynamic Content Area -->
-        <div class="content-wrapper" id="app-content">
+        <div class="content-wrapper flex-grow-1" id="app-content">
             <!-- Views will be injected here by JS, starting with Home View -->
         </div>
 
@@ -79,8 +79,11 @@
     <template id="tmpl-home-view">
         <div class="view-container d-flex flex-column justify-content-center h-100">
             <div class="header-section text-center mb-5">
-                <i class="ri-baseball-fill hero-icon"></i>
-                <h2 class="title mt-3">Play Ball</h2>
+                <div class="logo-container mb-3">
+                    <img src="assets/icon-512.png" alt="Gameday Score Logo" class="img-fluid rounded-4 shadow-sm"
+                        style="width: 80px; height: 80px; object-fit: cover;">
+                </div>
+                <h2 class="title mt-2">Play Ball</h2>
                 <p class="text-muted">Gestiona el score de tus juegos</p>
             </div>
 
@@ -104,6 +107,13 @@
                     <i class="ri-arrow-right-s-line ms-auto"></i>
                 </button>
             </div>
+
+            <!-- Home View Footer -->
+            <footer class="py-4 text-center mt-5">
+                <p class="text-muted small mb-1">Versión <span class="app-version-text">v1.1.12</span></p>
+                <a href="https://gameday-score.frankmarval.com/" target="_blank"
+                    class="text-primary small text-decoration-none fw-medium">gameday-score.frankmarval.com</a>
+            </footer>
         </div>
     </template>
 
@@ -487,7 +497,7 @@
                             <div class="me-3">
                                 <label class="form-label text-muted small fw-bold tracking-wide mb-1">Versión
                                     Instalada</label>
-                                <div class="fw-bold text-white fs-5" id="app-version-display">v1.1.8</div>
+                                <div class="fw-bold text-white fs-5 app-version-text">v1.1.12</div>
                             </div>
                             <div>
                                 <button type="button" class="btn btn-outline-info btn-sm rounded-pill px-3"
@@ -495,6 +505,22 @@
                                     <i class="ri-refresh-line me-1"></i> Buscar
                                 </button>
                             </div>
+                        </div>
+
+                        <hr class="border-secondary my-4">
+
+                        <!-- Credits Section -->
+                        <div class="credits-section text-center py-2">
+                            <p class="text-white mb-1 fw-bold">Ing. Frank Marval</p>
+                            <p class="text-white-50 small mb-3 px-3">
+                                Desarrollador Full-Stack y especialista en Soluciones Progresivas (PWA) & Ecosistemas
+                                Laravel
+                            </p>
+                            <p class="mb-1">
+                                <a href="mailto:ing@frankmarval.com"
+                                    class="text-primary text-decoration-none small">ing@frankmarval.com</a>
+                            </p>
+                            <p class="text-white-50 small">Cumaná, Venezuela</p>
                         </div>
 
                     </div>
@@ -549,9 +575,11 @@
                             <tbody id="roster-starters-tbody" class="text-center">
                                 <!-- JS genera filas de titulares (1-9) -->
                             </tbody>
-                            <thead class="bg-black text-center small text-white-50 tracking-wide border-top border-secondary">
+                            <thead
+                                class="bg-black text-center small text-white-50 tracking-wide border-top border-secondary">
                                 <tr>
-                                    <th colspan="4" class="py-2 text-uppercase fw-bold"><i class="ri-user-shared-2-line me-1"></i> Sustituciones / Suplentes</th>
+                                    <th colspan="4" class="py-2 text-uppercase fw-bold"><i
+                                            class="ri-user-shared-2-line me-1"></i> Sustituciones / Suplentes</th>
                                 </tr>
                             </thead>
                             <tbody id="roster-subs-tbody" class="text-center">

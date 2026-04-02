@@ -154,37 +154,59 @@ function renderInningsTable(totalInnings = 9) {
                 const inning = this.getAttribute('data-inning');
                 const team = this.getAttribute('data-team');
 
+                let currentVal = parseInt(this.textContent) || 0;
+                const teamName = team === 'visitante' ? (state.currentGame.visitante || 'Visitante') : (state.currentGame.local || 'Local');
+                const ruleSet = state.currentGame.ruleSet;
+                const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+
                 const { value: val } = await Swal.fire({
                     title: `Carreras Inning ${inning}`,
-                    text: `Equipo: ${team}`,
-                    input: 'text',
-                    inputValue: this.textContent,
+                    html: `
+                        <div class="${isDark ? 'text-white-50' : 'text-muted'} mb-3">Equipo: <strong>${teamName}</strong></div>
+                        <div class="d-flex align-items-center justify-content-center gap-3 py-3">
+                            <button type="button" class="btn btn-outline-danger rounded-circle btn-lg p-0 shadow-sm border-2 fw-bold" id="swal-btn-minus" style="width: 60px; height: 60px; font-size: 2rem; line-height: 1;">-</button>
+                            <div id="swal-runs-display" class="display-4 fw-bold ${isDark ? 'text-white' : 'text-dark'} px-4" style="min-width: 80px;">${currentVal}</div>
+                            <button type="button" class="btn btn-outline-success rounded-circle btn-lg p-0 shadow-sm border-2 fw-bold" id="swal-btn-plus" style="width: 60px; height: 60px; font-size: 2rem; line-height: 1;">+</button>
+                        </div>
+                    `,
                     showCancelButton: true,
                     confirmButtonText: 'Guardar',
                     cancelButtonText: 'Cancelar',
                     confirmButtonColor: '#0d6efd',
-                    cancelButtonColor: '#6c757d'
+                    cancelButtonColor: '#6c757d',
+                    background: isDark ? '#1e1e1e' : '#ffffff',
+                    color: isDark ? '#ffffff' : '#212529',
+                    didOpen: () => {
+                        const display = document.getElementById('swal-runs-display');
+                        const btnMinus = document.getElementById('swal-btn-minus');
+                        const btnPlus = document.getElementById('swal-btn-plus');
+
+                        btnMinus.addEventListener('click', () => {
+                            if (currentVal > 0) {
+                                currentVal--;
+                                display.textContent = currentVal;
+                            }
+                        });
+
+                        btnPlus.addEventListener('click', () => {
+                            if (ruleSet?.maxRunsPerInning > 0 && currentVal >= ruleSet.maxRunsPerInning) {
+                                Swal.showValidationMessage(`Límite: ${ruleSet.maxRunsPerInning} carreras`);
+                                return;
+                            }
+                            currentVal++;
+                            display.textContent = currentVal;
+                            Swal.resetValidationMessage();
+                        });
+                    },
+                    preConfirm: () => {
+                        return currentVal;
+                    }
                 });
 
                 if (val !== undefined && val !== null) {
-                    const strVal = String(val).trim();
-                    const numeric = parseInt(strVal);
-                    let finalVal = isNaN(numeric) ? '' : numeric;
-
-                    const ruleSet = state.currentGame.ruleSet;
-                    if (typeof finalVal === 'number' && ruleSet?.maxRunsPerInning > 0) {
-                        if (finalVal > ruleSet.maxRunsPerInning) {
-                            Swal.fire({
-                                title: 'Tope de Carreras',
-                                text: `El límite es de ${ruleSet.maxRunsPerInning} carreras por Inning según la Regla Activa.`,
-                                icon: 'warning',
-                                confirmButtonColor: '#0d6efd'
-                            });
-                            finalVal = ruleSet.maxRunsPerInning;
-                        }
-                    }
-
+                    const finalVal = val;
                     this.textContent = finalVal;
+                    
                     // Update specific index safely avoiding array reference cloning issues
                     let currentInningObj = { ...state.currentGame.inningsData[inning - 1] };
                     currentInningObj[team] = finalVal;
@@ -201,20 +223,51 @@ function renderInningsTable(totalInnings = 9) {
         appContent.querySelectorAll('.hit-cell').forEach(cell => {
             cell.addEventListener('click', async function () {
                 const team = this.getAttribute('data-team');
+                let currentVal = parseInt(this.textContent) || 0;
+                const teamName = team === 'visitante' ? (state.currentGame.visitante || 'Visitante') : (state.currentGame.local || 'Local');
+                const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+
                 const { value: val } = await Swal.fire({
                     title: `Hits`,
-                    text: `Equipo: ${team}`,
-                    input: 'number',
-                    inputValue: this.textContent,
+                    html: `
+                        <div class="${isDark ? 'text-white-50' : 'text-muted'} mb-3">Equipo: <strong>${teamName}</strong></div>
+                        <div class="d-flex align-items-center justify-content-center gap-3 py-3">
+                            <button type="button" class="btn btn-outline-danger rounded-circle btn-lg p-0 shadow-sm border-2 fw-bold" id="swal-btn-minus" style="width: 60px; height: 60px; font-size: 2rem; line-height: 1;">-</button>
+                            <div id="swal-hits-display" class="display-4 fw-bold ${isDark ? 'text-white' : 'text-dark'} px-4" style="min-width: 80px;">${currentVal}</div>
+                            <button type="button" class="btn btn-outline-success rounded-circle btn-lg p-0 shadow-sm border-2 fw-bold" id="swal-btn-plus" style="width: 60px; height: 60px; font-size: 2rem; line-height: 1;">+</button>
+                        </div>
+                    `,
                     showCancelButton: true,
                     confirmButtonText: 'Guardar',
                     cancelButtonText: 'Cancelar',
                     confirmButtonColor: '#0d6efd',
-                    cancelButtonColor: '#6c757d'
+                    cancelButtonColor: '#6c757d',
+                    background: isDark ? '#1e1e1e' : '#ffffff',
+                    color: isDark ? '#ffffff' : '#212529',
+                    didOpen: () => {
+                        const display = document.getElementById('swal-hits-display');
+                        const btnMinus = document.getElementById('swal-btn-minus');
+                        const btnPlus = document.getElementById('swal-btn-plus');
+
+                        btnMinus.addEventListener('click', () => {
+                            if (currentVal > 0) {
+                                currentVal--;
+                                display.textContent = currentVal;
+                            }
+                        });
+
+                        btnPlus.addEventListener('click', () => {
+                            currentVal++;
+                            display.textContent = currentVal;
+                        });
+                    },
+                    preConfirm: () => {
+                        return currentVal;
+                    }
                 });
 
                 if (val !== undefined && val !== null) {
-                    const numeric = parseInt(val) || 0;
+                    const numeric = val;
                     this.textContent = numeric;
                     if (team === 'visitante') state.currentGame.hitsVisitante = numeric;
                     else state.currentGame.hitsLocal = numeric;
@@ -227,20 +280,51 @@ function renderInningsTable(totalInnings = 9) {
         appContent.querySelectorAll('.error-cell').forEach(cell => {
             cell.addEventListener('click', async function () {
                 const team = this.getAttribute('data-team');
+                let currentVal = parseInt(this.textContent) || 0;
+                const teamName = team === 'visitante' ? (state.currentGame.visitante || 'Visitante') : (state.currentGame.local || 'Local');
+                const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+
                 const { value: val } = await Swal.fire({
                     title: `Errores`,
-                    text: `Equipo: ${team}`,
-                    input: 'number',
-                    inputValue: this.textContent,
+                    html: `
+                        <div class="${isDark ? 'text-white-50' : 'text-muted'} mb-3">Equipo: <strong>${teamName}</strong></div>
+                        <div class="d-flex align-items-center justify-content-center gap-3 py-3">
+                            <button type="button" class="btn btn-outline-danger rounded-circle btn-lg p-0 shadow-sm border-2 fw-bold" id="swal-btn-minus" style="width: 60px; height: 60px; font-size: 2rem; line-height: 1;">-</button>
+                            <div id="swal-errors-display" class="display-4 fw-bold ${isDark ? 'text-white' : 'text-dark'} px-4" style="min-width: 80px;">${currentVal}</div>
+                            <button type="button" class="btn btn-outline-success rounded-circle btn-lg p-0 shadow-sm border-2 fw-bold" id="swal-btn-plus" style="width: 60px; height: 60px; font-size: 2rem; line-height: 1;">+</button>
+                        </div>
+                    `,
                     showCancelButton: true,
                     confirmButtonText: 'Guardar',
                     cancelButtonText: 'Cancelar',
                     confirmButtonColor: '#0d6efd',
-                    cancelButtonColor: '#6c757d'
+                    cancelButtonColor: '#6c757d',
+                    background: isDark ? '#1e1e1e' : '#ffffff',
+                    color: isDark ? '#ffffff' : '#212529',
+                    didOpen: () => {
+                        const display = document.getElementById('swal-errors-display');
+                        const btnMinus = document.getElementById('swal-btn-minus');
+                        const btnPlus = document.getElementById('swal-btn-plus');
+
+                        btnMinus.addEventListener('click', () => {
+                            if (currentVal > 0) {
+                                currentVal--;
+                                display.textContent = currentVal;
+                            }
+                        });
+
+                        btnPlus.addEventListener('click', () => {
+                            currentVal++;
+                            display.textContent = currentVal;
+                        });
+                    },
+                    preConfirm: () => {
+                        return currentVal;
+                    }
                 });
 
                 if (val !== undefined && val !== null) {
-                    const numeric = parseInt(val) || 0;
+                    const numeric = val;
                     this.textContent = numeric;
                     if (team === 'visitante') state.currentGame.errorsVisitante = numeric;
                     else state.currentGame.errorsLocal = numeric;
@@ -619,10 +703,10 @@ function updateIndicatorVisuals(circles, value) {
     });
 }
 
-function saveState() {
-    DB.saveCurrentGame(state.currentGame);
+async function saveState() {
+    await DB.saveCurrentGame(state.currentGame);
     if (typeof saveToHistory === 'function') {
-        saveToHistory(state.currentGame);
+        await saveToHistory(state.currentGame);
     }
 }
 
