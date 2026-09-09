@@ -24,16 +24,17 @@
             {{-- Tarjetas de acciones --}}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                {{-- DISI-7 (juegos) --}}
+                {{-- DISI-7: Mis juegos (funcional) --}}
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <h4 class="font-semibold text-gray-900 mb-1">{{ __('Mis juegos') }}</h4>
                         <p class="text-sm text-gray-600 mb-3">
-                            {{ __('Consulta y gestiona los partidos que has creado.') }}
+                            {{ __('Crea y gestiona tus partidos con sus equipos, anotadores y árbitros.') }}
                         </p>
-                        <span class="inline-block text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                            {{ __('Próximamente (DISI-7)') }}
-                        </span>
+                        <a href="{{ route('games.index') }}"
+                           class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
+                            {{ __('Gestionar juegos') }}
+                        </a>
                     </div>
                 </div>
 

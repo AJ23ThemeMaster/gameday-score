@@ -64,7 +64,7 @@ gameday-score/
 | **DISI-4**  | CRUDs base: Categorías y Estadios (sin uploads aún)                                        | ✅ Hecho |
 | **DISI-5**  | CRUD de Equipos con logo (Storage + intervention/image si aplica)                          | ✅ Hecho |
 | **DISI-6**  | CRUD de Atletas, Anotadores, Árbitros con foto                                             | ✅ Hecho |
-| **DISI-7**  | CRUD de Juegos (Game) con relación a teams, stadium, category, scorekeepers, referees      | Pendiente |
+| **DISI-7**  | CRUD de Juegos (Game) con relación a teams, stadium, category, scorekeepers, referees      | ✅ Hecho |
 | **DISI-8**  | Marcar juego como público: ruta pública sin auth para ver avance en vivo                   | Pendiente |
 | **DISI-9**  | UI del Scoreboard nueva (Blade + JS) conectado a la API de Games                           | Pendiente |
 

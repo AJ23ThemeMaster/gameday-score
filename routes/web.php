@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AthleteController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\GameController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RefereeController;
 use App\Http\Controllers\ScorekeeperController;
@@ -25,13 +26,14 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // CRUDs (DISI-4, DISI-5, DISI-6)
+    // CRUDs (DISI-4, DISI-5, DISI-6, DISI-7)
     Route::resource('categories', CategoryController::class);
     Route::resource('stadiums', StadiumController::class);
     Route::resource('teams', TeamController::class);
     Route::resource('athletes', AthleteController::class);
     Route::resource('scorekeepers', ScorekeeperController::class);
     Route::resource('referees', RefereeController::class);
+    Route::resource('games', GameController::class);
 });
 
 require __DIR__.'/auth.php';
