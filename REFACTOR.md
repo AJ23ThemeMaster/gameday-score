@@ -58,8 +58,8 @@ gameday-score/
 
 | Ticket    | Descripción                                                                                  | Estado   |
 |-----------|----------------------------------------------------------------------------------------------|----------|
-| **DISI-1**  | Bootstrap Laravel + estructura master/develop + mover PWA a `public/legacy/`                | ✅ Actual |
-| **DISI-2**  | Laravel Breeze (Blade) con UI 100% en español                                              | Pendiente |
+| **DISI-1**  | Bootstrap Laravel + estructura master/develop + mover PWA a `public/legacy/`                | ✅ Hecho |
+| **DISI-2**  | Laravel Breeze (Blade) con UI 100% en español                                              | ✅ Hecho |
 | **DISI-3**  | Modelo de datos: User, Game, Category, Stadium, Team, Athlete, Scorekeeper, Referee + migraciones | Pendiente |
 | **DISI-4**  | CRUDs base: Categorías y Estadios (sin uploads aún)                                        | Pendiente |
 | **DISI-5**  | CRUD de Equipos con logo (Storage + intervention/image si aplica)                          | Pendiente |
