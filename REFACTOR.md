@@ -62,7 +62,7 @@ gameday-score/
 | **DISI-2**  | Laravel Breeze (Blade) con UI 100% en español                                              | ✅ Hecho |
 | **DISI-3**  | Modelo de datos: User, Game, Category, Stadium, Team, Athlete, Scorekeeper, Referee + migraciones | ✅ Hecho |
 | **DISI-4**  | CRUDs base: Categorías y Estadios (sin uploads aún)                                        | ✅ Hecho |
-| **DISI-5**  | CRUD de Equipos con logo (Storage + intervention/image si aplica)                          | Pendiente |
+| **DISI-5**  | CRUD de Equipos con logo (Storage + intervention/image si aplica)                          | ✅ Hecho |
 | **DISI-6**  | CRUD de Atletas, Anotadores, Árbitros con foto                                             | Pendiente |
 | **DISI-7**  | CRUD de Juegos (Game) con relación a teams, stadium, category, scorekeepers, referees      | Pendiente |
 | **DISI-8**  | Marcar juego como público: ruta pública sin auth para ver avance en vivo                   | Pendiente |

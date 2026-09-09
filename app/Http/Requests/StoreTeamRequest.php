@@ -1,0 +1,41 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreTeamRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:150'],
+            'short_name' => ['nullable', 'string', 'max:50'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
+            'home_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6})$/', 'max:7'],
+            'away_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6})$/', 'max:7'],
+            'active' => ['boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'El nombre del equipo es obligatorio.',
+            'name.max' => 'El nombre no puede tener más de :max caracteres.',
+            'logo.image' => 'El logo debe ser una imagen válida.',
+            'logo.mimes' => 'El logo debe ser JPG, PNG, WEBP o SVG.',
+            'logo.max' => 'El logo no puede pesar más de 2 MB.',
+            'home_color.regex' => 'El color local debe ser un código hexadecimal de 6 caracteres con # (ej. #1a3d6e).',
+            'away_color.regex' => 'El color visitante debe ser un código hexadecimal de 6 caracteres con # (ej. #ffffff).',
+        ];
+    }
+}
