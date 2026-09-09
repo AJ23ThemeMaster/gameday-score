@@ -59,6 +59,14 @@
                             {{ __('Público') }}
                         </span>
                         @if ($game->public_url)
+                            <button type="button"
+                                    x-data="{ copied: false }"
+                                    @click="navigator.clipboard.writeText('{{ $game->public_url }}').then(() => { copied = true; setTimeout(() => copied = false, 2000); })"
+                                    class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-indigo-100 text-indigo-700 hover:bg-indigo-200">
+                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V7a2 2 0 012-2m-2 8h2m-2 0v2a2 2 0 002 2h2a2 2 0 002-2v-2"/></svg>
+                                <span x-show="!copied">{{ __('Copiar enlace') }}</span>
+                                <span x-show="copied" x-cloak>{{ __('¡Copiado!') }}</span>
+                            </button>
                             <a href="{{ $game->public_url }}" target="_blank" class="text-xs text-indigo-600 hover:text-indigo-800 underline">
                                 {{ __('Ver enlace público') }} ↗
                             </a>
