@@ -79,16 +79,40 @@
                     </div>
                 </div>
 
-                {{-- DISI-6 --}}
+                {{-- DISI-6: Atletas, Anotadores, Árbitros (funcional) --}}
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <h4 class="font-semibold text-gray-900 mb-1">{{ __('Atletas') }}</h4>
                         <p class="text-sm text-gray-600 mb-3">
-                            {{ __('Gestiona los jugadores, anotadores y árbitros con su foto.') }}
+                            {{ __('Gestiona los jugadores con su foto, número y posición.') }}
                         </p>
-                        <span class="inline-block text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                            {{ __('Próximamente (DISI-6)') }}
-                        </span>
+                        <a href="{{ route('athletes.index') }}" class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
+                            {{ __('Gestionar atletas') }}
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <h4 class="font-semibold text-gray-900 mb-1">{{ __('Anotadores') }}</h4>
+                        <p class="text-sm text-gray-600 mb-3">
+                            {{ __('Personas encargadas de registrar el juego en planilla.') }}
+                        </p>
+                        <a href="{{ route('scorekeepers.index') }}" class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
+                            {{ __('Gestionar anotadores') }}
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <h4 class="font-semibold text-gray-900 mb-1">{{ __('Árbitros') }}</h4>
+                        <p class="text-sm text-gray-600 mb-3">
+                            {{ __('Árbitros principales y de base con su certificación.') }}
+                        </p>
+                        <a href="{{ route('referees.index') }}" class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
+                            {{ __('Gestionar árbitros') }}
+                        </a>
                     </div>
                 </div>
 
