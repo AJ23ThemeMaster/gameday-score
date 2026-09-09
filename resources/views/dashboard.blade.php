@@ -65,16 +65,17 @@
                     </div>
                 </div>
 
-                {{-- DISI-5 --}}
+                {{-- DISI-5: Equipos (funcional) --}}
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <h4 class="font-semibold text-gray-900 mb-1">{{ __('Equipos') }}</h4>
                         <p class="text-sm text-gray-600 mb-3">
                             {{ __('Crea equipos con su logo.') }}
                         </p>
-                        <span class="inline-block text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                            {{ __('Próximamente (DISI-5)') }}
-                        </span>
+                        <a href="{{ route('teams.index') }}"
+                           class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
+                            {{ __('Gestionar equipos') }}
+                        </a>
                     </div>
                 </div>
 
