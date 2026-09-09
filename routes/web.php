@@ -21,6 +21,10 @@ Route::get('/', function () {
 Route::get('/juego/publico/{token}', [PublicGameController::class, 'show'])
     ->name('public.games.show');
 
+// DISI-9: Endpoint JSON para polling de la vista pública (sin auth)
+Route::get('/juego/publico/{token}/state', [PublicGameController::class, 'stateJson'])
+    ->name('public.games.state');
+
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -39,6 +43,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('scorekeepers', ScorekeeperController::class);
     Route::resource('referees', RefereeController::class);
     Route::resource('games', GameController::class);
+
+    // DISI-9: Scoreboard en vivo (control del juego por el owner)
+    Route::get('games/{game}/live', [GameController::class, 'live'])->name('games.live');
+    Route::patch('games/{game}/state', [GameController::class, 'updateState'])->name('games.state.update');
+    Route::post('games/{game}/runs', [GameController::class, 'addRun'])->name('games.runs.add');
+    Route::post('games/{game}/end-inning', [GameController::class, 'endInning'])->name('games.end-inning');
 });
 
 require __DIR__.'/auth.php';

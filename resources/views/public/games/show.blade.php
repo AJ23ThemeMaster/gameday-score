@@ -55,9 +55,9 @@
                 {{-- Score --}}
                 <div class="px-4 text-center">
                     <div class="text-5xl sm:text-6xl font-black tracking-tighter">
-                        {{ $game->home_score }}
+                        <span id="home-score-display">{{ $game->home_score }}</span>
                         <span class="text-slate-500 mx-2">-</span>
-                        {{ $game->away_score }}
+                        <span id="away-score-display">{{ $game->away_score }}</span>
                     </div>
                     @if ($game->isInProgress() || $game->isCompleted())
                         <div class="mt-2 text-xs text-slate-400">
@@ -92,9 +92,9 @@
                         <div>
                             <div class="flex items-center justify-center gap-1.5">
                                 @php $b = $game->bases ?? []; @endphp
-                                <span class="w-3 h-3 rounded-full {{ ! empty($b['first']) ? 'bg-yellow-400' : 'bg-slate-600' }}"></span>
-                                <span class="w-3 h-3 rounded-full {{ ! empty($b['second']) ? 'bg-yellow-400' : 'bg-slate-600' }}"></span>
-                                <span class="w-3 h-3 rounded-full {{ ! empty($b['third']) ? 'bg-yellow-400' : 'bg-slate-600' }}"></span>
+                                <span id="base-3-display" class="w-3 h-3 rounded-full {{ ! empty($b['third']) ? 'bg-yellow-400' : 'bg-slate-600' }}"></span>
+                                <span id="base-2-display" class="w-3 h-3 rounded-full {{ ! empty($b['second']) ? 'bg-yellow-400' : 'bg-slate-600' }}"></span>
+                                <span id="base-1-display" class="w-3 h-3 rounded-full {{ ! empty($b['first']) ? 'bg-yellow-400' : 'bg-slate-600' }}"></span>
                             </div>
                             <div class="text-xs text-slate-400 uppercase tracking-wider mt-1">{{ __('Bases') }}</div>
                         </div>
@@ -155,6 +155,28 @@
             </p>
         </div>
     </div>
+
+    <script>
+    // Auto-refresh cada 5s via fetch al endpoint JSON
+    (function() {
+        const token = @json($game->public_token);
+        const url = '/juego/publico/' + token + '/state';
+        async function refresh() {
+            try {
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) return;
+                const data = await res.json();
+                document.getElementById('home-score-display') && (document.getElementById('home-score-display').textContent = data.home_score);
+                document.getElementById('away-score-display') && (document.getElementById('away-score-display').textContent = data.away_score);
+                const bases = data.bases || {};
+                const b1 = document.getElementById('base-1-display'); if (b1) b1.className = 'w-3 h-3 rounded-full ' + (bases.first ? 'bg-yellow-400' : 'bg-slate-600');
+                const b2 = document.getElementById('base-2-display'); if (b2) b2.className = 'w-3 h-3 rounded-full ' + (bases.second ? 'bg-yellow-400' : 'bg-slate-600');
+                const b3 = document.getElementById('base-3-display'); if (b3) b3.className = 'w-3 h-3 rounded-full ' + (bases.third ? 'bg-yellow-400' : 'bg-slate-600');
+            } catch (e) { /* ignore network errors */ }
+        }
+        setInterval(refresh, 5000);
+    })();
+    </script>
 
 </body>
 </html>

@@ -6,13 +6,16 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreGameRequest;
 use App\Http\Requests\UpdateGameRequest;
+use App\Http\Requests\UpdateGameStateRequest;
 use App\Models\Category;
 use App\Models\Game;
 use App\Models\Scorekeeper;
 use App\Models\Stadium;
 use App\Models\Team;
 use App\Models\Referee;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -134,6 +137,126 @@ class GameController extends Controller
         return redirect()
             ->route('games.index')
             ->with('status', 'Juego eliminado correctamente.');
+    }
+
+    // ----------------------------------------------------------------
+    // DISI-9: Live scoreboard (control en vivo del juego)
+    // ----------------------------------------------------------------
+
+    public function live(Game $game): View
+    {
+        abort_unless($game->user_id === Auth::id(), 403);
+
+        $game->load([
+            'category', 'stadium', 'homeTeam', 'awayTeam',
+            'homeTeam.athletes', 'awayTeam.athletes',
+            'scorekeepers', 'referees',
+        ]);
+
+        return view('games.live', compact('game'));
+    }
+
+    public function updateState(UpdateGameStateRequest $request, Game $game): RedirectResponse
+    {
+        abort_unless($game->user_id === Auth::id(), 403);
+
+        $data = array_filter($request->validated(), fn ($v) => $v !== null);
+
+        // Si el juego pasa a in_progress por primera vez, registrar started_at
+        if (isset($data['status']) && $data['status'] === 'in_progress' && ! $game->started_at) {
+            $data['started_at'] = now();
+        }
+        // Si el juego pasa a completed por primera vez, registrar ended_at
+        if (isset($data['status']) && $data['status'] === 'completed' && ! $game->ended_at) {
+            $data['ended_at'] = now();
+        }
+
+        $game->update($data);
+
+        return redirect()
+            ->route('games.live', $game)
+            ->with('status', __('Marcador actualizado.'));
+    }
+
+    public function addRun(Request $request, Game $game): RedirectResponse
+    {
+        abort_unless($game->user_id === Auth::id(), 403);
+
+        $request->validate([
+            'team' => ['required', 'in:home,away'],
+        ]);
+
+        $column = $request->input('team') === 'home' ? 'home_score' : 'away_score';
+        $game->increment($column);
+
+        // Si era el primer cambio de estado, pasar a in_progress
+        if ($game->status === 'scheduled') {
+            $game->update(['status' => 'in_progress', 'started_at' => now()]);
+        }
+
+        return redirect()
+            ->route('games.live', $game)
+            ->with('status', __('Carrera sumada.'));
+    }
+
+    public function endInning(Request $request, Game $game): RedirectResponse
+    {
+        abort_unless($game->user_id === Auth::id(), 403);
+
+        // Si es la parte de arriba (top), cambiar a parte de abajo (bottom) del mismo inning
+        // Si es la parte de abajo, avanzar al siguiente inning, parte de arriba
+        if ($game->inning_half === 'top') {
+            $game->update(['inning_half' => 'bottom']);
+        } else {
+            $newInning = $game->current_inning + 1;
+
+            // Si completamos todos los innings, finalizar el juego
+            if ($newInning > $game->innings_count) {
+                $game->update([
+                    'current_inning' => $game->innings_count,
+                    'inning_half' => 'bottom',
+                    'status' => 'completed',
+                    'ended_at' => now(),
+                ]);
+                return redirect()
+                    ->route('games.live', $game)
+                    ->with('status', __('¡Juego finalizado!'));
+            }
+
+            $game->update([
+                'current_inning' => $newInning,
+                'inning_half' => 'top',
+                'balls' => 0,
+                'strikes' => 0,
+                'outs' => 0,
+                'bases' => null,
+            ]);
+        }
+
+        return redirect()
+            ->route('games.live', $game)
+            ->with('status', __('Inning avanzado.'));
+    }
+
+    public function stateJson(Game $game): JsonResponse
+    {
+        // Endpoint público (sin auth) para polling desde la vista pública
+        // Pero validamos que el juego sea público o el owner lo solicite
+        return response()->json([
+            'id' => $game->id,
+            'status' => $game->status,
+            'current_inning' => $game->current_inning,
+            'inning_half' => $game->inning_half,
+            'balls' => $game->balls,
+            'strikes' => $game->strikes,
+            'outs' => $game->outs,
+            'bases' => $game->bases,
+            'home_score' => $game->home_score,
+            'away_score' => $game->away_score,
+            'home_team' => ['id' => $game->homeTeam->id, 'name' => $game->homeTeam->name, 'logo_url' => $game->homeTeam->logoUrl],
+            'away_team' => ['id' => $game->awayTeam->id, 'name' => $game->awayTeam->name, 'logo_url' => $game->awayTeam->logoUrl],
+            'updated_at' => $game->updated_at->toIso8601String(),
+        ]);
     }
 
     private function syncStaff(Game $game, array $data): void
