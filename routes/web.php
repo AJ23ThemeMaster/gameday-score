@@ -6,6 +6,7 @@ use App\Http\Controllers\AthleteController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\RefereeController;
 use App\Http\Controllers\ScorekeeperController;
 use App\Http\Controllers\StadiumController;
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Vista pública del juego (sin auth) — DISI-8
+Route::get('/juego/publico/{token}', [PublicGameController::class, 'show'])
+    ->name('public.games.show');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
