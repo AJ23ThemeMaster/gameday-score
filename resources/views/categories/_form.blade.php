@@ -1,0 +1,65 @@
+{{-- Formulario compartido para crear/editar categoría --}}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <div class="md:col-span-2">
+        <x-input-label for="name" :value="__('Nombre')" />
+        <x-text-input id="name" name="name" type="text" class="block mt-1 w-full"
+                      :value="old('name', $category->name ?? '')" required autofocus />
+        <x-input-error :messages="$errors->get('name')" class="mt-2" />
+    </div>
+
+    <div class="md:col-span-2">
+        <x-input-label for="slug" :value="__('Slug (URL amigable, en minúsculas)')" />
+        <x-text-input id="slug" name="slug" type="text" class="block mt-1 w-full"
+                      :value="old('slug', $category->slug ?? '')" required />
+        <x-input-error :messages="$errors->get('slug')" class="mt-2" />
+        <p class="mt-1 text-xs text-gray-500">
+            {{ __('Solo letras minúsculas, números y guiones. Ej: "pre-infantil".') }}
+        </p>
+    </div>
+
+    <div class="md:col-span-2">
+        <x-input-label for="description" :value="__('Descripción')" />
+        <textarea id="description" name="description" rows="3"
+                  class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('description', $category->description ?? '') }}</textarea>
+        <x-input-error :messages="$errors->get('description')" class="mt-2" />
+    </div>
+
+    <div>
+        <x-input-label for="innings_count" :value="__('Cantidad de innings')" />
+        <x-text-input id="innings_count" name="innings_count" type="number" min="1" max="99"
+                      class="block mt-1 w-full" :value="old('innings_count', $category->innings_count ?? 7)" required />
+        <x-input-error :messages="$errors->get('innings_count')" class="mt-2" />
+    </div>
+
+    <div>
+        <x-input-label for="pitch_limit" :value="__('Límite de lanzamientos (opcional)')" />
+        <x-text-input id="pitch_limit" name="pitch_limit" type="number" min="1" max="999"
+                      class="block mt-1 w-full" :value="old('pitch_limit', $category->pitch_limit ?? '')" />
+        <x-input-error :messages="$errors->get('pitch_limit')" class="mt-2" />
+    </div>
+
+    <div>
+        <x-input-label for="mercy_rule_difference" :value="__('Diferencia del nocaut')" />
+        <x-text-input id="mercy_rule_difference" name="mercy_rule_difference" type="number" min="1" max="99"
+                      class="block mt-1 w-full" :value="old('mercy_rule_difference', $category->mercy_rule_difference ?? 10)" required />
+        <x-input-error :messages="$errors->get('mercy_rule_difference')" class="mt-2" />
+    </div>
+
+    <div>
+        <x-input-label for="mercy_rule_inning" :value="__('Inning desde el que aplica el nocaut')" />
+        <x-text-input id="mercy_rule_inning" name="mercy_rule_inning" type="number" min="1" max="99"
+                      class="block mt-1 w-full" :value="old('mercy_rule_inning', $category->mercy_rule_inning ?? 5)" required />
+        <x-input-error :messages="$errors->get('mercy_rule_inning')" class="mt-2" />
+    </div>
+
+    <div class="md:col-span-2 flex items-center">
+        <input id="active" name="active" type="checkbox" value="1"
+               {{ old('active', $category->active ?? true) ? 'checked' : '' }}
+               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+        <label for="active" class="ms-2 text-sm text-gray-700">
+            {{ __('Categoría activa (visible en formularios de creación de juegos)') }}
+        </label>
+    </div>
+
+</div>
