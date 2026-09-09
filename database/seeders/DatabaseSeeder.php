@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\User;
@@ -10,16 +12,26 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Usuario base (si no existe) - usado por GameSeeder para asignar owner
+        User::firstOrCreate(
+            ['email' => 'frank@gameday.test'],
+            [
+                'name' => 'Frank Marval',
+                'password' => bcrypt('password123'),
+                'email_verified_at' => now(),
+            ],
+        );
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            CategorySeeder::class,
+            StadiumSeeder::class,
+            TeamSeeder::class,
+            AthleteSeeder::class,
+            ScorekeeperSeeder::class,
+            RefereeSeeder::class,
+            GameSeeder::class,
         ]);
     }
 }
