@@ -820,6 +820,17 @@ document.addEventListener('alpine:init', () => {
                 this.triggerInningFlip();
             }
 
+            // MEJ-5: sincronizar el highlight del equipo que esta bateando.
+            // top = away batea, bottom = home batea.
+            const homeZone = document.querySelector('[data-team-zone="home"]');
+            const awayZone = document.querySelector('[data-team-zone="away"]');
+            if (homeZone && awayZone) {
+                const newHomeBatting = s.half === 'bottom' ? '1' : '0';
+                const newAwayBatting = s.half === 'top' ? '1' : '0';
+                if (homeZone.dataset.batting !== newHomeBatting) homeZone.dataset.batting = newHomeBatting;
+                if (awayZone.dataset.batting !== newAwayBatting) awayZone.dataset.batting = newAwayBatting;
+            }
+
             this.renderDots('[data-balls]', s.balls, 'bg-emerald-500', 'bg-gray-200', 4);
             this.renderDots('[data-strikes]', s.strikes, 'bg-amber-500', 'bg-gray-200', 3);
             this.renderDots('[data-outs]', s.outs, 'bg-rose-500', 'bg-gray-200', 3);

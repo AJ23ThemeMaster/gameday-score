@@ -25,6 +25,51 @@
         .inning-anim-host.is-flipping {
             animation: inning-flip 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        /* MEJ-5: indicador del equipo que esta bateando.
+           Cuando data-batting="1" se aplica fondo sutil + anillo exterior
+           + escala ligera + badge animado de pulso. La transicion CSS
+           hace que el cambio entre equipos sea suave (no abrupto). */
+        .team-zone {
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+        .team-zone[data-batting="1"] {
+            background-color: rgba(16, 185, 129, 0.10);
+            box-shadow: inset 0 0 0 2px #10b981;
+            transform: scale(1.04);
+            z-index: 1;
+        }
+        .team-zone[data-batting="1"] .team-score {
+            color: #047857;
+        }
+        .team-zone .batting-badge {
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: #10b981;
+            color: white;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            padding: 2px 6px;
+            border-radius: 9999px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .team-zone[data-batting="1"] .batting-badge {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            animation: batting-pulse 1.6s ease-in-out infinite;
+        }
+        @keyframes batting-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+            50%      { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        }
     </style>
 
     <div
@@ -58,10 +103,13 @@
                 {{-- Logos + scores (Local | Score | Visitante) --}}
                 <div class="flex items-stretch border-b-2 border-gray-100">
                     {{-- Local --}}
-                    <div class="flex-1 flex items-center justify-end gap-3 p-4">
+                    <div class="team-zone flex-1 flex items-center justify-end gap-3 p-4 rounded-tl-2xl"
+                         data-team-zone="home"
+                         data-batting="{{ $state['half'] === 'bottom' ? '1' : '0' }}">
+                        <span class="batting-badge">{{ __('Bateando') }}</span>
                         <div class="text-right">
                             <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ $game->homeTeam->name }}</div>
-                            <div class="text-5xl font-black text-gray-900 leading-none" data-score="home">{{ $score['home'] }}</div>
+                            <div class="text-5xl font-black text-gray-900 leading-none team-score" data-score="home">{{ $score['home'] }}</div>
                         </div>
                         @if ($game->homeTeam->logoUrl)
                             <img src="{{ $game->homeTeam->logoUrl }}" class="h-14 w-14 object-contain">
@@ -82,7 +130,10 @@
                     </div>
 
                     {{-- Visitante --}}
-                    <div class="flex-1 flex items-center justify-start gap-3 p-4">
+                    <div class="team-zone flex-1 flex items-center justify-start gap-3 p-4 rounded-tr-2xl"
+                         data-team-zone="away"
+                         data-batting="{{ $state['half'] === 'top' ? '1' : '0' }}">
+                        <span class="batting-badge">{{ __('Bateando') }}</span>
                         @if ($game->awayTeam->logoUrl)
                             <img src="{{ $game->awayTeam->logoUrl }}" class="h-14 w-14 object-contain">
                         @else
@@ -90,7 +141,7 @@
                         @endif
                         <div class="text-left">
                             <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ $game->awayTeam->name }}</div>
-                            <div class="text-5xl font-black text-gray-900 leading-none" data-score="away">{{ $score['away'] }}</div>
+                            <div class="text-5xl font-black text-gray-900 leading-none team-score" data-score="away">{{ $score['away'] }}</div>
                         </div>
                     </div>
                 </div>
