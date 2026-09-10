@@ -70,6 +70,23 @@ class ScoreboardController extends Controller
         [$state, $pitcher, $batter, $onDeck, $pitcherStats, $batterStats] =
             $this->buildSnapshot($game);
 
+        // Si la ultima jugada cerro un inning (inning_end) o el juego (game_end),
+        // incluir el summary del inning que se cerro (no del actual). Esto permite
+        // que el cliente muestre el modal de resumen al detectar el cambio.
+        $summary = null;
+        $lastPlayType = $state['last_play_type'] ?? null;
+        if (in_array($lastPlayType, [\App\Models\Play::TYPE_INNING_END, \App\Models\Play::TYPE_GAME_END], true)) {
+            // El state.half actual es el NUEVO half. El que se cerro es el opuesto.
+            $closedHalf = $state['half'] === 'top' ? 'bottom' : 'top';
+            $closedInning = $state['half'] === 'top'
+                ? max(1, $state['inning'] - 1)
+                : $state['inning'];
+            $summary = app(\App\Services\GameplayEngine::class)
+                ->inningSummary($game, $closedInning, $closedHalf);
+            $summary['closed_inning'] = $closedInning;
+            $summary['closed_half'] = $closedHalf;
+        }
+
         return response()->json([
             'state' => $state,
             'score' => Play::scoreboard($game->id),
@@ -79,6 +96,7 @@ class ScoreboardController extends Controller
             'batter_stats' => $batterStats,
             'on_deck' => $onDeck ? $this->athleteToArray($onDeck) : null,
             'runners' => $this->runners($state),
+            'summary' => $summary,
         ]);
     }
 

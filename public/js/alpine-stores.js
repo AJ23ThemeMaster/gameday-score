@@ -219,10 +219,16 @@ document.addEventListener('alpine:init', () => {
         subKind: 'pitcher',
         subInId: '',
         subBase: 'first',
+        lastBases: { first: null, second: null, third: null },
         // Estado reactivo del juego (para los modales de sustitucion)
         stateHalf: 'top',
         stateBatterId: null,
         statePitcherId: null,
+        // Tracking del inning/half previo (para detectar cierre de inning)
+        prevInning: 1,
+        prevHalf: 'top',
+        // Flag para que el modal de resumen solo se muestre una vez por cierre
+        inningClosedFlag: null,
         stateBases: { first: null, second: null, third: null },
 
         start() {
@@ -557,6 +563,25 @@ document.addEventListener('alpine:init', () => {
             this.stateHalf = s.half;
             this.stateBatterId = s.current_batter_id;
             this.statePitcherId = s.current_pitcher_id;
+
+            // Detectar cierre de inning: si el half cambio (o inning incremento
+            // de 1 a 2 con el mismo half), el inning se cerro. Cargar el
+            // summary y abrir el modal (solo si no fue el primer poll).
+            const halfChanged = this.prevHalf && this.prevHalf !== s.half;
+            const inningRolled = (s.half === 'top') && (s.inning !== this.prevInning);
+            if ((halfChanged || inningRolled) && (this.prevInning !== 1 || this.prevHalf !== 'top')) {
+                // El inning se cerro. Calcular cual se cerro:
+                const closedHalf = s.half === 'top' ? 'bottom' : 'top';
+                const closedInning = s.half === 'top' ? s.inning - 1 : s.inning;
+                const flagKey = closedInning + '-' + closedHalf;
+                if (this.inningClosedFlag !== flagKey && data.summary) {
+                    this.inningClosedFlag = flagKey;
+                    this.inningSummary = data.summary;
+                    this.modal = 'inning-summary';
+                }
+            }
+            this.prevInning = s.inning;
+            this.prevHalf = s.half;
             this.stateBases = s.bases || { first: null, second: null, third: null };
 
             // Pitcher card
