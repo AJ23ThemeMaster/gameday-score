@@ -179,4 +179,40 @@ class PlayController extends Controller
             'result' => $result,
         ]);
     }
+
+    /**
+     * Registra una sustitucion de pitcher, bateador o pinch runner.
+     */
+    public function substitute(Request $request, Game $game, GameplayEngine $engine): JsonResponse
+    {
+        abort_unless($game->user_id === Auth::id(), 403);
+        abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
+
+        $validated = $request->validate([
+            'kind' => ['required', 'in:pitcher,batter,pr'],
+            'out_athlete_id' => ['required', 'integer', 'exists:athletes,id'],
+            'in_athlete_id' => ['required', 'integer', 'exists:athletes,id', 'different:out_athlete_id'],
+            'base' => ['required_if:kind,pr', 'nullable', 'in:first,second,third'],
+        ]);
+
+        try {
+            $result = $engine->substitute(
+                $game,
+                $validated['kind'],
+                (int) $validated['out_athlete_id'],
+                (int) $validated['in_athlete_id'],
+                $validated['base'] ?? null,
+            );
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'result' => $result,
+        ]);
+    }
 }

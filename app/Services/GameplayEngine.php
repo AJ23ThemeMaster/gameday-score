@@ -840,4 +840,129 @@ class GameplayEngine
             'strikeouts' => $strikeouts,
         ];
     }
+
+    /**
+     * Registra una sustitucion de pitcher, bateador o pinch runner.
+     * $kind: 'pitcher' | 'batter' | 'pr'
+     * $outAthleteId: atleta que sale
+     * $inAthleteId: atleta que entra
+     * $base (solo PR): 'first' | 'second' | 'third' - base del corredor a sustituir
+     */
+    public function substitute(Game $game, string $kind, int $outAthleteId, int $inAthleteId, ?string $base = null): array
+    {
+        $state = Play::currentState($game->id);
+        $inning = $state['inning'];
+        $half = $state['half'];
+        $outs = $state['outs'];
+        $bases = $state['bases'];
+        $currentBatterId = $state['current_batter_id'];
+        $currentPitcherId = $state['current_pitcher_id'];
+
+        $teamId = $half === 'top' ? $game->away_team_id : $game->home_team_id;
+
+        // Validar que ambos atletas esten en el roster del juego y del equipo correcto
+        $rosterIds = $game->athletes()->wherePivot('team_id', $teamId)->pluck('athletes.id')->toArray();
+        if (! in_array($outAthleteId, $rosterIds, true)) {
+            throw new \InvalidArgumentException("Atleta saliente no esta en el roster del equipo.");
+        }
+        if (! in_array($inAthleteId, $rosterIds, true)) {
+            throw new \InvalidArgumentException("Atleta entrante no esta en el roster del equipo.");
+        }
+
+        $created = [];
+        $newBases = $bases;
+        $newBatterId = $currentBatterId;
+        $newPitcherId = $currentPitcherId;
+
+        switch ($kind) {
+            case 'pitcher':
+                // Cambio de pitcher: el nuevo pitcher reemplaza al actual.
+                // Actualizar pivot: el viejo deja de ser pitcher, el nuevo pasa a serlo.
+                DB::table('game_athlete')
+                    ->where('game_id', $game->id)
+                    ->where('team_id', $teamId)
+                    ->where('is_pitcher', true)
+                    ->update(['is_pitcher' => false]);
+                DB::table('game_athlete')
+                    ->where('game_id', $game->id)
+                    ->where('athlete_id', $inAthleteId)
+                    ->update(['is_pitcher' => true]);
+
+                $outName = $game->athletes()->where('athletes.id', $outAthleteId)->first()?->full_name ?? 'ID ' . $outAthleteId;
+                $inName = $game->athletes()->where('athletes.id', $inAthleteId)->first()?->full_name ?? 'ID ' . $inAthleteId;
+                $created[] = $this->recordPlay($game, [
+                    'inning' => $inning, 'half' => $half,
+                    'type' => Play::TYPE_SUBSTITUTION,
+                    'subtype' => Play::SUBTYPE_SUB_PITCHER,
+                    'result' => "Cambio de pitcher: sale {$outName}, entra {$inName}",
+                    'batter_id' => $currentBatterId,
+                    'pitcher_id' => $inAthleteId, // el nuevo pitcher
+                    'outs_before' => $outs, 'outs_after' => $outs,
+                    'balls' => $state['balls'], 'strikes' => $state['strikes'],
+                    'bases_before' => $bases, 'bases_after' => $bases,
+                    'meta' => ['out_athlete_id' => $outAthleteId, 'in_athlete_id' => $inAthleteId],
+                ]);
+                $newPitcherId = $inAthleteId;
+                break;
+
+            case 'batter':
+                // Cambio de bateador: el nuevo bateador reemplaza al actual
+                // sin afectar el orden de bateo (sigue contando en el mismo turno).
+                $outName = $game->athletes()->where('athletes.id', $outAthleteId)->first()?->full_name ?? 'ID ' . $outAthleteId;
+                $inName = $game->athletes()->where('athletes.id', $inAthleteId)->first()?->full_name ?? 'ID ' . $inAthleteId;
+                $created[] = $this->recordPlay($game, [
+                    'inning' => $inning, 'half' => $half,
+                    'type' => Play::TYPE_SUBSTITUTION,
+                    'subtype' => Play::SUBTYPE_SUB_BATTER,
+                    'result' => "Cambio de bateador: sale {$outName}, entra {$inName}",
+                    'batter_id' => $inAthleteId,
+                    'pitcher_id' => $currentPitcherId,
+                    'outs_before' => $outs, 'outs_after' => $outs,
+                    'balls' => $state['balls'], 'strikes' => $state['strikes'],
+                    'bases_before' => $bases, 'bases_after' => $bases,
+                    'meta' => ['out_athlete_id' => $outAthleteId, 'in_athlete_id' => $inAthleteId],
+                ]);
+                $newBatterId = $inAthleteId;
+                break;
+
+            case 'pr':
+                // Pinch runner: un corredor en base es reemplazado por otro atleta.
+                if (! $base || ! in_array($base, ['first', 'second', 'third'], true)) {
+                    throw new \InvalidArgumentException("Base invalida para PR.");
+                }
+                if (empty($bases[$base])) {
+                    throw new \InvalidArgumentException("No hay corredor en {$base}.");
+                }
+                $newBases = $bases;
+                $newBases[$base] = $inAthleteId;
+                $outName = $game->athletes()->where('athletes.id', $outAthleteId)->first()?->full_name ?? 'ID ' . $outAthleteId;
+                $inName = $game->athletes()->where('athletes.id', $inAthleteId)->first()?->full_name ?? 'ID ' . $inAthleteId;
+                $baseLabel = ['first' => '1B', 'second' => '2B', 'third' => '3B'][$base];
+                $created[] = $this->recordPlay($game, [
+                    'inning' => $inning, 'half' => $half,
+                    'type' => Play::TYPE_SUBSTITUTION,
+                    'subtype' => Play::SUBTYPE_SUB_PR,
+                    'result' => "Pinch runner en {$baseLabel}: sale {$outName}, entra {$inName}",
+                    'batter_id' => $currentBatterId,
+                    'pitcher_id' => $currentPitcherId,
+                    'outs_before' => $outs, 'outs_after' => $outs,
+                    'balls' => $state['balls'], 'strikes' => $state['strikes'],
+                    'bases_before' => $bases, 'bases_after' => $newBases,
+                    'meta' => ['out_athlete_id' => $outAthleteId, 'in_athlete_id' => $inAthleteId, 'base' => $base],
+                ]);
+                break;
+
+            default:
+                throw new \InvalidArgumentException("Tipo de sustitucion no soportado: {$kind}");
+        }
+
+        return [
+            'success' => true,
+            'kind' => $kind,
+            'bases' => $newBases,
+            'batter_id' => $newBatterId,
+            'pitcher_id' => $newPitcherId,
+            'plays' => $created,
+        ];
+    }
 }

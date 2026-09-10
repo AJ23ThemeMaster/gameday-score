@@ -200,19 +200,30 @@ document.addEventListener('alpine:init', () => {
         pitchUrl: config.pitchUrl,
         endInningUrl: config.endInningUrl,
         endGameUrl: config.endGameUrl,
+        substituteUrl: config.substituteUrl,
         homeName: config.homeName,
         awayName: config.awayName,
         csrf: config.csrf,
+        rosterAway: config.rosterAway || [],
+        rosterHome: config.rosterHome || [],
         pollInterval: null,
         pollStatus: 'Conectado',
         isPolling: false,
         isPitching: false,
-        modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'inning-summary' | 'end-game' | null
+        modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'inning-summary' | 'end-game' | 'substitute' | null
         outSubtype: null,
         hitSubtype: null,
         hitConfig: { label: '', description: '', preview: '' },
         defensiveSequence: [],
         inningSummary: null,
+        subKind: 'pitcher',
+        subInId: '',
+        subBase: 'first',
+        // Estado reactivo del juego (para los modales de sustitucion)
+        stateHalf: 'top',
+        stateBatterId: null,
+        statePitcherId: null,
+        stateBases: { first: null, second: null, third: null },
 
         start() {
             this.pollInterval = setInterval(() => this.poll(), 5000);
@@ -427,6 +438,84 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        // ============= FASE 4b: SUSTITUCIONES =============
+        openSubstituteModal() {
+            this.subKind = 'pitcher';
+            this.subInId = '';
+            this.subBase = (this.lastBases && this.lastBases.first) ? 'first'
+                : ((this.lastBases && this.lastBases.second) ? 'second'
+                : ((this.lastBases && this.lastBases.third) ? 'third' : 'first'));
+            this.modal = 'substitute';
+        },
+        // Roster del equipo que esta bateando (half === 'top' => away, 'bottom' => home)
+        rosterForBattingTeam() {
+            return this.stateHalf === 'top' ? this.rosterAway : this.rosterHome;
+        },
+        currentPitcherLabel() {
+            const id = this.statePitcherId;
+            if (!id) return '—';
+            const a = [...this.rosterAway, ...this.rosterHome].find(r => r.id === id);
+            return a ? `#${a.lineup_order ?? '-'} ${a.first_name} ${a.last_name}` : `ID ${id}`;
+        },
+        currentBatterLabel() {
+            const id = this.stateBatterId;
+            if (!id) return '—';
+            const a = [...this.rosterAway, ...this.rosterHome].find(r => r.id === id);
+            return a ? `#${a.lineup_order ?? '-'} ${a.first_name} ${a.last_name}` : `ID ${id}`;
+        },
+        runnerLabel(id) {
+            if (!id) return '—';
+            const a = [...this.rosterAway, ...this.rosterHome].find(r => r.id === id);
+            return a ? `${a.first_name} ${a.last_name}` : `ID ${id}`;
+        },
+        canConfirmSubstitute() {
+            if (!this.subInId) return false;
+            if (this.subKind === 'pr') {
+                if (!this.subBase) return false;
+                if (!this.lastBases || !this.lastBases[this.subBase]) return false;
+            }
+            return true;
+        },
+        async confirmSubstitute() {
+            if (!this.canConfirmSubstitute()) return;
+            // Determinar out_athlete_id
+            let outId = null;
+            if (this.subKind === 'pitcher') {
+                outId = this.statePitcherId;
+            } else if (this.subKind === 'batter') {
+                outId = this.stateBatterId;
+            } else if (this.subKind === 'pr') {
+                outId = this.lastBases[this.subBase];
+            }
+            if (!outId) {
+                this.toast('No se puede identificar el atleta saliente', 'error');
+                return;
+            }
+            try {
+                const body = new FormData();
+                body.append('kind', this.subKind);
+                body.append('out_athlete_id', outId);
+                body.append('in_athlete_id', this.subInId);
+                if (this.subKind === 'pr') body.append('base', this.subBase);
+                const resp = await fetch(this.substituteUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json' },
+                    body,
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    this.closeModal();
+                    this.toast('Sustitucion registrada', 'success');
+                    await this.pollNow();
+                } else {
+                    this.toast(data.error || 'Error al sustituir', 'error');
+                }
+            } catch (e) {
+                console.error('substitute error', e);
+                this.toast('Error de red al sustituir', 'error');
+            }
+        },
+
         toast(message, level = 'success') {
             window.dispatchEvent(new CustomEvent('toast', { detail: { message, level } }));
         },
@@ -457,6 +546,10 @@ document.addEventListener('alpine:init', () => {
             // Cachear las bases actuales para que el modal de hit muestre el
             // preview correcto.
             this.lastBases = s.bases || { first: null, second: null, third: null };
+            this.stateHalf = s.half;
+            this.stateBatterId = s.current_batter_id;
+            this.statePitcherId = s.current_pitcher_id;
+            this.stateBases = s.bases || { first: null, second: null, third: null };
 
             // Pitcher card
             this.renderAthleteCard('[data-card="pitcher"]', data.pitcher, data.pitcher_stats, 'pitcher-stats', (s) =>

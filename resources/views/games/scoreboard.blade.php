@@ -19,11 +19,14 @@
             'pitchUrl' => route('games.plays.pitch', $game),
             'endInningUrl' => route('games.plays.end-inning', $game),
             'endGameUrl' => route('games.plays.end-game', $game),
+            'substituteUrl' => route('games.plays.substitute', $game),
             'homeName' => $game->homeTeam->name,
             'awayName' => $game->awayTeam->name,
             'homeShort' => $game->homeTeam->short_name ?? $game->homeTeam->name,
             'awayShort' => $game->awayTeam->short_name ?? $game->awayTeam->name,
             'csrf' => csrf_token(),
+            'rosterAway' => $game->athletes()->wherePivot('team_id', $game->away_team_id)->orderBy('game_athlete.lineup_order')->get(['athletes.id', 'athletes.first_name', 'athletes.last_name', 'game_athlete.lineup_order'])->map(fn($a) => ['id' => $a->id, 'first_name' => $a->first_name, 'last_name' => $a->last_name, 'lineup_order' => $a->pivot->lineup_order])->values(),
+            'rosterHome' => $game->athletes()->wherePivot('team_id', $game->home_team_id)->orderBy('game_athlete.lineup_order')->get(['athletes.id', 'athletes.first_name', 'athletes.last_name', 'game_athlete.lineup_order'])->map(fn($a) => ['id' => $a->id, 'first_name' => $a->first_name, 'last_name' => $a->last_name, 'lineup_order' => $a->pivot->lineup_order])->values(),
         ]))"
         x-init="start()"
     >
@@ -313,10 +316,11 @@
 
                     {{-- Tab content: EXTRAS (Fase 4) --}}
                     <div x-show="tab === 'extra'" x-cloak class="grid grid-cols-1 gap-2 p-4">
-                        <button type="button" disabled
-                                class="py-3 bg-gray-100 text-gray-700 text-base font-bold rounded-lg opacity-60 cursor-not-allowed">
+                        <button type="button" @click="openSubstituteModal()"
+                                :disabled="isPitching"
+                                class="py-3 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-base font-bold rounded-lg transition">
                             {{ __('Sustituir') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Disponible proximamente') }}</div>
+                            <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Pitcher, bateador o corredor') }}</div>
                         </button>
                         <button type="button" @click="sendBalk()"
                                 :disabled="isPitching"
@@ -623,6 +627,104 @@
                             <button type="button" @click="confirmEndGame()"
                                     class="flex-1 py-3 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-xl">
                                 {{ __('Finalizar juego') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal: sustituciones (Fase 4b) --}}
+            <div x-show="modal === 'substitute'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+                 @keydown.escape.window="closeModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                    <div class="bg-sky-600 text-white px-5 py-3 flex items-center justify-between">
+                        <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Sustituir') }}</h3>
+                        <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        {{-- Sub-tabs: Pitcher / Bateador / PR --}}
+                        <div class="flex gap-1 border-b border-gray-200">
+                            <button type="button" @click="subKind = 'pitcher'"
+                                    :class="subKind === 'pitcher' ? 'border-b-2 border-sky-600 text-sky-700 font-bold' : 'text-gray-500'"
+                                    class="px-3 py-2 text-sm">{{ __('Pitcher') }}</button>
+                            <button type="button" @click="subKind = 'batter'"
+                                    :class="subKind === 'batter' ? 'border-b-2 border-sky-600 text-sky-700 font-bold' : 'text-gray-500'"
+                                    class="px-3 py-2 text-sm">{{ __('Bateador') }}</button>
+                            <button type="button" @click="subKind = 'pr'"
+                                    :class="subKind === 'pr' ? 'border-b-2 border-sky-600 text-sky-700 font-bold' : 'text-gray-500'"
+                                    class="px-3 py-2 text-sm">{{ __('Pinch runner') }}</button>
+                        </div>
+
+                        {{-- Pitcher change --}}
+                        <div x-show="subKind === 'pitcher'" class="space-y-3">
+                            <p class="text-sm text-gray-600">{{ __('Reemplaza al pitcher actual por otro del roster.') }}</p>
+                            <div>
+                                <label class="text-xs text-gray-500 uppercase font-semibold">{{ __('Pitcher actual') }}</label>
+                                <div class="text-base font-bold text-gray-800" x-text="currentPitcherLabel()"></div>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 uppercase font-semibold">{{ __('Nuevo pitcher') }}</label>
+                                <select x-model="subInId"
+                                        class="w-full mt-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-sky-500 focus:outline-none">
+                                    <option value="">{{ __('Selecciona un atleta...') }}</option>
+                                    <template x-for="a in rosterForBattingTeam()" :key="a.id">
+                                        <option :value="a.id" x-text="`#${a.lineup_order ?? '-'} ${a.first_name} ${a.last_name}`"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+
+                        {{-- Batter change --}}
+                        <div x-show="subKind === 'batter'" class="space-y-3">
+                            <p class="text-sm text-gray-600">{{ __('Reemplaza al bateador actual por otro del roster.') }}</p>
+                            <div>
+                                <label class="text-xs text-gray-500 uppercase font-semibold">{{ __('Bateador actual') }}</label>
+                                <div class="text-base font-bold text-gray-800" x-text="currentBatterLabel()"></div>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 uppercase font-semibold">{{ __('Nuevo bateador') }}</label>
+                                <select x-model="subInId"
+                                        class="w-full mt-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-sky-500 focus:outline-none">
+                                    <option value="">{{ __('Selecciona un atleta...') }}</option>
+                                    <template x-for="a in rosterForBattingTeam()" :key="a.id">
+                                        <option :value="a.id" x-text="`#${a.lineup_order ?? '-'} ${a.first_name} ${a.last_name}`"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+
+                        {{-- Pinch runner --}}
+                        <div x-show="subKind === 'pr'" class="space-y-3">
+                            <p class="text-sm text-gray-600">{{ __('Reemplaza un corredor en base por otro atleta del roster.') }}</p>
+                            <div>
+                                <label class="text-xs text-gray-500 uppercase font-semibold">{{ __('Base') }}</label>
+                                <select x-model="subBase"
+                                        class="w-full mt-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-sky-500 focus:outline-none">
+                                    <option value="first" x-show="lastBases?.first">1B: <span x-text="runnerLabel(lastBases?.first)"></span></option>
+                                    <option value="second" x-show="lastBases?.second">2B: <span x-text="runnerLabel(lastBases?.second)"></span></option>
+                                    <option value="third" x-show="lastBases?.third">3B: <span x-text="runnerLabel(lastBases?.third)"></span></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 uppercase font-semibold">{{ __('Nuevo corredor') }}</label>
+                                <select x-model="subInId"
+                                        class="w-full mt-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-sky-500 focus:outline-none">
+                                    <option value="">{{ __('Selecciona un atleta...') }}</option>
+                                    <template x-for="a in rosterForBattingTeam()" :key="a.id">
+                                        <option :value="a.id" x-text="`${a.first_name} ${a.last_name}`"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button type="button" @click="closeModal()"
+                                    class="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl">
+                                {{ __('Cancelar') }}
+                            </button>
+                            <button type="button" @click="confirmSubstitute()" :disabled="!canConfirmSubstitute()"
+                                    class="flex-1 py-3 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold rounded-xl">
+                                {{ __('Sustituir') }}
                             </button>
                         </div>
                     </div>

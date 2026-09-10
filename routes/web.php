@@ -63,6 +63,8 @@ Route::middleware('auth')->group(function () {
     // DISI-12 Fase 4: finalizar inning/juego manualmente
     Route::post('games/{game}/end-inning', [\App\Http\Controllers\PlayController::class, 'endInning'])->name('games.plays.end-inning');
     Route::post('games/{game}/end-game', [\App\Http\Controllers\PlayController::class, 'endGame'])->name('games.plays.end-game');
+    // DISI-12 Fase 4b: sustituciones (pitcher, bateador, pinch runner)
+    Route::post('games/{game}/substitute', [\App\Http\Controllers\PlayController::class, 'substitute'])->name('games.plays.substitute');
 
     // DISI-10: Roster y sustituciones
     Route::get('games/{game}/roster', [RosterController::class, 'index'])->name('games.roster.index');
