@@ -8,6 +8,7 @@ use App\Http\Controllers\GameController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\RefereeController;
+use App\Http\Controllers\RosterController;
 use App\Http\Controllers\ScorekeeperController;
 use App\Http\Controllers\StadiumController;
 use App\Http\Controllers\TeamController;
@@ -49,6 +50,13 @@ Route::middleware('auth')->group(function () {
     Route::patch('games/{game}/state', [GameController::class, 'updateState'])->name('games.state.update');
     Route::post('games/{game}/runs', [GameController::class, 'addRun'])->name('games.runs.add');
     Route::post('games/{game}/end-inning', [GameController::class, 'endInning'])->name('games.end-inning');
+
+    // DISI-10: Roster y sustituciones
+    Route::get('games/{game}/roster', [RosterController::class, 'index'])->name('games.roster.index');
+    Route::post('games/{game}/roster/athletes', [RosterController::class, 'store'])->name('games.roster.store');
+    Route::patch('games/{game}/roster/{athlete}', [RosterController::class, 'update'])->name('games.roster.update');
+    Route::delete('games/{game}/roster/{athlete}', [RosterController::class, 'destroy'])->name('games.roster.destroy');
+    Route::post('games/{game}/roster/substitute', [RosterController::class, 'substitute'])->name('games.roster.substitute');
 });
 
 require __DIR__.'/auth.php';

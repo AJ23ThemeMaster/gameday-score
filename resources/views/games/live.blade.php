@@ -6,6 +6,7 @@
             </h2>
             <div class="flex gap-2">
                 <a href="{{ route('games.show', $game) }}" class="text-sm text-gray-600 hover:text-gray-800">{{ __('Detalle') }}</a>
+                <a href="{{ route('games.roster.index', $game) }}" class="inline-flex items-center px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-md">{{ __('Roster') }}</a>
                 @if ($game->is_public && $game->public_url)
                     <a href="{{ $game->public_url }}" target="_blank" class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-md">
                         {{ __('Ver vista pública') }} ↗

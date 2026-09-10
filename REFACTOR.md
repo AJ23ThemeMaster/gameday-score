@@ -1,6 +1,6 @@
 # Refactor: Gameday Score con Laravel + MySQL
 
-> **Estado actual (DISI-1):** Bootstrap de Laravel. La PWA original sigue accesible en `/legacy/`.
+> **Estado actual (DISI-10):** Roster y sustituciones en vivo completas. La PWA original sigue accesible en `/legacy/`.
 
 ## 🎯 Objetivo
 
@@ -67,6 +67,7 @@ gameday-score/
 | **DISI-7**  | CRUD de Juegos (Game) con relación a teams, stadium, category, scorekeepers, referees      | ✅ Hecho |
 | **DISI-8**  | Marcar juego como público: ruta pública sin auth para ver avance en vivo                   | ✅ Hecho |
 | **DISI-9**  | UI del Scoreboard nueva (Blade + JS) conectado a la API de Games                           | ✅ Hecho |
+| **DISI-10** | Roster por juego: gestión de alineaciones y sustituciones en vivo (game_athlete pivot)     | ✅ Hecho |
 
 ## 🔧 Convenciones del Proyecto
 
