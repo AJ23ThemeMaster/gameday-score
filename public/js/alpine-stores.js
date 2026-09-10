@@ -192,4 +192,103 @@ document.addEventListener('alpine:init', () => {
             }
         },
     });
+
+    // Scoreboard live-poll component (DISI-12)
+    window.Alpine.data('scoreboardApp', (config) => ({
+        gameId: config.gameId,
+        pollUrl: config.pollUrl,
+        homeName: config.homeName,
+        awayName: config.awayName,
+        pollInterval: null,
+        pollStatus: 'Conectado',
+        isPolling: false,
+
+        start() {
+            // Polling cada 5s
+            this.pollInterval = setInterval(() => this.poll(), 5000);
+            // Poll inmediato
+            this.poll();
+        },
+
+        stop() {
+            if (this.pollInterval) {
+                clearInterval(this.pollInterval);
+                this.pollInterval = null;
+            }
+        },
+
+        async poll() {
+            if (this.isPolling) return;
+            this.isPolling = true;
+            try {
+                const res = await fetch(this.pollUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                this.applyState(data);
+                this.pollStatus = 'Última actualización: ' + new Date().toLocaleTimeString();
+            } catch (e) {
+                this.pollStatus = 'Sin conexión. Reintentando...';
+            } finally {
+                this.isPolling = false;
+            }
+        },
+
+        applyState(data) {
+            if (!data || !data.state) return;
+            const s = data.state;
+            const score = data.score || { home: 0, away: 0 };
+
+            // Scores
+            const homeScore = document.querySelector('[data-score="home"]');
+            const awayScore = document.querySelector('[data-score="away"]');
+            if (homeScore) homeScore.textContent = score.home;
+            if (awayScore) awayScore.textContent = score.away;
+
+            // Inning
+            const inningNum = document.querySelector('[data-inning-number]');
+            const inningHalf = document.querySelector('[data-inning-half]');
+            if (inningNum) inningNum.textContent = s.inning;
+            if (inningHalf) inningHalf.textContent = s.half === 'top' ? '▲' : '▼';
+
+            // Count: balls / strikes / outs
+            this.renderDots('[data-balls]', s.balls, 'bg-emerald-500', 'bg-gray-200', 4);
+            this.renderDots('[data-strikes]', s.strikes, 'bg-amber-500', 'bg-gray-200', 3);
+            this.renderDots('[data-outs]', s.outs, 'bg-rose-500', 'bg-gray-200', 3);
+
+            // Bases
+            this.renderBase('first', s.bases?.first, data.runners?.first);
+            this.renderBase('second', s.bases?.second, data.runners?.second);
+            this.renderBase('third', s.bases?.third, data.runners?.third);
+        },
+
+        renderDots(selector, count, activeClass, inactiveClass, max) {
+            const container = document.querySelector(selector);
+            if (!container) return;
+            // Limpia y regenera los dots
+            container.innerHTML = '';
+            for (let i = 0; i < max; i++) {
+                const dot = document.createElement('span');
+                dot.className = `w-3 h-3 rounded-full border ${i < count ? activeClass : inactiveClass}`;
+                container.appendChild(dot);
+            }
+        },
+
+        renderBase(base, athleteId, runner) {
+            const el = document.querySelector(`[data-base="${base}"] > div`);
+            if (!el) return;
+            if (athleteId && runner) {
+                el.className = 'w-11 h-11 bg-amber-300 border-2 border-amber-500 shadow-md rounded flex items-center justify-center font-bold text-xs text-amber-900';
+                el.innerHTML = `<div class="text-center leading-tight"><div class="text-[9px] font-bold">${base.toUpperCase()}</div><div class="text-[11px] font-black">${runner.number ?? ''}</div></div>`;
+            } else {
+                el.className = 'w-11 h-11 bg-emerald-50/90 border-2 border-white rounded flex items-center justify-center font-bold text-xs text-emerald-700/40';
+                el.textContent = base.toUpperCase();
+            }
+        },
+    }));
 });

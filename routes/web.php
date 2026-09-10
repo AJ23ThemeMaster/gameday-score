@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\RefereeController;
 use App\Http\Controllers\RosterController;
+use App\Http\Controllers\ScoreboardController;
 use App\Http\Controllers\ScorekeeperController;
 use App\Http\Controllers\StadiumController;
 use App\Http\Controllers\TeamController;
@@ -50,6 +51,13 @@ Route::middleware('auth')->group(function () {
     Route::patch('games/{game}/state', [GameController::class, 'updateState'])->name('games.state.update');
     Route::post('games/{game}/runs', [GameController::class, 'addRun'])->name('games.runs.add');
     Route::post('games/{game}/end-inning', [GameController::class, 'endInning'])->name('games.end-inning');
+
+    // DISI-12: Nuevo scoreboard moderno (Fase 1: layout + live AJAX sin recargar)
+    Route::get('games/{game}/scoreboard', [ScoreboardController::class, 'show'])->name('games.scoreboard');
+    Route::get('games/{game}/scoreboard/poll', [ScoreboardController::class, 'poll'])->name('games.scoreboard.poll');
+    // DISI-12 (fases siguientes): registrar jugadas
+    Route::post('games/{game}/plays', [\App\Http\Controllers\PlayController::class, 'store'])->name('games.plays.store');
+    Route::get('games/{game}/plays', [\App\Http\Controllers\PlayController::class, 'index'])->name('games.plays.index');
 
     // DISI-10: Roster y sustituciones
     Route::get('games/{game}/roster', [RosterController::class, 'index'])->name('games.roster.index');
