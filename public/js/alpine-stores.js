@@ -201,8 +201,14 @@ document.addEventListener('alpine:init', () => {
         endInningUrl: config.endInningUrl,
         endGameUrl: config.endGameUrl,
         substituteUrl: config.substituteUrl,
+        statsUrl: config.statsUrl,
+        lineupReorderUrl: config.lineupReorderUrl,
         homeName: config.homeName,
         awayName: config.awayName,
+        homeShort: config.homeShort,
+        awayShort: config.awayShort,
+        homeTeamId: config.homeTeamId,
+        awayTeamId: config.awayTeamId,
         csrf: config.csrf,
         rosterAway: config.rosterAway || [],
         rosterHome: config.rosterHome || [],
@@ -210,7 +216,7 @@ document.addEventListener('alpine:init', () => {
         pollStatus: 'Conectado',
         isPolling: false,
         isPitching: false,
-        modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'inning-summary' | 'end-game' | 'substitute' | null
+        modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'inning-summary' | 'end-game' | 'substitute' | 'stats' | 'lineup' | null
         outSubtype: null,
         hitSubtype: null,
         hitConfig: { label: '', description: '', preview: '' },
@@ -230,10 +236,28 @@ document.addEventListener('alpine:init', () => {
         // Flag para que el modal de resumen solo se muestre una vez por cierre
         inningClosedFlag: null,
         stateBases: { first: null, second: null, third: null },
+        // MEJ-2: AudioContext lazy para el beep de cierre de inning
+        _audioCtx: null,
+        // MEJ-3: datos del modal de stats
+        statsData: null,
+        statsLoading: false,
+        statsTab: 'batting', // 'batting' | 'pitching'
+        statsFilter: 'home', // 'home' | 'away' | 'all'
+        // MEJ-4: estado del modal de lineup
+        lineupTeam: 'away', // 'away' | 'home'
+        lineupAway: [],
+        lineupHome: [],
+        lineupLoading: false,
+        lineupDirty: false,
+        lineupDragId: null,
 
         start() {
             this.pollInterval = setInterval(() => this.poll(), 5000);
             this.poll();
+        },
+
+        async pollNow() {
+            await this.poll();
         },
 
         stop() {
@@ -304,6 +328,7 @@ document.addEventListener('alpine:init', () => {
                     if (data.summary) {
                         this.inningSummary = data.summary;
                         this.modal = 'inning-summary';
+                        this.playInningEndBeep();
                     }
                 }
                 else this.toast('Jugada registrada', 'success');
@@ -418,6 +443,7 @@ document.addEventListener('alpine:init', () => {
                     this.inningSummary = data.summary || null;
                     if (this.inningSummary) {
                         this.modal = 'inning-summary';
+                        this.playInningEndBeep();
                     }
                     // Re-render inmediato del state
                     await this.pollNow();
@@ -534,6 +560,245 @@ document.addEventListener('alpine:init', () => {
             window.dispatchEvent(new CustomEvent('toast', { detail: { message, level } }));
         },
 
+        // ============= MEJ-3: MODAL DE STATS DEL JUEGO =============
+        async openStatsModal() {
+            this.modal = 'stats';
+            this.statsTab = 'batting';
+            this.statsFilter = 'all';
+            await this.loadStats();
+        },
+        async loadStats() {
+            this.statsLoading = true;
+            try {
+                const res = await fetch(this.statsUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                this.statsData = await res.json();
+            } catch (e) {
+                this.toast('Error al cargar stats: ' + e.message, 'error');
+            } finally {
+                this.statsLoading = false;
+            }
+        },
+        filteredBatting() {
+            if (!this.statsData) return [];
+            if (this.statsFilter === 'all') return this.statsData.batting;
+            const tid = this.statsFilter === 'home' ? this.homeTeamId : this.awayTeamId;
+            return this.statsData.batting.filter(b => b.team_id === tid);
+        },
+        filteredPitching() {
+            if (!this.statsData) return [];
+            if (this.statsFilter === 'all') return this.statsData.pitching;
+            const tid = this.statsFilter === 'home' ? this.homeTeamId : this.awayTeamId;
+            return this.statsData.pitching.filter(p => p.team_id === tid);
+        },
+        lineScoreAway() {
+            if (!this.statsData) return [];
+            return Object.values(this.statsData.line_score.away);
+        },
+        lineScoreHome() {
+            if (!this.statsData) return [];
+            return Object.values(this.statsData.line_score.home);
+        },
+        lineScoreTotal(team) {
+            if (!this.statsData) return 0;
+            const arr = this.statsData.line_score[team] || {};
+            return Object.values(arr).reduce((a, b) => a + b, 0);
+        },
+        formatAvg(avg) {
+            if (avg === 0 || avg === '0') return '.000';
+            const num = parseFloat(avg);
+            if (isNaN(num) || num === 0) return '.000';
+            return '.' + Math.round(num * 1000).toString().padStart(3, '0');
+        },
+
+        // ============= MEJ-4: MODAL DE LINEUP CON DRAG&DROP =============
+        async openLineupModal() {
+            this.modal = 'lineup';
+            this.lineupTeam = 'away';
+            this.lineupDirty = false;
+            await this.loadLineup();
+        },
+        async loadLineup() {
+            this.lineupLoading = true;
+            try {
+                const res = await fetch(this.statsUrl, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json();
+                // Construir lineups a partir de rosterAway/Home + lineupOrder.
+                // Como statsUrl no devuelve roster, hacemos una copia profunda
+                // de rosterAway/Home y la mantenemos en el estado del modal.
+                if (!this.lineupAway.length) {
+                    this.lineupAway = JSON.parse(JSON.stringify(this.rosterAway));
+                }
+                if (!this.lineupHome.length) {
+                    this.lineupHome = JSON.parse(JSON.stringify(this.rosterHome));
+                }
+            } catch (e) {
+                this.toast('Error al cargar lineup: ' + e.message, 'error');
+            } finally {
+                this.lineupLoading = false;
+            }
+        },
+        currentLineup() {
+            return this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+        },
+        currentTeamId() {
+            return this.lineupTeam === 'away' ? this.awayTeamId : this.homeTeamId;
+        },
+        onDragStart(event, id) {
+            this.lineupDragId = id;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', String(id));
+            event.currentTarget.classList.add('opacity-40');
+        },
+        onDragEnd(event) {
+            event.currentTarget.classList.remove('opacity-40');
+            this.lineupDragId = null;
+            // Limpiar marcadores visuales
+            document.querySelectorAll('[data-lineup-drop]').forEach(el => {
+                el.classList.remove('border-emerald-500', 'bg-emerald-50');
+            });
+        },
+        onDragOver(event, overId) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            const dropEl = event.currentTarget;
+            dropEl.classList.add('border-emerald-500', 'bg-emerald-50');
+        },
+        onDragLeave(event) {
+            event.currentTarget.classList.remove('border-emerald-500', 'bg-emerald-50');
+        },
+        onDrop(event, overId) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('border-emerald-500', 'bg-emerald-50');
+            const fromId = this.lineupDragId ?? Number(event.dataTransfer.getData('text/plain'));
+            if (!fromId || fromId === overId) return;
+            const arr = this.currentLineup();
+            const fromIdx = arr.findIndex(a => a.id === fromId);
+            const toIdx = arr.findIndex(a => a.id === overId);
+            if (fromIdx < 0 || toIdx < 0) return;
+            // Mover
+            const [moved] = arr.splice(fromIdx, 1);
+            arr.splice(toIdx, 0, moved);
+            // Reasignar lineup_order (1..9)
+            arr.forEach((a, i) => { a.lineup_order = i + 1; });
+            this.lineupDirty = true;
+        },
+        moveUp(id) {
+            const arr = this.currentLineup();
+            const idx = arr.findIndex(a => a.id === id);
+            if (idx <= 0) return;
+            [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+            arr.forEach((a, i) => { a.lineup_order = i + 1; });
+            this.lineupDirty = true;
+        },
+        moveDown(id) {
+            const arr = this.currentLineup();
+            const idx = arr.findIndex(a => a.id === id);
+            if (idx < 0 || idx >= arr.length - 1) return;
+            [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+            arr.forEach((a, i) => { a.lineup_order = i + 1; });
+            this.lineupDirty = true;
+        },
+        async saveLineup() {
+            const arr = this.currentLineup();
+            const teamId = this.currentTeamId();
+            const order = arr.map((a, i) => ({
+                athlete_id: a.id,
+                lineup_order: i + 1,
+            }));
+            try {
+                const body = new FormData();
+                body.append('_token', this.csrf);
+                body.append('team_id', teamId);
+                order.forEach((o, i) => {
+                    body.append(`order[${i}][athlete_id]`, o.athlete_id);
+                    body.append(`order[${i}][lineup_order]`, o.lineup_order);
+                });
+                const res = await fetch(this.lineupReorderUrl, {
+                    method: 'POST',
+                    body,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': this.csrf,
+                    },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.toast('Lineup guardado', 'success');
+                    this.lineupDirty = false;
+                    // Sincronizar rosterAway/Home con el nuevo orden
+                    if (this.lineupTeam === 'away') {
+                        this.rosterAway = JSON.parse(JSON.stringify(arr));
+                    } else {
+                        this.rosterHome = JSON.parse(JSON.stringify(arr));
+                    }
+                } else {
+                    this.toast(data.error || data.message || 'Error al guardar', 'error');
+                }
+            } catch (e) {
+                this.toast('Error de red al guardar lineup: ' + e.message, 'error');
+            }
+        },
+
+        // MEJ-2: Web Audio API beep de cierre de inning.
+        // 2 tonos: uno corto (440Hz) y uno largo (660Hz) con 180ms de gap.
+        playInningEndBeep() {
+            try {
+                if (!this._audioCtx) {
+                    const Ctx = window.AudioContext || window.webkitAudioContext;
+                    if (!Ctx) return;
+                    this._audioCtx = new Ctx();
+                }
+                const ctx = this._audioCtx;
+                if (ctx.state === 'suspended') {
+                    ctx.resume().catch(() => {});
+                }
+                const beep = (freq, startAt, duration) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.001, ctx.currentTime + startAt);
+                    gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + startAt + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startAt + duration);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + startAt);
+                    osc.stop(ctx.currentTime + startAt + duration);
+                };
+                beep(440, 0, 0.18);
+                beep(660, 0.25, 0.30);
+            } catch (e) {
+                // Silenciar errores de audio (politicas de autoplay, etc.)
+                console.warn('inning beep failed', e);
+            }
+        },
+
+        // MEJ-1: Dispara la animacion slide del inning/half.
+        // Agrega `is-flipping` por 700ms y la quita para que el keyframe
+        // pueda volver a dispararse en el siguiente cambio.
+        triggerInningFlip() {
+            const hosts = document.querySelectorAll('[data-inning-anim]');
+            hosts.forEach(el => {
+                el.classList.remove('is-flipping');
+                // Forzar reflow para reiniciar la animacion
+                void el.offsetWidth;
+                el.classList.add('is-flipping');
+                setTimeout(() => el.classList.remove('is-flipping'), 700);
+            });
+        },
+
         applyState(data) {
             if (!data || !data.state) return;
             const s = data.state;
@@ -546,8 +811,14 @@ document.addEventListener('alpine:init', () => {
 
             const inningNum = document.querySelector('[data-inning-number]');
             const inningHalf = document.querySelector('[data-inning-half]');
+            // MEJ-1: detectar cambio real de inning/half para disparar animacion
+            const inningAnimChanged = inningNum && inningNum.textContent !== String(s.inning);
+            const halfAnimChanged = inningHalf && inningHalf.textContent !== (s.half === 'top' ? '▲' : '▼');
             if (inningNum) inningNum.textContent = s.inning;
             if (inningHalf) inningHalf.textContent = s.half === 'top' ? '▲' : '▼';
+            if (inningAnimChanged || halfAnimChanged) {
+                this.triggerInningFlip();
+            }
 
             this.renderDots('[data-balls]', s.balls, 'bg-emerald-500', 'bg-gray-200', 4);
             this.renderDots('[data-strikes]', s.strikes, 'bg-amber-500', 'bg-gray-200', 3);
@@ -578,6 +849,7 @@ document.addEventListener('alpine:init', () => {
                     this.inningClosedFlag = flagKey;
                     this.inningSummary = data.summary;
                     this.modal = 'inning-summary';
+                    this.playInningEndBeep();
                 }
             }
             this.prevInning = s.inning;

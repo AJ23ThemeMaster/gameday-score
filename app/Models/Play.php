@@ -368,4 +368,204 @@ class Play extends Model
             'avg' => $avg,
         ];
     }
+
+    /**
+     * Estadisticas historicas COMPLETAS del juego (box score).
+     * Devuelve:
+     *  - pitching: por cada pitcher que ha lanzado (pitches, K, BB, H, R, ER aprox)
+     *  - batting:  por cada bateador que ha bateado (AB, H, 2B, 3B, HR, RBI, R, BB, K, AVG)
+     *  - line_score: carreras por inning de cada equipo
+     *
+     * No incluye jugadas de tipo 'pitch' con subtype 'at_bat_start' (es un
+     * marcador interno, no un lanzamiento real).
+     */
+    public static function statsAll(int $gameId, int $homeTeamId, int $awayTeamId, int $totalInnings = 7): array
+    {
+        $plays = static::where('game_id', $gameId)
+            ->orderBy('inning')
+            ->orderBy('half')
+            ->orderBy('sequence')
+            ->get();
+
+        // ============ PITCHING ============
+        $pitchingById = [];
+        foreach ($plays as $p) {
+            $pid = $p->pitcher_id;
+            if (! $pid) continue;
+            if (! isset($pitchingById[$pid])) {
+                $pitchingById[$pid] = [
+                    'pitcher_id' => $pid,
+                    'pitches' => 0,
+                    'strikes' => 0,
+                    'balls' => 0,
+                    'strikeouts' => 0,
+                    'hits_allowed' => 0,
+                    'walks_allowed' => 0,
+                    'runs_allowed' => 0,
+                    'batters_faced' => 0,
+                ];
+            }
+            $t = $p->type;
+            $st = $p->subtype;
+            if ($t === static::TYPE_PITCH) {
+                if ($st === 'at_bat_start') {
+                    // Marca inicio de turno; NO es un lanzamiento real.
+                    $pitchingById[$pid]['batters_faced']++;
+                    continue;
+                }
+                $pitchingById[$pid]['pitches']++;
+                if ($st === 'ball') {
+                    $pitchingById[$pid]['balls']++;
+                } elseif (in_array($st, ['looking', 'swinging', 'foul_tip'], true)) {
+                    $pitchingById[$pid]['strikes']++;
+                }
+            } elseif ($t === static::TYPE_OUT && $st === static::SUBTYPE_OUT_STRIKEOUT) {
+                $pitchingById[$pid]['strikeouts']++;
+            } elseif ($t === static::TYPE_HIT) {
+                $pitchingById[$pid]['hits_allowed']++;
+            } elseif ($t === static::TYPE_WALK) {
+                $pitchingById[$pid]['walks_allowed']++;
+            }
+            // Carreras permitidas: las del inning/half se atribuyen al pitcher
+            // activo en ese momento (pitcher_id del play).
+            $pitchingById[$pid]['runs_allowed'] += (int) $p->runs_scored;
+        }
+
+        // Calcular IP (innings pitched) a partir de los outs registrados.
+        // outs_after es el total de outs DEL juego en ese momento, no los
+        // atribuidos a este pitcher. Para aproximar: contar outs por pitcher
+        // requiere un walk, lo dejamos como derivado simple: cada out consume
+        // 1/3 de inning. Aqui usamos una mejor aproximacion: contar los
+        // outs en plays donde el pitcher es este Y outs_after > outs_before.
+        $outsByPitcher = [];
+        foreach ($plays as $p) {
+            $pid = $p->pitcher_id;
+            if (! $pid) continue;
+            $t = $p->type;
+            $st = $p->subtype;
+            $isOut = ($t === static::TYPE_OUT)
+                || ($t === static::TYPE_PITCH && in_array($st, ['looking', 'swinging', 'foul_tip'], true) && ((int) $p->strikes >= 2))
+                || ($t === static::TYPE_BUNT && in_array($st, ['sacrifice', 'bunt_out'], true));
+            // Simplificacion: solo contar outs REALES (type=out) o strikeouts
+            // via TYPE_PITCH que terminaron ponche. El resto se cubre con
+            // TYPE_OUT ya que el engine registra cada out via Play::recordPlay.
+            $isRecordedOut = ($t === static::TYPE_OUT)
+                || ($t === static::TYPE_PITCH && in_array($st, ['looking', 'swinging', 'foul_tip'], true) && ((int) $p->balls === 3 || (int) $p->strikes === 2));
+            // Engine crea jugada TYPE_OUT (SUBTYPE_OUT_STRIKEOUT) por separado
+            // cuando se llega a 3 strikes, asi que type=out cubre los ponches
+            // de forma fiable. Ademas anade el at_bat_start con type=pitch.
+            $delta = (int) $p->outs_after - (int) $p->outs_before;
+            if ($delta > 0 && $t === static::TYPE_OUT) {
+                $outsByPitcher[$pid] = ($outsByPitcher[$pid] ?? 0) + $delta;
+            }
+        }
+        $pitchingList = [];
+        foreach ($pitchingById as $pid => $row) {
+            $outs = $outsByPitcher[$pid] ?? 0;
+            $ip = number_format(floor($outs / 3), 0) . '.' . ($outs % 3);
+            $row['outs'] = $outs;
+            $row['ip'] = $ip;
+            // Aproximacion: ER = R para esta primera version (sin plays de
+            // errores que atribuyan unearned runs en este momento).
+            $row['earned_runs'] = $row['runs_allowed'];
+            $pitchingList[] = $row;
+        }
+        // Ordenar por aparicion (primer inning en que lanzo)
+        usort($pitchingList, function ($a, $b) use ($plays) {
+            $firstA = PHP_INT_MAX; $firstB = PHP_INT_MAX;
+            foreach ($plays as $p) {
+                if ($p->pitcher_id === $a['pitcher_id']) { $firstA = min($firstA, (int) $p->inning * 2 + ($p->half === 'bottom' ? 1 : 0)); }
+                if ($p->pitcher_id === $b['pitcher_id']) { $firstB = min($firstB, (int) $p->inning * 2 + ($p->half === 'bottom' ? 1 : 0)); }
+            }
+            return $firstA <=> $firstB;
+        });
+
+        // ============ BATTING ============
+        $battingById = [];
+        foreach ($plays as $p) {
+            $bid = $p->batter_id;
+            if (! $bid) continue;
+            if (! isset($battingById[$bid])) {
+                $battingById[$bid] = [
+                    'batter_id' => $bid,
+                    'at_bats' => 0,
+                    'hits' => 0,
+                    'singles' => 0,
+                    'doubles' => 0,
+                    'triples' => 0,
+                    'hr' => 0,
+                    'rbi' => 0,
+                    'runs' => 0,
+                    'walks' => 0,
+                    'strikeouts' => 0,
+                    'hbp' => 0,
+                ];
+            }
+            $t = $p->type;
+            $st = $p->subtype;
+            if ($t === static::TYPE_HIT) {
+                $battingById[$bid]['at_bats']++;
+                $battingById[$bid]['hits']++;
+                $battingById[$bid]['rbi'] += (int) $p->rbi;
+                // El bateador anota si es HR o HR de pierna.
+                if (in_array($st, [static::SUBTYPE_HIT_HR, static::SUBTYPE_HIT_INSIDE_PARK], true)) {
+                    $battingById[$bid]['runs']++;
+                }
+                if ($st === static::SUBTYPE_HIT_SINGLE) $battingById[$bid]['singles']++;
+                if ($st === static::SUBTYPE_HIT_DOUBLE) $battingById[$bid]['doubles']++;
+                if ($st === static::SUBTYPE_HIT_TRIPLE) $battingById[$bid]['triples']++;
+                if ($st === static::SUBTYPE_HIT_HR) $battingById[$bid]['hr']++;
+            } elseif ($t === static::TYPE_OUT) {
+                $battingById[$bid]['at_bats']++;
+                if ($st === static::SUBTYPE_OUT_STRIKEOUT) {
+                    $battingById[$bid]['strikeouts']++;
+                }
+                $battingById[$bid]['rbi'] += (int) $p->rbi;
+            } elseif ($t === static::TYPE_WALK) {
+                $battingById[$bid]['walks']++;
+                $battingById[$bid]['rbi'] += (int) $p->rbi;
+            } elseif ($t === static::TYPE_HBP) {
+                $battingById[$bid]['hbp']++;
+            } elseif ($t === static::TYPE_BUNT) {
+                $battingById[$bid]['at_bats']++;
+                $battingById[$bid]['rbi'] += (int) $p->rbi;
+            }
+        }
+        $battingList = [];
+        foreach ($battingById as $row) {
+            $row['avg'] = $row['at_bats'] > 0 ? round($row['hits'] / $row['at_bats'], 3) : 0.0;
+            $battingList[] = $row;
+        }
+        // Ordenar por orden de bateo (lineup_order) cuando sea posible
+        usort($battingList, function ($a, $b) use ($plays) {
+            $firstA = PHP_INT_MAX; $firstB = PHP_INT_MAX;
+            foreach ($plays as $p) {
+                if ($p->batter_id === $a['batter_id']) { $firstA = min($firstA, (int) $p->inning * 2 + ($p->half === 'bottom' ? 1 : 0)); }
+                if ($p->batter_id === $b['batter_id']) { $firstB = min($firstB, (int) $p->inning * 2 + ($p->half === 'bottom' ? 1 : 0)); }
+            }
+            return $firstA <=> $firstB;
+        });
+
+        // ============ LINE SCORE (carreras por inning) ============
+        $lineScore = ['home' => [], 'away' => []];
+        for ($i = 1; $i <= $totalInnings; $i++) {
+            $lineScore['home'][$i] = 0;
+            $lineScore['away'][$i] = 0;
+        }
+        foreach ($plays as $p) {
+            if ((int) $p->runs_scored > 0 && $p->inning >= 1 && $p->inning <= $totalInnings) {
+                if ($p->half === 'top') {
+                    $lineScore['away'][$p->inning] += (int) $p->runs_scored;
+                } else {
+                    $lineScore['home'][$p->inning] += (int) $p->runs_scored;
+                }
+            }
+        }
+
+        return [
+            'pitching' => $pitchingList,
+            'batting' => $battingList,
+            'line_score' => $lineScore,
+        ];
+    }
 }

@@ -11,12 +11,108 @@ use App\Services\GameplayEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ScoreboardController extends Controller
 {
     public function __construct(private readonly GameplayEngine $engine)
     {
+    }
+
+    /**
+     * Endpoint de stats historicas del juego (MEJ-3).
+     * Devuelve box score acumulado: pitching de TODOS los pitchers que han
+     * lanzado, batting de TODOS los bateadores que han bateado, y line score
+     * por inning. Usado por el modal "Stats del juego".
+     */
+    public function stats(Request $request, Game $game): JsonResponse
+    {
+        abort_unless($game->user_id === Auth::id(), 403);
+
+        $game->load('homeTeam', 'awayTeam');
+        $totalInnings = (int) ($game->innings_count ?: 7);
+
+        $stats = Play::statsAll($game->id, $game->home_team_id, $game->away_team_id, $totalInnings);
+
+        // Adjuntar nombre y numero del atleta a cada fila
+        $pitcherIds = array_column($stats['pitching'], 'pitcher_id');
+        $batterIds = array_column($stats['batting'], 'batter_id');
+        $allIds = array_unique(array_merge($pitcherIds, $batterIds));
+        $athletes = \App\Models\Athlete::whereIn('id', $allIds)->get()->keyBy('id');
+
+        foreach ($stats['pitching'] as &$row) {
+            $a = $athletes->get($row['pitcher_id']);
+            $row['name'] = $a?->full_name ?? 'ID ' . $row['pitcher_id'];
+            $row['number'] = $a?->number;
+            $row['team_id'] = $a?->team?->id;
+        }
+        unset($row);
+        foreach ($stats['batting'] as &$row) {
+            $a = $athletes->get($row['batter_id']);
+            $row['name'] = $a?->full_name ?? 'ID ' . $row['batter_id'];
+            $row['number'] = $a?->number;
+            $row['team_id'] = $a?->team?->id;
+        }
+        unset($row);
+
+        return response()->json([
+            'success' => true,
+            'home_team' => [
+                'id' => $game->home_team_id,
+                'name' => $game->homeTeam->name,
+                'short' => $game->homeTeam->short_name ?? $game->homeTeam->name,
+            ],
+            'away_team' => [
+                'id' => $game->away_team_id,
+                'name' => $game->awayTeam->name,
+                'short' => $game->awayTeam->short_name ?? $game->awayTeam->name,
+            ],
+            'total_innings' => $totalInnings,
+            'pitching' => $stats['pitching'],
+            'batting' => $stats['batting'],
+            'line_score' => $stats['line_score'],
+        ]);
+    }
+
+    /**
+     * Endpoint para reordenar el lineup de un equipo (MEJ-4).
+     * Espera un body con:
+     *   { team_id: int, order: [{athlete_id, lineup_order}, ...] }
+     * Actualiza game_athlete.lineup_order segun la posicion en el array.
+     */
+    public function reorderLineup(Request $request, Game $game): JsonResponse
+    {
+        abort_unless($game->user_id === Auth::id(), 403);
+
+        $data = $request->validate([
+            'team_id' => 'required|integer',
+            'order' => 'required|array|min:1',
+            'order.*.athlete_id' => 'required|integer',
+            'order.*.lineup_order' => 'required|integer|min:1|max:9',
+        ]);
+
+        $teamId = (int) $data['team_id'];
+        if ($teamId !== $game->home_team_id && $teamId !== $game->away_team_id) {
+            return response()->json(['success' => false, 'error' => 'Equipo no pertenece al juego'], 422);
+        }
+
+        DB::transaction(function () use ($game, $teamId, $data) {
+            foreach ($data['order'] as $row) {
+                // Pivot update via wherePivot
+                $game->athletes()
+                    ->wherePivot('team_id', $teamId)
+                    ->updateExistingPivot($row['athlete_id'], [
+                        'lineup_order' => (int) $row['lineup_order'],
+                    ]);
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lineup reordenado',
+            'order' => $data['order'],
+        ]);
     }
 
     /**

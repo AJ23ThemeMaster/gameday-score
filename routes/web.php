@@ -55,6 +55,10 @@ Route::middleware('auth')->group(function () {
     // DISI-12: Nuevo scoreboard moderno (Fase 1: layout + live AJAX sin recargar)
     Route::get('games/{game}/scoreboard', [ScoreboardController::class, 'show'])->name('games.scoreboard');
     Route::get('games/{game}/scoreboard/poll', [ScoreboardController::class, 'poll'])->name('games.scoreboard.poll');
+    // DISI-12 MEJ-3: stats historicas del juego (box score)
+    Route::get('games/{game}/scoreboard/stats', [ScoreboardController::class, 'stats'])->name('games.scoreboard.stats');
+    // DISI-12 MEJ-4: reordenar lineup (drag&drop)
+    Route::patch('games/{game}/lineup/order', [ScoreboardController::class, 'reorderLineup'])->name('games.lineup.reorder');
     // DISI-12 (fases siguientes): registrar jugadas
     Route::post('games/{game}/plays', [\App\Http\Controllers\PlayController::class, 'store'])->name('games.plays.store');
     Route::get('games/{game}/plays', [\App\Http\Controllers\PlayController::class, 'index'])->name('games.plays.index');
