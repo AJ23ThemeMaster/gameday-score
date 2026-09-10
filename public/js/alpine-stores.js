@@ -723,8 +723,12 @@ document.addEventListener('alpine:init', () => {
                     body.append(`order[${i}][athlete_id]`, o.athlete_id);
                     body.append(`order[${i}][lineup_order]`, o.lineup_order);
                 });
+                // La ruta games.lineup.reorder acepta PATCH. Usamos
+                // X-HTTP-Method-Override para soportar PATCH real (los
+                // formularios HTML solo permiten GET/POST). Como el navegador
+                // sí soporta PATCH en fetch, mandamos PATCH directo.
                 const res = await fetch(this.lineupReorderUrl, {
-                    method: 'POST',
+                    method: 'PATCH',
                     body,
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
