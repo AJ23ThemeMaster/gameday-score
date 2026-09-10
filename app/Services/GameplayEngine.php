@@ -287,8 +287,16 @@ class GameplayEngine
 
         if ($half === 'top') {
             $newHalf = 'bottom';
-            $newBatter = $this->firstBatter($game, 'bottom');
             $newPitcher = $this->pitcherFor($game, $game->home_team_id);
+            // Si es el inning 1, el home batea por primera vez: arranca desde #1.
+            // En innings 2+, el home continua su lineup desde donde se quedo
+            // en el bottom del inning anterior.
+            if ($inning === 1) {
+                $newBatter = $this->firstBatter($game, 'bottom');
+            } else {
+                $lastHomeBatter = $this->lastBatterForTeamInInning($game, $game->home_team_id, $inning - 1, 'bottom');
+                $newBatter = $this->nextBatterByTeam($game, $game->home_team_id, $lastHomeBatter, 'bottom');
+            }
             return [$newBatter, $newBases, $newHalf, $inning, $newOuts, true, $newPitcher];
         }
 
@@ -311,7 +319,12 @@ class GameplayEngine
             return [null, $newBases, 'bottom', $newInning, $newOuts, true, $pitcherId];
         }
 
-        $newBatter = $this->firstBatter($game, 'top');
+        // El away continua su lineup desde donde se quedo en el top del inning
+        // que acabamos de cerrar (regla de beisbol: el orden de bateo NO se
+        // reinicia entre innings). Si por algun motivo no encontramos al
+        // ultimo bateador del away, caemos al #1 como fallback.
+        $lastAwayBatter = $this->lastBatterForTeamInInning($game, $game->away_team_id, $inning, 'top');
+        $newBatter = $this->nextBatterByTeam($game, $game->away_team_id, $lastAwayBatter, 'top');
         $newPitcher = $this->pitcherFor($game, $game->away_team_id);
         return [$newBatter, $newBases, 'top', $newInning, $newOuts, true, $newPitcher];
     }
@@ -341,22 +354,57 @@ class GameplayEngine
     public function nextBatter(Game $game, string $half, ?int $currentBatterId): ?int
     {
         $teamId = $half === 'top' ? $game->away_team_id : $game->home_team_id;
+        return $this->nextBatterByTeam($game, $teamId, $currentBatterId, $half);
+    }
+
+    /**
+     * Variante de nextBatter que recibe el teamId explicito (util cuando hay
+     * que continuar el lineup de un equipo que NO es el del half actual, por
+     * ejemplo en la transicion bottom->top donde el away continua su orden
+     * desde el inning anterior).
+     */
+    public function nextBatterByTeam(Game $game, int $teamId, ?int $currentBatterId, ?string $halfFallback = null): ?int
+    {
         if (! $currentBatterId) {
-            return $this->firstBatter($game, $half);
+            // Si no hay bateador actual, arrancar desde el #1.
+            $a = $game->athletes()
+                ->wherePivot('team_id', $teamId)
+                ->wherePivot('lineup_order', 1)
+                ->first();
+            return $a?->id;
         }
         $current = $game->athletes()
             ->wherePivot('team_id', $teamId)
             ->where('athletes.id', $currentBatterId)
             ->first();
         if (! $current) {
-            return $this->firstBatter($game, $half);
+            // Bateador no esta en el lineup de este equipo (caso raro): fallback al #1.
+            $a = $game->athletes()
+                ->wherePivot('team_id', $teamId)
+                ->wherePivot('lineup_order', 1)
+                ->first();
+            return $a?->id;
         }
         $lineupOrder = (int) $current->pivot->lineup_order;
         $next = $game->athletes()
             ->wherePivot('team_id', $teamId)
             ->wherePivot('lineup_order', $lineupOrder === 9 ? 1 : $lineupOrder + 1)
             ->first();
-        return $next?->id ?? $this->firstBatter($game, $half);
+        return $next?->id;
+    }
+
+    /**
+     * Devuelve el ultimo bateador (con batter_id no nulo) del equipo en el inning dado.
+     * Se usa para continuar el lineup entre innings respetando el orden de bateo.
+     */
+    public function lastBatterForTeamInInning(Game $game, int $teamId, int $inning, string $half): ?int
+    {
+        return Play::where('game_id', $game->id)
+            ->where('inning', $inning)
+            ->where('half', $half)
+            ->whereNotNull('batter_id')
+            ->orderByDesc('sequence')
+            ->value('batter_id');
     }
 
     /**
