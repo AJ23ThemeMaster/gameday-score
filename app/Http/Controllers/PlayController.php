@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Game;
 use App\Models\Play;
+use App\Services\GameplayEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -106,5 +107,38 @@ class PlayController extends Controller
             'play' => $play,
             'message' => 'Jugada registrada.',
         ], 201);
+    }
+
+    /**
+     * Procesa un evento de pitcheo (ball, strike, foul, out) via GameplayEngine.
+     * Usado por la UI del scoreboard en Fases 2-5.
+     */
+    public function pitch(Request $request, Game $game, GameplayEngine $engine): JsonResponse
+    {
+        abort_unless($game->user_id === Auth::id(), 403);
+        abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
+
+        $validated = $request->validate([
+            'type' => ['required', 'in:ball,strike,foul,out'],
+            'subtype' => ['nullable', 'string', 'max:30'],
+            'defensive_sequence' => ['nullable', 'array', 'max:5'],
+            'defensive_sequence.*' => ['string', 'max:10'],
+        ]);
+
+        $result = $engine->processPitch($game, $validated);
+
+        return response()->json([
+            'success' => true,
+            'state' => $result['state'],
+            'walk' => $result['walk'],
+            'strikeout' => $result['strikeout'],
+            'end_half' => $result['end_half'],
+            'plays' => collect($result['plays'])->map(fn ($p) => [
+                'id' => $p->id,
+                'type' => $p->type,
+                'subtype' => $p->subtype,
+                'result' => $p->result,
+            ])->values(),
+        ]);
     }
 }

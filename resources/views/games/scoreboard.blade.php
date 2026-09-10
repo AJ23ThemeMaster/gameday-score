@@ -16,10 +16,12 @@
         x-data="scoreboardApp(@js([
             'gameId' => $game->id,
             'pollUrl' => route('games.scoreboard.poll', $game),
+            'pitchUrl' => route('games.plays.pitch', $game),
             'homeName' => $game->homeTeam->name,
             'awayName' => $game->awayTeam->name,
             'homeShort' => $game->homeTeam->short_name ?? $game->homeTeam->name,
             'awayShort' => $game->awayTeam->short_name ?? $game->awayTeam->name,
+            'csrf' => csrf_token(),
         ]))"
         x-init="start()"
     >
@@ -221,28 +223,28 @@
                         </button>
                     </div>
 
-                    {{-- Tab content: PITCHEo (Fase 2) --}}
+                    {{-- Tab content: PITCHEo (Fase 2 — funcional) --}}
                     <div x-show="tab === 'pitch'" x-cloak class="grid grid-cols-2 gap-3 p-4">
-                        <button type="button" disabled
-                                class="py-8 bg-emerald-500 text-white text-2xl font-black rounded-2xl opacity-60 cursor-not-allowed">
+                        <button type="button" @click="sendBall()"
+                                :disabled="isPitching"
+                                class="py-8 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
                             {{ __('Ball') }}
                         </button>
-                        <button type="button" disabled
-                                class="py-8 bg-rose-500 text-white text-2xl font-black rounded-2xl opacity-60 cursor-not-allowed">
+                        <button type="button" @click="openStrikeModal()"
+                                :disabled="isPitching"
+                                class="py-8 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
                             {{ __('Strike') }}
                         </button>
-                        <button type="button" disabled
-                                class="py-8 bg-amber-500 text-white text-2xl font-black rounded-2xl opacity-60 cursor-not-allowed">
+                        <button type="button" @click="sendFoul()"
+                                :disabled="isPitching"
+                                class="py-8 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
                             {{ __('Foul') }}
                         </button>
-                        <button type="button" disabled
-                                class="py-8 bg-slate-700 text-white text-2xl font-black rounded-2xl opacity-60 cursor-not-allowed">
+                        <button type="button" @click="openOutStep1()"
+                                :disabled="isPitching"
+                                class="py-8 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
                             {{ __('Out') }}
                         </button>
-                        <p class="col-span-2 text-xs text-center text-gray-500 mt-2">
-                            <span x-show="false"></span>
-                            {{ __('Disponible en la Fase 2') }}
-                        </p>
                     </div>
 
                     {{-- Tab content: BATEo (Fase 3) --}}
@@ -305,6 +307,144 @@
             {{-- Indicador de conexion en vivo --}}
             <div class="mt-3 text-center text-xs text-gray-400" data-poll-indicator>
                 <span x-text="pollStatus"></span>
+            </div>
+
+            {{-- ============ MODALES PITCHEo (Fase 2) ============ --}}
+
+            {{-- Modal: tipo de strike (Mirando / Swing / Foul Tip) --}}
+            <div x-show="modal === 'strike'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+                 @keydown.escape.window="closeModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                    <div class="bg-rose-500 text-white px-5 py-3 flex items-center justify-between">
+                        <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Tipo de ponche') }}</h3>
+                        <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        <button type="button" @click="sendStrike('looking')"
+                                class="w-full py-4 bg-rose-50 hover:bg-rose-100 text-rose-700 text-lg font-bold rounded-xl border-2 border-rose-200 transition">
+                            {{ __('Mirando') }}
+                        </button>
+                        <button type="button" @click="sendStrike('swinging')"
+                                class="w-full py-4 bg-rose-100 hover:bg-rose-200 text-rose-800 text-lg font-bold rounded-xl border-2 border-rose-300 transition">
+                            {{ __('Swing') }}
+                        </button>
+                        <button type="button" @click="sendStrike('foul_tip')"
+                                class="w-full py-4 bg-rose-200 hover:bg-rose-300 text-rose-900 text-lg font-bold rounded-xl border-2 border-rose-400 transition">
+                            {{ __('Foul Tip') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal Out paso 1: tipo de out --}}
+            <div x-show="modal === 'out-step1'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+                 @keydown.escape.window="closeModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                    <div class="bg-slate-700 text-white px-5 py-3 flex items-center justify-between">
+                        <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Tipo de out') }}</h3>
+                        <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        <button type="button" @click="openOutStep2('fly')"
+                                class="w-full py-4 bg-sky-50 hover:bg-sky-100 text-sky-700 text-lg font-bold rounded-xl border-2 border-sky-200 transition">
+                            {{ __('Fly (elevado)') }}
+                        </button>
+                        <button type="button" @click="openOutStep2('line')"
+                                class="w-full py-4 bg-sky-100 hover:bg-sky-200 text-sky-800 text-lg font-bold rounded-xl border-2 border-sky-300 transition">
+                            {{ __('Línea') }}
+                        </button>
+                        <button type="button" @click="openOutStep2('ground')"
+                                class="w-full py-4 bg-amber-50 hover:bg-amber-100 text-amber-700 text-lg font-bold rounded-xl border-2 border-amber-200 transition">
+                            {{ __('Roletazo') }}
+                        </button>
+                        <button type="button" @click="sendOut('reglamento')"
+                                class="w-full py-4 bg-slate-50 hover:bg-slate-100 text-slate-700 text-lg font-bold rounded-xl border-2 border-slate-200 transition">
+                            {{ __('De reglamento') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal Out paso 2: jugada defensiva (fildeadores en orden) --}}
+            <div x-show="modal === 'out-step2'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+                 @keydown.escape.window="closeModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" @click.outside="closeModal()">
+                    <div class="bg-slate-800 text-white px-5 py-3 flex items-center justify-between">
+                        <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Jugada defensiva') }}</h3>
+                        <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="p-5">
+                        <p class="text-sm text-gray-600 mb-3">
+                            {{ __('Toca los fildeadores en el orden que participaron.') }}
+                        </p>
+
+                        {{-- Diamante SVG con los 9 fildeadores + bateador --}}
+                        <div class="relative bg-emerald-700 rounded-xl mx-auto" style="width: 280px; height: 280px;">
+                            {{-- Infield dirt --}}
+                            <div class="absolute inset-6 bg-amber-100/30 rounded-full"></div>
+
+                            {{-- Bases --}}
+                            <div class="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-10 bg-white border-2 border-gray-300 rounded rotate-45"></div>
+                            <div class="absolute top-1/2 right-2 -translate-y-1/2 w-10 h-10 bg-white border-2 border-gray-300 rounded rotate-45"></div>
+                            <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-10 h-10 bg-white border-2 border-gray-300 rounded rotate-45"></div>
+                            <div class="absolute top-1/2 left-2 -translate-y-1/2 w-10 h-10 bg-white border-2 border-gray-300 rounded rotate-45"></div>
+
+                            {{-- Pitcher mound --}}
+                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-amber-200/90 rounded-full flex items-center justify-center text-xs font-black text-amber-900">P</div>
+
+                            {{-- Posiciones clickeables --}}
+                            <button type="button" @click="addFielder('C')"  class="absolute bottom-1 left-1/2 -translate-x-1/2 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">C</button>
+                            <button type="button" @click="addFielder('1B')" class="absolute top-1/2 right-1 -translate-y-1/2 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">1B</button>
+                            <button type="button" @click="addFielder('2B')" class="absolute top-2 right-12 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">2B</button>
+                            <button type="button" @click="addFielder('3B')" class="absolute top-1/2 left-1 -translate-y-1/2 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">3B</button>
+                            <button type="button" @click="addFielder('SS')" class="absolute top-2 left-12 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">SS</button>
+                            <button type="button" @click="addFielder('LF')" class="absolute top-1 left-1/4 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">LF</button>
+                            <button type="button" @click="addFielder('CF')" class="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">CF</button>
+                            <button type="button" @click="addFielder('RF')" class="absolute top-1 right-1/4 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">RF</button>
+                        </div>
+
+                        {{-- Secuencia seleccionada --}}
+                        <div class="mt-4 p-3 bg-gray-50 rounded-lg min-h-[60px]">
+                            <div class="text-xs text-gray-500 uppercase font-semibold mb-1">{{ __('Secuencia') }}</div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <template x-for="(f, i) in defensiveSequence" :key="i">
+                                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-amber-200 text-amber-900 rounded-full text-sm font-bold">
+                                        <span x-text="f"></span>
+                                        <button type="button" @click="removeFielder(i)" class="text-amber-700 hover:text-red-600 font-black">&times;</button>
+                                    </span>
+                                </template>
+                                <span x-show="defensiveSequence.length === 0" class="text-sm text-gray-400 italic">{{ __('Selecciona los fildeadores') }}</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex gap-2">
+                            <button type="button" @click="closeModal()"
+                                    class="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl">
+                                {{ __('Cancelar') }}
+                            </button>
+                            <button type="button" @click="confirmOut()" :disabled="defensiveSequence.length === 0"
+                                    class="flex-1 py-3 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-bold rounded-xl">
+                                {{ __('Registrar out') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Toast global (errores del pitch) --}}
+            <div class="fixed top-4 right-4 z-[60] space-y-2" x-data="toastStack()" @toast.window="show($event.detail.message, $event.detail.level)">
+                <template x-for="t in items" :key="t.id">
+                    <div x-show="t.visible" x-transition
+                         :class="{
+                             'bg-emerald-500': t.level === 'success',
+                             'bg-rose-500': t.level === 'error',
+                             'bg-amber-500': t.level === 'warning',
+                             'bg-sky-500': t.level === 'info',
+                         }"
+                         class="text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium max-w-xs">
+                        <span x-text="t.message"></span>
+                    </div>
+                </template>
             </div>
 
         </div>

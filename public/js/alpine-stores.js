@@ -197,16 +197,20 @@ document.addEventListener('alpine:init', () => {
     window.Alpine.data('scoreboardApp', (config) => ({
         gameId: config.gameId,
         pollUrl: config.pollUrl,
+        pitchUrl: config.pitchUrl,
         homeName: config.homeName,
         awayName: config.awayName,
+        csrf: config.csrf,
         pollInterval: null,
         pollStatus: 'Conectado',
         isPolling: false,
+        isPitching: false,
+        modal: null, // 'strike' | 'out-step1' | 'out-step2' | null
+        outSubtype: null,
+        defensiveSequence: [],
 
         start() {
-            // Polling cada 5s
             this.pollInterval = setInterval(() => this.poll(), 5000);
-            // Poll inmediato
             this.poll();
         },
 
@@ -239,29 +243,86 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        // ===== PITCHEo (Fase 2) =====
+        async sendPitch(event) {
+            if (this.isPitching) return;
+            this.isPitching = true;
+            try {
+                const fd = new FormData();
+                for (const [k, v] of Object.entries(event)) {
+                    if (Array.isArray(v)) {
+                        v.forEach(item => fd.append(k + '[]', item));
+                    } else {
+                        fd.append(k, v);
+                    }
+                }
+                fd.append('_token', this.csrf);
+                const res = await fetch(this.pitchUrl, {
+                    method: 'POST',
+                    body: fd,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    this.toast(data.message || 'Error al registrar la jugada', 'error');
+                    return;
+                }
+                // Refresca el state inmediatamente (no espera al poll).
+                this.poll();
+                if (data.walk) this.toast('Base por bolas', 'info');
+                else if (data.strikeout) this.toast('Ponche', 'info');
+                else if (data.end_half) this.toast('Fin del inning', 'warning');
+                else this.toast('Jugada registrada', 'success');
+            } catch (e) {
+                this.toast('Error de red: ' + e.message, 'error');
+            } finally {
+                this.isPitching = false;
+            }
+        },
+
+        sendBall() { this.sendPitch({ type: 'ball' }); },
+        sendFoul() { this.sendPitch({ type: 'foul' }); },
+        sendStrike(subtype) { this.sendPitch({ type: 'strike', subtype }); this.closeModal(); },
+        sendOut(subtype, defensiveSequence = []) {
+            this.sendPitch({ type: 'out', subtype, defensive_sequence: defensiveSequence });
+            this.closeModal();
+        },
+
+        openStrikeModal() { this.modal = 'strike'; },
+        openOutStep1() { this.modal = 'out-step1'; },
+        openOutStep2(subtype) { this.outSubtype = subtype; this.defensiveSequence = []; this.modal = 'out-step2'; },
+        confirmOut() { this.sendOut(this.outSubtype, this.defensiveSequence); },
+        addFielder(pos) { this.defensiveSequence.push(pos); },
+        removeFielder(i) { this.defensiveSequence.splice(i, 1); },
+        closeModal() { this.modal = null; this.outSubtype = null; this.defensiveSequence = []; },
+
+        toast(message, level = 'success') {
+            window.dispatchEvent(new CustomEvent('toast', { detail: { message, level } }));
+        },
+
         applyState(data) {
             if (!data || !data.state) return;
             const s = data.state;
             const score = data.score || { home: 0, away: 0 };
 
-            // Scores
             const homeScore = document.querySelector('[data-score="home"]');
             const awayScore = document.querySelector('[data-score="away"]');
             if (homeScore) homeScore.textContent = score.home;
             if (awayScore) awayScore.textContent = score.away;
 
-            // Inning
             const inningNum = document.querySelector('[data-inning-number]');
             const inningHalf = document.querySelector('[data-inning-half]');
             if (inningNum) inningNum.textContent = s.inning;
             if (inningHalf) inningHalf.textContent = s.half === 'top' ? '▲' : '▼';
 
-            // Count: balls / strikes / outs
             this.renderDots('[data-balls]', s.balls, 'bg-emerald-500', 'bg-gray-200', 4);
             this.renderDots('[data-strikes]', s.strikes, 'bg-amber-500', 'bg-gray-200', 3);
             this.renderDots('[data-outs]', s.outs, 'bg-rose-500', 'bg-gray-200', 3);
 
-            // Bases
             this.renderBase('first', s.bases?.first, data.runners?.first);
             this.renderBase('second', s.bases?.second, data.runners?.second);
             this.renderBase('third', s.bases?.third, data.runners?.third);
@@ -270,7 +331,6 @@ document.addEventListener('alpine:init', () => {
         renderDots(selector, count, activeClass, inactiveClass, max) {
             const container = document.querySelector(selector);
             if (!container) return;
-            // Limpia y regenera los dots
             container.innerHTML = '';
             for (let i = 0; i < max; i++) {
                 const dot = document.createElement('span');

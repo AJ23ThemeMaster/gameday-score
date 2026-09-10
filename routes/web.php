@@ -58,6 +58,8 @@ Route::middleware('auth')->group(function () {
     // DISI-12 (fases siguientes): registrar jugadas
     Route::post('games/{game}/plays', [\App\Http\Controllers\PlayController::class, 'store'])->name('games.plays.store');
     Route::get('games/{game}/plays', [\App\Http\Controllers\PlayController::class, 'index'])->name('games.plays.index');
+    // DISI-12 Fase 2: endpoint del engine de pitcheo (ball, strike, foul, out)
+    Route::post('games/{game}/pitch', [\App\Http\Controllers\PlayController::class, 'pitch'])->name('games.plays.pitch');
 
     // DISI-10: Roster y sustituciones
     Route::get('games/{game}/roster', [RosterController::class, 'index'])->name('games.roster.index');
