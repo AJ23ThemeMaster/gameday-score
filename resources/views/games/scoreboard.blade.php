@@ -17,6 +17,8 @@
             'gameId' => $game->id,
             'pollUrl' => route('games.scoreboard.poll', $game),
             'pitchUrl' => route('games.plays.pitch', $game),
+            'endInningUrl' => route('games.plays.end-inning', $game),
+            'endGameUrl' => route('games.plays.end-game', $game),
             'homeName' => $game->homeTeam->name,
             'awayName' => $game->awayTeam->name,
             'homeShort' => $game->homeTeam->short_name ?? $game->homeTeam->name,
@@ -314,26 +316,30 @@
                         <button type="button" disabled
                                 class="py-3 bg-gray-100 text-gray-700 text-base font-bold rounded-lg opacity-60 cursor-not-allowed">
                             {{ __('Sustituir') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Disponible proximamente') }}</div>
                         </button>
-                        <button type="button" disabled
-                                class="py-3 bg-gray-100 text-gray-700 text-base font-bold rounded-lg opacity-60 cursor-not-allowed">
+                        <button type="button" @click="sendBalk()"
+                                :disabled="isPitching"
+                                class="py-3 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white text-base font-bold rounded-lg transition">
                             {{ __('Balk') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Corredores avanzan 1 base') }}</div>
                         </button>
-                        <button type="button" disabled
-                                class="py-3 bg-gray-100 text-gray-700 text-base font-bold rounded-lg opacity-60 cursor-not-allowed">
+                        <button type="button" @click="openBuntModal()"
+                                :disabled="isPitching"
+                                class="py-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-base font-bold rounded-lg transition">
                             {{ __('Toque de bolas') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Sacrifice o bunt single') }}</div>
                         </button>
-                        <button type="button" disabled
-                                class="py-3 bg-rose-50 text-rose-700 text-base font-bold rounded-lg border border-rose-200 opacity-60 cursor-not-allowed">
+                        <button type="button" @click="openEndInningModal()"
+                                :disabled="isPitching"
+                                class="py-3 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 text-base font-bold rounded-lg border border-rose-200 transition">
                             {{ __('Finalizar inning') }}
                         </button>
-                        <button type="button" disabled
-                                class="py-3 bg-rose-100 text-rose-800 text-base font-bold rounded-lg border border-rose-300 opacity-60 cursor-not-allowed">
+                        <button type="button" @click="openEndGameModal()"
+                                :disabled="isPitching"
+                                class="py-3 bg-rose-100 hover:bg-rose-200 disabled:opacity-50 text-rose-800 text-base font-bold rounded-lg border border-rose-300 transition">
                             {{ __('Finalizar juego') }}
                         </button>
-                        <p class="text-xs text-center text-gray-500 mt-2">
-                            {{ __('Disponible en la Fase 4') }}
-                        </p>
                     </div>
                 </div>
 
@@ -492,6 +498,131 @@
                             <button type="button" @click="confirmOut()" :disabled="defensiveSequence.length === 0"
                                     class="flex-1 py-3 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-bold rounded-xl">
                                 {{ __('Registrar out') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal: tipo de bunt (Fase 4) --}}
+            <div x-show="modal === 'bunt'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+                 @keydown.escape.window="closeModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                    <div class="bg-amber-500 text-white px-5 py-3 flex items-center justify-between">
+                        <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Toque de bolas') }}</h3>
+                        <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        <p class="text-sm text-gray-600">{{ __('Elige el resultado del toque:') }}</p>
+                        <button type="button" @click="sendBunt('sacrifice')"
+                                class="w-full py-4 bg-amber-50 hover:bg-amber-100 text-amber-700 text-lg font-bold rounded-xl border-2 border-amber-200 transition">
+                            {{ __('Toque de sacrificio') }}
+                            <div class="text-xs font-normal opacity-80 mt-1">{{ __('Bateador out, corredores avanzan') }}</div>
+                        </button>
+                        <button type="button" @click="sendBunt('bunt_single')"
+                                class="w-full py-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-lg font-bold rounded-xl border-2 border-emerald-200 transition">
+                            {{ __('Bunt single') }}
+                            <div class="text-xs font-normal opacity-80 mt-1">{{ __('Bateador a 1B, corredores avanzan') }}</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal: confirmar finalizar inning (Fase 4) --}}
+            <div x-show="modal === 'end-inning'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+                 @keydown.escape.window="closeModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                    <div class="bg-rose-100 text-rose-800 px-5 py-3 flex items-center justify-between">
+                        <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Finalizar inning') }}</h3>
+                        <button type="button" @click="closeModal()" class="text-rose-700/80 hover:text-rose-900 text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        <p class="text-sm text-gray-700">
+                            {{ __('Vas a cerrar el inning actual antes de los 3 outs. Esta accion no se puede deshacer.') }}
+                        </p>
+                        <div class="bg-gray-50 rounded-lg p-3 text-sm">
+                            <div class="text-xs text-gray-500 uppercase font-semibold mb-1">{{ __('Inning actual') }}</div>
+                            <div class="text-gray-800">
+                                <span data-inning-number>{{ $game->current_inning }}</span> -
+                                <span data-inning-half>{{ $game->inning_half === 'top' ? __('Top (visitante)') : __('Bottom (local)') }}</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" @click="closeModal()"
+                                    class="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl">
+                                {{ __('Cancelar') }}
+                            </button>
+                            <button type="button" @click="confirmEndInning()"
+                                    class="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl">
+                                {{ __('Finalizar inning') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal: resumen tras finalizar inning (Fase 4/5) --}}
+            <div x-show="modal === 'inning-summary'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+                 @keydown.escape.window="closeModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                    <div class="bg-emerald-500 text-white px-5 py-3 flex items-center justify-between">
+                        <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Inning finalizado') }}</h3>
+                        <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="p-5 space-y-3" x-show="inningSummary">
+                        <div class="bg-emerald-50 rounded-lg p-4 text-center">
+                            <div class="text-xs text-emerald-700 uppercase font-semibold">Inning <span x-text="inningSummary?.inning"></span> - <span x-text="inningSummary?.half === 'top' ? 'Top' : 'Bottom'"></span></div>
+                            <div class="text-4xl font-black text-emerald-800 my-1">
+                                <span x-text="inningSummary?.runs ?? 0"></span> <span class="text-base font-normal">carrera<span x-show="(inningSummary?.runs ?? 0) !== 1">s</span></span>
+                            </div>
+                            <div class="text-xs text-emerald-700">
+                                <span x-text="inningSummary?.hits ?? 0"></span> hits ·
+                                <span x-text="inningSummary?.walks ?? 0"></span> BB ·
+                                <span x-text="inningSummary?.strikeouts ?? 0"></span> K ·
+                                <span x-text="inningSummary?.errors ?? 0"></span> E
+                            </div>
+                        </div>
+                        <button type="button" @click="closeModal()"
+                                class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl">
+                            {{ __('Continuar') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal: confirmar finalizar juego (Fase 4) --}}
+            <div x-show="modal === 'end-game'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+                 @keydown.escape.window="closeModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                    <div class="bg-rose-700 text-white px-5 py-3 flex items-center justify-between">
+                        <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Finalizar juego') }}</h3>
+                        <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        <p class="text-sm text-gray-700">
+                            {{ __('Vas a finalizar el juego ahora. El juego se marcara como terminado y no se podran registrar mas jugadas.') }}
+                        </p>
+                        <div class="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{{ __('Score') }}:</span>
+                                <span class="font-black">
+                                    <span x-text="awayName"></span> <span data-score="away">{{ $game->away_score }}</span> -
+                                    <span data-score="home">{{ $game->home_score }}</span> <span x-text="homeName"></span>
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{{ __('Inning') }}:</span>
+                                <span class="font-bold"><span data-inning-number>{{ $game->current_inning }}</span> - <span data-inning-half>{{ $game->inning_half === 'top' ? 'Top' : 'Bottom' }}</span></span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" @click="closeModal()"
+                                    class="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl">
+                                {{ __('Cancelar') }}
+                            </button>
+                            <button type="button" @click="confirmEndGame()"
+                                    class="flex-1 py-3 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-xl">
+                                {{ __('Finalizar juego') }}
                             </button>
                         </div>
                     </div>

@@ -119,7 +119,7 @@ class PlayController extends Controller
         abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
 
         $validated = $request->validate([
-            'type' => ['required', 'in:ball,strike,foul,out,hit'],
+            'type' => ['required', 'in:ball,strike,foul,out,hit,balk,bunt'],
             'subtype' => ['nullable', 'string', 'max:30'],
             'defensive_sequence' => ['nullable', 'array', 'max:5'],
             'defensive_sequence.*' => ['string', 'max:10'],
@@ -130,15 +130,53 @@ class PlayController extends Controller
         return response()->json([
             'success' => true,
             'state' => $result['state'],
-            'walk' => $result['walk'],
-            'strikeout' => $result['strikeout'],
-            'end_half' => $result['end_half'],
+            'walk' => $result['walk'] ?? false,
+            'strikeout' => $result['strikeout'] ?? false,
+            'end_half' => $result['end_half'] ?? false,
             'plays' => collect($result['plays'])->map(fn ($p) => [
                 'id' => $p->id,
                 'type' => $p->type,
                 'subtype' => $p->subtype,
                 'result' => $p->result,
             ])->values(),
+        ]);
+    }
+
+    /**
+     * Finaliza la media entrada actual manualmente (cierre por el anotador
+     * antes de los 3 outs, shortened game, lluvia, etc.).
+     */
+    public function endInning(Request $request, Game $game, GameplayEngine $engine): JsonResponse
+    {
+        abort_unless($game->user_id === Auth::id(), 403);
+        abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
+
+        $result = $engine->endInning($game);
+        $summary = null;
+        if (isset($result['inning']) && isset($result['half']) && ($result['status'] ?? '') === 'inning_closed') {
+            $summary = $engine->inningSummary($game->fresh(), $result['inning'], $result['half']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'result' => $result,
+            'summary' => $summary,
+        ]);
+    }
+
+    /**
+     * Finaliza el juego manualmente (mercy rule, lluvia, etc.).
+     */
+    public function endGame(Request $request, Game $game, GameplayEngine $engine): JsonResponse
+    {
+        abort_unless($game->user_id === Auth::id(), 403);
+        abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
+
+        $result = $engine->endGame($game);
+
+        return response()->json([
+            'success' => true,
+            'result' => $result,
         ]);
     }
 }

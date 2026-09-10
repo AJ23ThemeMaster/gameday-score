@@ -180,9 +180,21 @@ class Play extends Model
         $balls = $resetsCount ? 0 : $last->balls;
         $strikes = $resetsCount ? 0 : $last->strikes;
 
+        // Si la ultima jugada es inning_end o game_end, leer el inning/half
+        // actualizado del modelo Game (la jugada queda con el half viejo por
+        // diseño, pero el Game ya tiene el siguiente half grabado por
+        // endInning/endGame).
+        $game = Game::find($gameId);
+        $inning = $last->inning;
+        $half = $last->half;
+        if ($game && in_array($last->type, [static::TYPE_INNING_END, static::TYPE_GAME_END], true)) {
+            $inning = $game->current_inning;
+            $half = $game->inning_half;
+        }
+
         return [
-            'inning' => $last->inning,
-            'half' => $last->half,
+            'inning' => $inning,
+            'half' => $half,
             'outs' => $last->outs_after,
             'balls' => $balls,
             'strikes' => $strikes,

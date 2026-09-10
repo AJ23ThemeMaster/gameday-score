@@ -190,6 +190,80 @@ class GameplayEngine
                     $strikes = 0;
                     break;
 
+                case 'balk':
+                    // Pitcheo ilegal del pitcher: TODOS los corredores avanzan 1 base.
+                    // Si hay alguien en 3B, anota. El bateador NO cambia.
+                    [$bases, $balkRuns] = $this->advanceRunnersForBalk($bases);
+                    $createdPlays[] = $this->recordPlay($game, [
+                        'inning' => $inning, 'half' => $half,
+                        'type' => Play::TYPE_BALK,
+                        'subtype' => null,
+                        'result' => $balkRuns > 0
+                            ? "Balk — corredores avanzan ({$balkRuns} carrera" . ($balkRuns !== 1 ? 's' : '') . ')'
+                            : 'Balk — corredores avanzan',
+                        'batter_id' => $batterId,
+                        'pitcher_id' => $pitcherId,
+                        'outs_before' => $outs, 'outs_after' => $outs,
+                        'balls' => $balls, 'strikes' => $strikes,
+                        'bases_before' => $state['bases'] ?? ['first' => null, 'second' => null, 'third' => null],
+                        'bases_after' => $bases,
+                        'runs_scored' => $balkRuns,
+                        'rbi' => 0,
+                    ]);
+                    break;
+
+                case 'bunt':
+                    // Toque de bolas (sacrifice bunt): el bateador hace OUT, los
+                    // corredores avanzan una base. Si subtype es 'bunt_single',
+                    // el bateador llega a 1B en vez de out.
+                    $buntSubtype = $event['subtype'] ?? Play::SUBTYPE_BUNT_SACRIFICE;
+                    $isBuntOut = $buntSubtype !== Play::SUBTYPE_BUNT_SINGLE;
+                    $runsScored = 0;
+                    $rbi = 0;
+                    [$bases, $runsScored] = $this->advanceRunnersForBunt($bases, $batterId, $isBuntOut);
+                    $rbi = $runsScored;
+                    if ($isBuntOut) {
+                        $createdPlays[] = $this->recordPlay($game, [
+                            'inning' => $inning, 'half' => $half,
+                            'type' => Play::TYPE_BUNT,
+                            'subtype' => $buntSubtype,
+                            'result' => 'Toque de sacrificio' . ($runsScored > 0 ? " ({$runsScored} carrera" . ($runsScored !== 1 ? 's' : '') . ')' : ''),
+                            'batter_id' => $batterId,
+                            'pitcher_id' => $pitcherId,
+                            'outs_before' => $outs, 'outs_after' => $outs + 1,
+                            'balls' => $balls, 'strikes' => $strikes,
+                            'bases_before' => $state['bases'] ?? ['first' => null, 'second' => null, 'third' => null],
+                            'bases_after' => $bases,
+                            'runs_scored' => $runsScored,
+                            'rbi' => $rbi,
+                        ]);
+                        $outs++;
+                        [$batterId, $bases, $half, $inning, $outs, $endHalf, $pitcherId] =
+                            $this->advanceBatter($game, $bases, $outs, $half, $inning, $batterId, $pitcherId);
+                        $balls = 0;
+                        $strikes = 0;
+                    } else {
+                        $createdPlays[] = $this->recordPlay($game, [
+                            'inning' => $inning, 'half' => $half,
+                            'type' => Play::TYPE_BUNT,
+                            'subtype' => $buntSubtype,
+                            'result' => 'Toque y alcanza 1B' . ($runsScored > 0 ? " ({$runsScored} carrera" . ($runsScored !== 1 ? 's' : '') . ')' : ''),
+                            'batter_id' => $batterId,
+                            'pitcher_id' => $pitcherId,
+                            'outs_before' => $outs, 'outs_after' => $outs,
+                            'balls' => $balls, 'strikes' => $strikes,
+                            'bases_before' => $state['bases'] ?? ['first' => null, 'second' => null, 'third' => null],
+                            'bases_after' => $bases,
+                            'runs_scored' => $runsScored,
+                            'rbi' => $rbi,
+                        ]);
+                        [$batterId, $bases, $half, $inning, $outs, $endHalf, $pitcherId] =
+                            $this->advanceBatter($game, $bases, $outs, $half, $inning, $batterId, $pitcherId);
+                        $balls = 0;
+                        $strikes = 0;
+                    }
+                    break;
+
                 default:
                     throw new \InvalidArgumentException("Tipo de pitcheo no soportado: {$event['type']}");
             }
@@ -408,6 +482,53 @@ class GameplayEngine
     }
 
     /**
+     * Balk: todos los corredores en base avanzan una base. Si hay alguien en
+     * 3B anota. Devuelve [bases_nuevas, runs_anotados].
+     */
+    public function advanceRunnersForBalk(array $bases): array
+    {
+        $runs = 0;
+        $newBases = ['first' => null, 'second' => null, 'third' => null];
+        // 3B -> Home (anota)
+        if (! empty($bases['third'])) {
+            $runs++;
+        } else {
+            $newBases['third'] = $bases['third'];
+        }
+        // 2B -> 3B
+        $newBases['third'] = $bases['second'] ?? $newBases['third'];
+        // 1B -> 2B
+        $newBases['second'] = $bases['first'] ?? null;
+        return [$newBases, $runs];
+    }
+
+    /**
+     * Bunt (toque de sacrificio): el bateador hace OUT, los corredores en base
+     * avanzan una base. Si $buntOut es false, el bateador llega a 1B.
+     * Devuelve [bases_nuevas, runs_anotados].
+     */
+    public function advanceRunnersForBunt(array $bases, ?int $batterId, bool $buntOut = true): array
+    {
+        $runs = 0;
+        $newBases = ['first' => null, 'second' => null, 'third' => null];
+        // 3B -> Home (anota)
+        if (! empty($bases['third'])) {
+            $runs++;
+        } else {
+            $newBases['third'] = $bases['third'];
+        }
+        // 2B -> 3B
+        $newBases['third'] = $bases['second'] ?? $newBases['third'];
+        // 1B -> 2B
+        $newBases['second'] = $bases['first'] ?? null;
+        // Bateador -> 1B (solo si NO es out)
+        if (! $buntOut) {
+            $newBases['first'] = $batterId;
+        }
+        return [$newBases, $runs];
+    }
+
+    /**
      * Devuelve el pitcher (is_pitcher=true) del team.
      */
     public function pitcherFor(Game $game, int $teamId): ?int
@@ -562,5 +683,161 @@ class GameplayEngine
             'recorded_by' => auth()->id(),
             'recorded_at' => now(),
         ]));
+    }
+
+    /**
+     * Finaliza la media entrada actual manualmente (util para el caso en
+     * que el anotador quiere cerrar el inning antes de los 3 outs, por
+     * ejemplo en juegos shortened o por lluvia).
+     */
+    public function endInning(Game $game): array
+    {
+        $state = Play::currentState($game->id);
+        $inning = $state['inning'];
+        $half = $state['half'];
+        $outs = $state['outs'];
+        $bases = $state['bases'];
+
+        // Si ya esta cerrado, no hace nada
+        $last = Play::where('game_id', $game->id)->orderByDesc('id')->first();
+        if ($last && in_array($last->type, [Play::TYPE_INNING_END, Play::TYPE_GAME_END], true)) {
+            return ['status' => 'already_closed'];
+        }
+
+        $pitcherId = Play::currentState($game->id)['current_pitcher_id'] ?? $this->pitcherFor($game, $half === 'top' ? $game->away_team_id : $game->home_team_id);
+
+        // Grabar jugada inning_end
+        $this->recordPlay($game, [
+            'inning' => $inning, 'half' => $half,
+            'type' => Play::TYPE_INNING_END,
+            'subtype' => 'manual',
+            'result' => 'Fin del inning ' . $inning . ' ' . $half . ' (manual)',
+            'batter_id' => null,
+            'pitcher_id' => $pitcherId,
+            'outs_before' => $outs, 'outs_after' => $outs,
+            'balls' => 0, 'strikes' => 0,
+            'bases_before' => $bases, 'bases_after' => ['first' => null, 'second' => null, 'third' => null],
+        ]);
+
+        // Determinar siguiente media entrada
+        if ($half === 'top') {
+            $newHalf = 'bottom';
+            $newInning = $inning;
+            $newPitcher = $this->pitcherFor($game, $game->home_team_id);
+            if ($inning === 1) {
+                $newBatter = $this->firstBatter($game, 'bottom');
+            } else {
+                $lastHomeBatter = $this->lastBatterForTeamInInning($game, $game->home_team_id, $inning - 1, 'bottom');
+                $newBatter = $this->nextBatterByTeam($game, $game->home_team_id, $lastHomeBatter, 'bottom');
+            }
+        } else {
+            $newHalf = 'top';
+            $newInning = $inning + 1;
+            $newPitcher = $this->pitcherFor($game, $game->away_team_id);
+            $lastAwayBatter = $this->lastBatterForTeamInInning($game, $game->away_team_id, $inning, 'top');
+            $newBatter = $this->nextBatterByTeam($game, $game->away_team_id, $lastAwayBatter, 'top');
+        }
+
+        // Si pasamos del total de innings, fin del juego
+        $totalInnings = $game->innings_count ?: 7;
+        if ($newInning > $totalInnings) {
+            $this->recordPlay($game, [
+                'inning' => $inning, 'half' => $half,
+                'type' => Play::TYPE_GAME_END,
+                'subtype' => 'final_inning',
+                'result' => 'Juego terminado (final del inning ' . $totalInnings . ')',
+                'batter_id' => null,
+                'pitcher_id' => $newPitcher,
+                'outs_before' => 0, 'outs_after' => 0,
+                'balls' => 0, 'strikes' => 0,
+                'bases_before' => ['first' => null, 'second' => null, 'third' => null],
+                'bases_after' => ['first' => null, 'second' => null, 'third' => null],
+            ]);
+            $game->update(['status' => 'finalized']);
+            return [
+                'status' => 'game_over',
+                'inning' => $inning,
+                'half' => $half,
+                'away_score' => $game->fresh()->away_score,
+                'home_score' => $game->fresh()->home_score,
+            ];
+        }
+
+        $game->update([
+            'current_inning' => $newInning,
+            'inning_half' => $newHalf,
+        ]);
+
+        return [
+            'status' => 'inning_closed',
+            'inning' => $newInning,
+            'half' => $newHalf,
+            'batter_id' => $newBatter,
+            'pitcher_id' => $newPitcher,
+        ];
+    }
+
+    /**
+     * Finaliza el juego manualmente (util cuando el anotador quiere cerrar
+     * antes del inning final, por ejemplo por mercy rule, lluvia, etc.).
+     */
+    public function endGame(Game $game): array
+    {
+        $state = Play::currentState($game->id);
+        $inning = $state['inning'];
+        $half = $state['half'];
+        $outs = $state['outs'];
+        $bases = $state['bases'];
+        $pitcherId = $state['current_pitcher_id'];
+
+        $this->recordPlay($game, [
+            'inning' => $inning, 'half' => $half,
+            'type' => Play::TYPE_GAME_END,
+            'subtype' => 'manual',
+            'result' => 'Juego terminado (manual)',
+            'batter_id' => null,
+            'pitcher_id' => $pitcherId,
+            'outs_before' => $outs, 'outs_after' => $outs,
+            'balls' => 0, 'strikes' => 0,
+            'bases_before' => $bases, 'bases_after' => $bases,
+        ]);
+        $game->update(['status' => 'finalized']);
+
+        $g = $game->fresh();
+        return [
+            'status' => 'game_over',
+            'inning' => $inning,
+            'half' => $half,
+            'away_score' => $g->away_score,
+            'home_score' => $g->home_score,
+        ];
+    }
+
+    /**
+     * Resumen del inning actual: carreras anotadas y jugadas del inning.
+     */
+    public function inningSummary(Game $game, int $inning, string $half): array
+    {
+        $plays = Play::where('game_id', $game->id)
+            ->where('inning', $inning)
+            ->where('half', $half)
+            ->orderBy('sequence')
+            ->get();
+        $runs = $plays->sum('runs_scored');
+        $hits = $plays->where('type', Play::TYPE_HIT)->count();
+        $errors = $plays->where('type', Play::TYPE_ERROR)->count();
+        $walks = $plays->where('type', Play::TYPE_WALK)->count();
+        $strikeouts = $plays->where('type', Play::TYPE_OUT)
+            ->where('subtype', Play::SUBTYPE_OUT_STRIKEOUT)->count();
+        return [
+            'inning' => $inning,
+            'half' => $half,
+            'plays' => $plays->count(),
+            'runs' => $runs,
+            'hits' => $hits,
+            'errors' => $errors,
+            'walks' => $walks,
+            'strikeouts' => $strikeouts,
+        ];
     }
 }

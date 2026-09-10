@@ -198,6 +198,8 @@ document.addEventListener('alpine:init', () => {
         gameId: config.gameId,
         pollUrl: config.pollUrl,
         pitchUrl: config.pitchUrl,
+        endInningUrl: config.endInningUrl,
+        endGameUrl: config.endGameUrl,
         homeName: config.homeName,
         awayName: config.awayName,
         csrf: config.csrf,
@@ -205,11 +207,12 @@ document.addEventListener('alpine:init', () => {
         pollStatus: 'Conectado',
         isPolling: false,
         isPitching: false,
-        modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | null
+        modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'inning-summary' | 'end-game' | null
         outSubtype: null,
         hitSubtype: null,
         hitConfig: { label: '', description: '', preview: '' },
         defensiveSequence: [],
+        inningSummary: null,
 
         start() {
             this.pollInterval = setInterval(() => this.poll(), 5000);
@@ -362,6 +365,67 @@ document.addEventListener('alpine:init', () => {
         },
 
         closeModal() { this.modal = null; this.outSubtype = null; this.hitSubtype = null; this.hitConfig = { label: '', description: '', preview: '' }; this.defensiveSequence = []; },
+
+        // ============= FASE 4: EXTRAS =============
+        // Balk: directo (no requiere modal de confirmacion)
+        sendBalk() { this.sendPitch({ type: 'balk' }); this.toast('Balk registrado', 'info'); },
+
+        // Bunt: abre modal con opciones sacrifice vs bunt_single
+        openBuntModal() { this.modal = 'bunt'; },
+        sendBunt(subtype) { this.sendPitch({ type: 'bunt', subtype }); this.closeModal(); this.toast('Toque registrado', 'info'); },
+
+        // Finalizar inning
+        openEndInningModal() { this.modal = 'end-inning'; },
+        async confirmEndInning() {
+            try {
+                const resp = await fetch(this.endInningUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json' },
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    this.closeModal();
+                    if (data.result?.status === 'game_over') {
+                        this.toast('Juego finalizado (inning completo)', 'warning');
+                    } else {
+                        this.toast('Inning finalizado', 'success');
+                    }
+                    this.inningSummary = data.summary || null;
+                    if (this.inningSummary) {
+                        this.modal = 'inning-summary';
+                    }
+                    // Re-render inmediato del state
+                    await this.pollNow();
+                } else {
+                    this.toast('Error al finalizar inning', 'error');
+                }
+            } catch (e) {
+                console.error('endInning error', e);
+                this.toast('Error de red al finalizar inning', 'error');
+            }
+        },
+
+        // Finalizar juego
+        openEndGameModal() { this.modal = 'end-game'; },
+        async confirmEndGame() {
+            try {
+                const resp = await fetch(this.endGameUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json' },
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    this.closeModal();
+                    this.toast('Juego finalizado: ' + data.result.away_score + '-' + data.result.home_score, 'warning');
+                    await this.pollNow();
+                } else {
+                    this.toast('Error al finalizar juego', 'error');
+                }
+            } catch (e) {
+                console.error('endGame error', e);
+                this.toast('Error de red al finalizar juego', 'error');
+            }
+        },
 
         toast(message, level = 'success') {
             window.dispatchEvent(new CustomEvent('toast', { detail: { message, level } }));
