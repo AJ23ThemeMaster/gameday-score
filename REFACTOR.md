@@ -69,7 +69,7 @@ gameday-score/
 | **DISI-9**  | UI del Scoreboard nueva (Blade + JS) conectado a la API de Games                           | ✅ Hecho |
 | **DISI-10** | Roster por juego: gestión de alineaciones y sustituciones en vivo (game_athlete pivot)     | ✅ Hecho |
 | **DISI-11** | Roster con AJAX: actualizar/agregar/quitar/sustituir sin recargar página + toasts          | ✅ Hecho |
-| **DISI-12** | Scoreboard con jugadas modernas (PITCHEo + BATEo) — Fases 1-3, plan 6 fases                | 🚧 En progreso (Fases 1, 2, 2.5, 2.6, 2.7 y 3 hechas) |
+| **DISI-12** | Scoreboard con jugadas modernas (PITCHEo + BATEo) — Fases 1-5 + BUG-12.a + MEJ-1..4       | ✅ Hecho (Fases 1, 2, 2.5, 3, 4, 4b, 5, BUG-12.a y MEJ-1..4) |
 
 ## 🔧 Convenciones del Proyecto
 
