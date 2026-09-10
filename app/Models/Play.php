@@ -190,6 +190,7 @@ class Play extends Model
             'current_batter_id' => $last->batter_id,
             'current_pitcher_id' => $last->pitcher_id,
             'last_play_id' => $last->id,
+            'last_play_type' => $last->type,
             'is_inning_over' => $last->type === static::TYPE_INNING_END,
             'is_game_over' => $last->type === static::TYPE_GAME_END,
         ];

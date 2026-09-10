@@ -305,7 +305,7 @@ class GameplayEngine
     /**
      * Devuelve el pitcher (is_pitcher=true) del team.
      */
-    private function pitcherFor(Game $game, int $teamId): ?int
+    public function pitcherFor(Game $game, int $teamId): ?int
     {
         $a = $game->athletes()
             ->wherePivot('team_id', $teamId)

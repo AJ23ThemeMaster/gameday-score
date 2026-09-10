@@ -91,10 +91,20 @@ class ScoreboardController extends Controller
     {
         $state = Play::currentState($game->id);
 
-        // Si el state no tiene bateador (juego nuevo sin plays), usa el primero
-        // del lineup del equipo al bate.
-        if (! $state['current_batter_id']) {
+        // Si la ultima jugada cerro el medio inning (inning_end) o el juego
+        // (game_end), hay que recalcular pitcher/bateador para el nuevo half,
+        // porque la jugada guardada pertenece al half anterior.
+        $recalculate = in_array($state['last_play_type'] ?? null, [
+            Play::TYPE_INNING_END,
+            Play::TYPE_GAME_END,
+        ], true) || $state['outs'] === 0;
+
+        if (! $state['current_batter_id'] || $recalculate) {
             $state['current_batter_id'] = $this->engine->firstBatter($game, $state['half']);
+        }
+        if ($recalculate) {
+            $defendingTeamId = $state['half'] === 'top' ? $game->home_team_id : $game->away_team_id;
+            $state['current_pitcher_id'] = $this->engine->pitcherFor($game, $defendingTeamId);
         }
 
         $pitcher = $state['current_pitcher_id'] ? Athlete::find($state['current_pitcher_id']) : null;
