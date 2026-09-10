@@ -1,9 +1,19 @@
-<div x-data="{ open: false, teamId: null, teamName: '', available: [], athleteId: '' }"
-     @open-add-modal.window="open = true; teamId = $event.detail.teamId; teamName = $event.detail.teamName; available = $event.detail.available; athleteId = ''"
-     x-show="open" x-cloak
-     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-     style="display: none;">
-    <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg mx-4" @click.outside="open = false">
+{{-- Patron Breeze: x-data inline, listener .window --}}
+<div
+    x-data="{
+        show: false,
+        teamId: null,
+        teamName: '',
+        available: [],
+        athleteId: '',
+    }"
+    x-on:open-add-modal.window="show = true; teamId = $event.detail.teamId; teamName = $event.detail.teamName; available = $event.detail.available; athleteId = ''"
+    x-on:close.stop="show = false"
+    x-on:keydown.escape.window="show = false"
+    x-show="show"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    style="display: none;">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg mx-4" @click.outside="show = false">
         <form method="POST" :action="`/games/{{ $game->id }}/roster/athletes`" class="p-6">
             @csrf
             <input type="hidden" name="team_id" :value="teamId">
@@ -16,7 +26,7 @@
 
             <div class="mb-3">
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Atleta') }}</label>
-                <select id="add-athlete-id" required
+                <select required
                         x-model="athleteId"
                         class="w-full border-gray-300 rounded-md text-sm"
                         :disabled="available.length === 0">
@@ -60,7 +70,7 @@
             </div>
 
             <div class="flex justify-end gap-2">
-                <button type="button" @click="open = false"
+                <button type="button" @click="show = false"
                         class="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">
                     {{ __('Cancelar') }}
                 </button>
