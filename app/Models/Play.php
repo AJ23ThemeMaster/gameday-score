@@ -144,6 +144,11 @@ class Play extends Model
     /**
      * Devuelve el estado actual del juego basado en la ultima jugada.
      * Reconstruye: inning, half, outs, bases, current_batter, current_pitcher, count.
+     *
+     * Importante: las jugadas guardan el count AL MOMENTO del evento.
+     * El state actual debe reflejar el count POST-jugada, que se resetea
+     * cuando la jugada cambia de bateador (walk, strikeout, out, hit,
+     * inning_end, game_end, etc.).
      */
     public static function currentState(int $gameId): array
     {
@@ -159,12 +164,28 @@ class Play extends Model
 
         $bases = $last->bases_after ?? ['first' => null, 'second' => null, 'third' => null];
 
+        // Determinar si el count se resetea (cambio de bateador).
+        $resetsCount = in_array($last->type, [
+            static::TYPE_WALK,
+            static::TYPE_HIT,
+            static::TYPE_HBP,
+            static::TYPE_ERROR,
+            static::TYPE_BUNT,
+            static::TYPE_BALK,
+            static::TYPE_OUT,
+            static::TYPE_INNING_END,
+            static::TYPE_GAME_END,
+        ], true);
+
+        $balls = $resetsCount ? 0 : $last->balls;
+        $strikes = $resetsCount ? 0 : $last->strikes;
+
         return [
             'inning' => $last->inning,
             'half' => $last->half,
             'outs' => $last->outs_after,
-            'balls' => $last->balls,
-            'strikes' => $last->strikes,
+            'balls' => $balls,
+            'strikes' => $strikes,
             'bases' => $bases,
             'current_batter_id' => $last->batter_id,
             'current_pitcher_id' => $last->pitcher_id,
