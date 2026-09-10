@@ -157,25 +157,10 @@
     </div>
 
     <script>
-    // Auto-refresh cada 5s via fetch al endpoint JSON
-    (function() {
-        const token = @json($game->public_token);
-        const url = '/juego/publico/' + token + '/state';
-        async function refresh() {
-            try {
-                const res = await fetch(url, { cache: 'no-store' });
-                if (!res.ok) return;
-                const data = await res.json();
-                document.getElementById('home-score-display') && (document.getElementById('home-score-display').textContent = data.home_score);
-                document.getElementById('away-score-display') && (document.getElementById('away-score-display').textContent = data.away_score);
-                const bases = data.bases || {};
-                const b1 = document.getElementById('base-1-display'); if (b1) b1.className = 'w-3 h-3 rounded-full ' + (bases.first ? 'bg-yellow-400' : 'bg-slate-600');
-                const b2 = document.getElementById('base-2-display'); if (b2) b2.className = 'w-3 h-3 rounded-full ' + (bases.second ? 'bg-yellow-400' : 'bg-slate-600');
-                const b3 = document.getElementById('base-3-display'); if (b3) b3.className = 'w-3 h-3 rounded-full ' + (bases.third ? 'bg-yellow-400' : 'bg-slate-600');
-            } catch (e) { /* ignore network errors */ }
-        }
-        setInterval(refresh, 5000);
-    })();
+        // Auto-refresh de la pagina cada 10 segundos para mantener el marcador actualizado.
+        // (Usamos location.reload en vez de fetch+textContent para evitar conflictos con
+        //  Alpine.js que carga el bundle de Breeze app.js.)
+        setTimeout(() => location.reload(), 10000);
     </script>
 
 </body>
