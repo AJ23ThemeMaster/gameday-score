@@ -108,6 +108,9 @@
                                     <span class="text-indigo-600">#{{ $pitcher->number ?? '?' }}</span>
                                     {{ $pitcher->full_name }}
                                 </div>
+                                <div class="text-[10px] text-gray-600 mt-0.5 truncate" data-pitcher-stats>
+                                    {{ $pitcherStats['pitches'] }} lanz. ({{ $pitcherStats['strikes'] }}S / {{ $pitcherStats['balls'] }}B) · K: {{ $pitcherStats['strikeouts'] }} · H: {{ $pitcherStats['hits'] }}
+                                </div>
                             @else
                                 <div class="text-sm text-gray-400 italic">{{ __('Sin lanzador') }}</div>
                             @endif
@@ -126,6 +129,9 @@
                                     <span class="text-amber-600">#{{ $batter->number ?? '?' }}</span>
                                     {{ $batter->full_name }}
                                 </div>
+                                <div class="text-[10px] text-gray-600 mt-0.5 truncate" data-batter-stats>
+                                    AB: {{ $batterStats['at_bats'] }} · H: {{ $batterStats['hits'] }} · AVG: {{ number_format($batterStats['avg'], 3, '.', '') }} · BB: {{ $batterStats['walks'] }} · K: {{ $batterStats['strikeouts'] }}
+                                </div>
                             @else
                                 <div class="text-sm text-gray-400 italic">{{ __('Sin bateador') }}</div>
                             @endif
@@ -134,15 +140,17 @@
                 </div>
 
                 {{-- On-deck (Prevenido) --}}
-                @if ($onDeck)
-                    <div class="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center gap-2" data-card="ondeck">
-                        <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">{{ __('Prevenido') }}</div>
-                        <div class="text-sm font-bold text-gray-700">
-                            <span class="text-gray-500">#{{ $onDeck['number'] ?? '?' }}</span>
-                            {{ $onDeck['name'] }}
-                        </div>
+                <div class="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center gap-2" data-card="ondeck">
+                    <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">{{ __('Prevenido') }}</div>
+                    <div class="text-sm font-bold text-gray-700" data-on-deck-name>
+                        @if ($onDeck)
+                            <span class="text-gray-500">#{{ $onDeck->number ?? '?' }}</span>
+                            {{ $onDeck->full_name }}
+                        @else
+                            <span class="text-gray-400 italic font-normal">{{ __('Sin prevenido') }}</span>
+                        @endif
                     </div>
-                @endif
+                </div>
 
                 {{-- Diamond: corredores en base --}}
                 {{-- Contenedor: cuadrado verde con bases, home y pitcher mound posicionados dentro. --}}

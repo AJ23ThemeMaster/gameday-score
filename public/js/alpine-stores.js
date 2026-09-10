@@ -326,6 +326,41 @@ document.addEventListener('alpine:init', () => {
             this.renderBase('first', s.bases?.first, data.runners?.first);
             this.renderBase('second', s.bases?.second, data.runners?.second);
             this.renderBase('third', s.bases?.third, data.runners?.third);
+
+            // Pitcher card
+            this.renderAthleteCard('[data-card="pitcher"]', data.pitcher, data.pitcher_stats, 'pitcher-stats', (s) =>
+                `${s.pitches} lanz. (${s.strikes}S / ${s.balls}B) · K: ${s.strikeouts} · H: ${s.hits}`);
+            // Batter card
+            this.renderAthleteCard('[data-card="batter"]', data.batter, data.batter_stats, 'batter-stats', (s) =>
+                `AB: ${s.at_bats} · H: ${s.hits} · AVG: ${s.avg.toFixed(3).replace(/^0+/, '')} · BB: ${s.walks} · K: ${s.strikeouts}`);
+            // On-deck
+            const onDeckEl = document.querySelector('[data-on-deck-name]');
+            if (onDeckEl) {
+                if (data.on_deck) {
+                    onDeckEl.innerHTML = `<span class="text-gray-500">#${data.on_deck.number ?? '?'}</span> ${data.on_deck.name}`;
+                } else {
+                    onDeckEl.innerHTML = '<span class="text-gray-400 italic font-normal">Sin prevenido</span>';
+                }
+            }
+        },
+
+        renderAthleteCard(selector, athlete, stats, statsAttr, formatStats) {
+            const card = document.querySelector(selector);
+            if (!card) return;
+            // El nombre del atleta (sin el sub-bloque de stats) esta en el primer .text-sm del card.
+            const nameEl = card.querySelector('.text-sm.font-bold');
+            if (nameEl) {
+                if (athlete) {
+                    const colorClass = selector.includes('pitcher') ? 'text-indigo-600' : 'text-amber-600';
+                    nameEl.innerHTML = `<span class="${colorClass}">#${athlete.number ?? '?'}</span> ${athlete.name}`;
+                } else {
+                    nameEl.innerHTML = '<span class="text-gray-400 italic font-normal">Sin lanzador</span>';
+                }
+            }
+            const statsEl = card.querySelector(`[data-${statsAttr}]`);
+            if (statsEl && stats) {
+                statsEl.textContent = formatStats(stats);
+            }
         },
 
         renderDots(selector, count, activeClass, inactiveClass, max) {

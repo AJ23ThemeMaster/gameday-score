@@ -268,7 +268,7 @@ class GameplayEngine
     /**
      * Devuelve el primer bateador del lineup para el half actual.
      */
-    private function firstBatter(Game $game, string $half): ?int
+    public function firstBatter(Game $game, string $half): ?int
     {
         $teamId = $half === 'top' ? $game->away_team_id : $game->home_team_id;
         $a = $game->athletes()
@@ -281,7 +281,7 @@ class GameplayEngine
     /**
      * Devuelve el siguiente bateador en el lineup (lineup_order+1, 1 si pasa de 9).
      */
-    private function nextBatter(Game $game, string $half, ?int $currentBatterId): ?int
+    public function nextBatter(Game $game, string $half, ?int $currentBatterId): ?int
     {
         $teamId = $half === 'top' ? $game->away_team_id : $game->home_team_id;
         if (! $currentBatterId) {

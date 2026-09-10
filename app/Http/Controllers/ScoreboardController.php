@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Athlete;
 use App\Models\Game;
 use App\Models\Play;
+use App\Services\GameplayEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ScoreboardController extends Controller
 {
+    public function __construct(private readonly GameplayEngine $engine)
+    {
+    }
+
     /**
      * Scoreboard principal (vista del anotador). Reemplaza al antiguo games.live
      * con un layout moderno: logos, scores, rombo con corredores, info del
@@ -28,40 +33,29 @@ class ScoreboardController extends Controller
             'homeTeam.athletes', 'awayTeam.athletes',
         ]);
 
-        $state = Play::currentState($game->id);
-        $score = Play::scoreboard($game->id);
-
-        $pitcher = $state['current_pitcher_id']
-            ? \App\Models\Athlete::find($state['current_pitcher_id'])
-            : null;
-        $batter = $state['current_batter_id']
-            ? \App\Models\Athlete::find($state['current_batter_id'])
-            : null;
-        $onDeck = $this->onDeck($game, $state);
-        $runners = $this->runners($state);
+        [$state, $pitcher, $batter, $onDeck, $pitcherStats, $batterStats] =
+            $this->buildSnapshot($game);
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'state' => $state,
-                'score' => $score,
-                'pitcher' => $pitcher ? [
-                    'id' => $pitcher->id,
-                    'name' => $pitcher->full_name,
-                    'number' => $pitcher->number,
-                ] : null,
-                'batter' => $batter ? [
-                    'id' => $batter->id,
-                    'name' => $batter->full_name,
-                    'number' => $batter->number,
-                ] : null,
-                'on_deck' => $onDeck,
-                'runners' => $runners,
+                'score' => Play::scoreboard($game->id),
+                'pitcher' => $pitcher ? $this->athleteToArray($pitcher) : null,
+                'pitcher_stats' => $pitcherStats,
+                'batter' => $batter ? $this->athleteToArray($batter) : null,
+                'batter_stats' => $batterStats,
+                'on_deck' => $onDeck ? $this->athleteToArray($onDeck) : null,
+                'runners' => $this->runners($state),
             ]);
         }
 
+        $score = Play::scoreboard($game->id);
+        $runners = $this->runners($state);
+
         return view('games.scoreboard', compact(
-            'game', 'state', 'score', 'pitcher', 'batter', 'onDeck', 'runners'
+            'game', 'state', 'score', 'pitcher', 'batter', 'onDeck', 'runners',
+            'pitcherStats', 'batterStats',
         ));
     }
 
@@ -73,33 +67,67 @@ class ScoreboardController extends Controller
     {
         abort_unless($game->user_id === Auth::id(), 403);
 
-        $state = Play::currentState($game->id);
-        $score = Play::scoreboard($game->id);
-
-        $pitcher = $state['current_pitcher_id']
-            ? \App\Models\Athlete::find($state['current_pitcher_id'])
-            : null;
-        $batter = $state['current_batter_id']
-            ? \App\Models\Athlete::find($state['current_batter_id'])
-            : null;
+        [$state, $pitcher, $batter, $onDeck, $pitcherStats, $batterStats] =
+            $this->buildSnapshot($game);
 
         return response()->json([
             'state' => $state,
-            'score' => $score,
-            'pitcher' => $pitcher ? [
-                'id' => $pitcher->id,
-                'name' => $pitcher->full_name,
-                'number' => $pitcher->number,
-                'team_id' => $pitcher->team?->id,
-            ] : null,
-            'batter' => $batter ? [
-                'id' => $batter->id,
-                'name' => $batter->full_name,
-                'number' => $batter->number,
-            ] : null,
+            'score' => Play::scoreboard($game->id),
+            'pitcher' => $pitcher ? $this->athleteToArray($pitcher) : null,
+            'pitcher_stats' => $pitcherStats,
+            'batter' => $batter ? $this->athleteToArray($batter) : null,
+            'batter_stats' => $batterStats,
+            'on_deck' => $onDeck ? $this->athleteToArray($onDeck) : null,
             'runners' => $this->runners($state),
-            'on_deck' => $this->onDeck($game, $state),
         ]);
+    }
+
+    /**
+     * Construye el snapshot completo: state + pitcher/batter + on-deck + stats.
+     *
+     * @return array{0: array, 1: ?Athlete, 2: ?Athlete, 3: ?Athlete, 4: array, 5: array}
+     */
+    private function buildSnapshot(Game $game): array
+    {
+        $state = Play::currentState($game->id);
+
+        // Si el state no tiene bateador (juego nuevo sin plays), usa el primero
+        // del lineup del equipo al bate.
+        if (! $state['current_batter_id']) {
+            $state['current_batter_id'] = $this->engine->firstBatter($game, $state['half']);
+        }
+
+        $pitcher = $state['current_pitcher_id'] ? Athlete::find($state['current_pitcher_id']) : null;
+        $batter = $state['current_batter_id'] ? Athlete::find($state['current_batter_id']) : null;
+
+        // On-deck: siguiente bateador del lineup (el engine respeta el wrap 9->1).
+        $onDeckId = $this->engine->nextBatter($game, $state['half'], $state['current_batter_id']);
+        $onDeck = $onDeckId ? Athlete::find($onDeckId) : null;
+
+        $pitcherStats = $pitcher ? Play::statsForPitcher($game->id, $pitcher->id) : $this->emptyPitcherStats();
+        $batterStats = $batter ? Play::statsForBatter($game->id, $batter->id) : $this->emptyBatterStats();
+
+        return [$state, $pitcher, $batter, $onDeck, $pitcherStats, $batterStats];
+    }
+
+    private function athleteToArray(Athlete $a): array
+    {
+        return [
+            'id' => $a->id,
+            'name' => $a->full_name,
+            'number' => $a->number,
+            'team_id' => $a->team?->id,
+        ];
+    }
+
+    private function emptyPitcherStats(): array
+    {
+        return ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0];
+    }
+
+    private function emptyBatterStats(): array
+    {
+        return ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0, 'avg' => 0.0];
     }
 
     /**
@@ -115,79 +143,12 @@ class ScoreboardController extends Controller
 
         $out = [];
         foreach ($ids as $base => $athleteId) {
-            $a = \App\Models\Athlete::find($athleteId);
+            $a = Athlete::find($athleteId);
             if ($a) {
-                $out[$base] = [
-                    'id' => $a->id,
-                    'name' => $a->full_name,
-                    'number' => $a->number,
-                ];
+                $out[$base] = $this->athleteToArray($a);
             }
         }
 
         return $out;
-    }
-
-    /**
-     * Devuelve el siguiente bateador (on-deck / prevenido).
-     * Es el siguiente atleta en el lineup del equipo al bate que NO ha bateado
-     * en este inning.
-     */
-    private function onDeck(Game $game, array $state): ?array
-    {
-        $battingTeamId = $state['half'] === 'top' ? $game->away_team_id : $game->home_team_id;
-
-        // Atletas del lineup del equipo al bate, ordenados por lineup_order
-        $lineup = DB::table('game_athlete')
-            ->where('game_id', $game->id)
-            ->where('team_id', $battingTeamId)
-            ->orderBy('lineup_order')
-            ->pluck('athlete_id')
-            ->toArray();
-
-        if (empty($lineup)) {
-            return null;
-        }
-
-        // Atleta que ya bateo en este inning
-        $battersThisInning = DB::table('plays')
-            ->where('game_id', $game->id)
-            ->where('inning', $state['inning'])
-            ->where('half', $state['half'])
-            ->whereIn('type', ['hit', 'out', 'walk', 'hbp', 'error', 'bunt'])
-            ->orderBy('sequence')
-            ->pluck('batter_id')
-            ->filter()
-            ->unique()
-            ->toArray();
-
-        $currentBatter = $state['current_batter_id'];
-
-        // Encuentra el siguiente en el orden
-        $next = null;
-        foreach ($lineup as $i => $aid) {
-            // Si el current es el siguiente, entonces on-deck es el subsiguiente
-            if ($currentBatter && $aid === $currentBatter) {
-                $next = $lineup[$i + 1] ?? $lineup[0];
-                break;
-            }
-            // Si este atleta NO ha bateado, es el on-deck
-            if (! in_array($aid, $battersThisInning, true) && $aid !== $currentBatter) {
-                $next = $aid;
-                break;
-            }
-        }
-
-        if (! $next) {
-            $next = $lineup[0];
-        }
-
-        $a = \App\Models\Athlete::find($next);
-
-        return $a ? [
-            'id' => $a->id,
-            'name' => $a->full_name,
-            'number' => $a->number,
-        ] : null;
     }
 }

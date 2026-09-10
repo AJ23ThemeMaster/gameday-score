@@ -256,4 +256,97 @@ class Play extends Model
             'by_inning' => $byInning,
         ];
     }
+
+    /**
+     * Estadisticas en vivo del pitcher durante un juego.
+     * Calcula: lanzamientos (pitches), strikes, balls, ponches (K),
+     * hits permitidos (H), boletos (BB).
+     */
+    public static function statsForPitcher(int $gameId, int $pitcherId): array
+    {
+        $plays = static::where('game_id', $gameId)
+            ->where('pitcher_id', $pitcherId)
+            ->get();
+
+        $pitches = 0;
+        $strikes = 0;
+        $balls = 0;
+        $strikeouts = 0;
+        $hits = 0;
+        $walks = 0;
+
+        foreach ($plays as $p) {
+            $type = $p->type;
+            $subtype = $p->subtype;
+
+            if ($type === static::TYPE_PITCH) {
+                $pitches++;
+                if ($subtype === 'ball') {
+                    $balls++;
+                } elseif (in_array($subtype, ['looking', 'swinging', 'foul_tip'], true)) {
+                    $strikes++;
+                }
+                // 'foul' (pitch) no incrementa ni balls ni strikes (cuenta como strike visual pero
+                // para el conteo de pitches/strikes lo dejamos en pitches solamente)
+            } elseif ($type === static::TYPE_OUT && $subtype === static::SUBTYPE_OUT_STRIKEOUT) {
+                $strikeouts++;
+            } elseif ($type === static::TYPE_HIT) {
+                $hits++;
+            } elseif ($type === static::TYPE_WALK) {
+                $walks++;
+            }
+        }
+
+        return [
+            'pitches' => $pitches,
+            'strikes' => $strikes,
+            'balls' => $balls,
+            'strikeouts' => $strikeouts,
+            'hits' => $hits,
+            'walks' => $walks,
+        ];
+    }
+
+    /**
+     * Estadisticas en vivo del bateador durante un juego.
+     * Calcula: turnos al bate (AB), hits (H), ponches (K), boletos (BB),
+     * promedio (AVG = H/AB).
+     */
+    public static function statsForBatter(int $gameId, int $batterId): array
+    {
+        $plays = static::where('game_id', $gameId)
+            ->where('batter_id', $batterId)
+            ->get();
+
+        $at_bats = 0;
+        $hits = 0;
+        $strikeouts = 0;
+        $walks = 0;
+
+        foreach ($plays as $p) {
+            $type = $p->type;
+            if ($type === static::TYPE_HIT) {
+                $at_bats++;
+                $hits++;
+            } elseif ($type === static::TYPE_OUT) {
+                $at_bats++;
+                if ($p->subtype === static::SUBTYPE_OUT_STRIKEOUT) {
+                    $strikeouts++;
+                }
+            } elseif ($type === static::TYPE_WALK) {
+                $walks++;
+                // Los walks no cuentan como AB.
+            }
+        }
+
+        $avg = $at_bats > 0 ? round($hits / $at_bats, 3) : 0.0;
+
+        return [
+            'at_bats' => $at_bats,
+            'hits' => $hits,
+            'strikeouts' => $strikeouts,
+            'walks' => $walks,
+            'avg' => $avg,
+        ];
+    }
 }
