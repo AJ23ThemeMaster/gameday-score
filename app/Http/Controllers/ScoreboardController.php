@@ -122,11 +122,16 @@ class ScoreboardController extends Controller
 
     private function athleteToArray(Athlete $a): array
     {
+        $firstInitial = mb_strtoupper(mb_substr($a->first_name ?? '', 0, 1));
+        $lastInitial = mb_strtoupper(mb_substr($a->last_name ?? '', 0, 1));
+
         return [
             'id' => $a->id,
             'name' => $a->full_name,
             'number' => $a->number,
             'team_id' => $a->team?->id,
+            'photo_url' => $a->photoUrl,
+            'initials' => $firstInitial . $lastInitial,
         ];
     }
 

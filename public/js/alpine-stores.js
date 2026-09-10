@@ -333,21 +333,13 @@ document.addEventListener('alpine:init', () => {
             // Batter card
             this.renderAthleteCard('[data-card="batter"]', data.batter, data.batter_stats, 'batter-stats', (s) =>
                 `AB: ${s.at_bats} · H: ${s.hits} · AVG: ${s.avg.toFixed(3).replace(/^0+/, '')} · BB: ${s.walks} · K: ${s.strikeouts}`);
-            // On-deck
-            const onDeckEl = document.querySelector('[data-on-deck-name]');
-            if (onDeckEl) {
-                if (data.on_deck) {
-                    onDeckEl.innerHTML = `<span class="text-gray-500">#${data.on_deck.number ?? '?'}</span> ${data.on_deck.name}`;
-                } else {
-                    onDeckEl.innerHTML = '<span class="text-gray-400 italic font-normal">Sin prevenido</span>';
-                }
-            }
+            // On-deck (prevenido): avatar + nombre
+            this.renderOnDeck(data.on_deck);
         },
 
         renderAthleteCard(selector, athlete, stats, statsAttr, formatStats) {
             const card = document.querySelector(selector);
             if (!card) return;
-            // El nombre del atleta (sin el sub-bloque de stats) esta en el primer .text-sm del card.
             const nameEl = card.querySelector('.text-sm.font-bold');
             if (nameEl) {
                 if (athlete) {
@@ -360,6 +352,33 @@ document.addEventListener('alpine:init', () => {
             const statsEl = card.querySelector(`[data-${statsAttr}]`);
             if (statsEl && stats) {
                 statsEl.textContent = formatStats(stats);
+            }
+            this.renderAthleteAvatar(card, athlete);
+        },
+
+        renderOnDeck(athlete) {
+            const card = document.querySelector('[data-card="ondeck"]');
+            if (!card) return;
+            const nameEl = card.querySelector('[data-on-deck-name]');
+            if (nameEl) {
+                if (athlete) {
+                    nameEl.innerHTML = `<span class="text-gray-500">#${athlete.number ?? '?'}</span> ${athlete.name}`;
+                } else {
+                    nameEl.innerHTML = '<span class="text-gray-400 italic font-normal">Sin prevenido</span>';
+                }
+            }
+            this.renderAthleteAvatar(card, athlete);
+        },
+
+        renderAthleteAvatar(scope, athlete) {
+            const avatar = scope.querySelector('[data-athlete-avatar]');
+            if (!avatar) return;
+            if (athlete && athlete.photo_url) {
+                avatar.innerHTML = `<img src="${athlete.photo_url}" class="w-full h-full object-cover" data-athlete-photo>`;
+            } else if (athlete && athlete.initials) {
+                avatar.innerHTML = `<span data-athlete-initials>${athlete.initials}</span>`;
+            } else {
+                avatar.innerHTML = '<span>?</span>';
             }
         },
 

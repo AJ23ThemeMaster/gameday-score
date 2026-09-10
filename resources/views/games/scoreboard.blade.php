@@ -98,8 +98,14 @@
                 <div class="grid grid-cols-2 gap-0 border-b-2 border-gray-100">
                     {{-- Pitcher --}}
                     <div class="p-3 flex items-center gap-3 border-r border-gray-100" data-card="pitcher">
-                        <div class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
-                            P
+                        <div class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-[11px] flex-shrink-0 overflow-hidden" data-athlete-avatar>
+                            @if ($pitcher && $pitcher->photoUrl)
+                                <img src="{{ $pitcher->photoUrl }}" class="w-full h-full object-cover" data-athlete-photo>
+                            @elseif ($pitcher)
+                                <span data-athlete-initials>{{ mb_strtoupper(mb_substr($pitcher->first_name ?? '', 0, 1)) }}{{ mb_strtoupper(mb_substr($pitcher->last_name ?? '', 0, 1)) }}</span>
+                            @else
+                                <span>?</span>
+                            @endif
                         </div>
                         <div class="min-w-0 flex-1">
                             <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">{{ __('Pitcheando') }}</div>
@@ -119,8 +125,14 @@
 
                     {{-- Batter --}}
                     <div class="p-3 flex items-center gap-3" data-card="batter">
-                        <div class="w-9 h-9 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
-                            AB
+                        <div class="w-9 h-9 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-[11px] flex-shrink-0 overflow-hidden" data-athlete-avatar>
+                            @if ($batter && $batter->photoUrl)
+                                <img src="{{ $batter->photoUrl }}" class="w-full h-full object-cover" data-athlete-photo>
+                            @elseif ($batter)
+                                <span data-athlete-initials>{{ mb_strtoupper(mb_substr($batter->first_name ?? '', 0, 1)) }}{{ mb_strtoupper(mb_substr($batter->last_name ?? '', 0, 1)) }}</span>
+                            @else
+                                <span>?</span>
+                            @endif
                         </div>
                         <div class="min-w-0 flex-1">
                             <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">{{ __('Al bate') }}</div>
@@ -141,6 +153,15 @@
 
                 {{-- On-deck (Prevenido) --}}
                 <div class="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center gap-2" data-card="ondeck">
+                    <div class="w-7 h-7 rounded-full bg-slate-500 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0 overflow-hidden" data-athlete-avatar>
+                        @if ($onDeck && $onDeck->photoUrl)
+                            <img src="{{ $onDeck->photoUrl }}" class="w-full h-full object-cover" data-athlete-photo>
+                        @elseif ($onDeck)
+                            <span data-athlete-initials>{{ mb_strtoupper(mb_substr($onDeck->first_name ?? '', 0, 1)) }}{{ mb_strtoupper(mb_substr($onDeck->last_name ?? '', 0, 1)) }}</span>
+                        @else
+                            <span>?</span>
+                        @endif
+                    </div>
                     <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">{{ __('Prevenido') }}</div>
                     <div class="text-sm font-bold text-gray-700" data-on-deck-name>
                         @if ($onDeck)
