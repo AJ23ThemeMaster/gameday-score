@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondsWithRosterPartial;
 use App\Http\Requests\AddAthleteToRosterRequest;
 use App\Http\Requests\SubstituteAthleteRequest;
 use App\Http\Requests\UpdateRosterEntryRequest;
 use App\Models\Athlete;
 use App\Models\Game;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,8 @@ use Illuminate\View\View;
 
 class RosterController extends Controller
 {
+    use RespondsWithRosterPartial;
+
     public function index(Game $game): View
     {
         abort_unless($game->user_id === Auth::id(), 403);
@@ -25,7 +29,6 @@ class RosterController extends Controller
             'homeTeam.athletes', 'awayTeam.athletes',
         ]);
 
-        // Atletas actualmente en el roster (game_athlete)
         $rosterEntries = $game->athletes()
             ->withPivot([
                 'team_id', 'lineup_order', 'position',
@@ -35,11 +38,9 @@ class RosterController extends Controller
             ->get()
             ->keyBy('id');
 
-        // Atletas disponibles por equipo (los del team que NO están en el roster)
         $homeAvailable = $game->homeTeam->athletes->whereNotIn('id', $rosterEntries->keys());
         $awayAvailable = $game->awayTeam->athletes->whereNotIn('id', $rosterEntries->keys());
 
-        // Lanzadores actuales
         $homePitcher = $rosterEntries->first(fn ($a) => $a->pivot->is_pitcher && $a->pivot->team_id === $game->home_team_id);
         $awayPitcher = $rosterEntries->first(fn ($a) => $a->pivot->is_pitcher && $a->pivot->team_id === $game->away_team_id);
 
@@ -48,7 +49,7 @@ class RosterController extends Controller
         ));
     }
 
-    public function store(AddAthleteToRosterRequest $request, Game $game): RedirectResponse
+    public function store(AddAthleteToRosterRequest $request, Game $game): RedirectResponse|JsonResponse
     {
         abort_unless($game->user_id === Auth::id(), 403);
 
@@ -57,16 +58,16 @@ class RosterController extends Controller
 
         // Si este atleta es pitcher, quitar el flag de cualquier otro pitcher del mismo equipo
         if ($request->boolean('is_pitcher')) {
-            $game->athletes()
+            $otherPitchers = $game->athletes()
                 ->wherePivot('team_id', $data['team_id'])
                 ->wherePivot('is_pitcher', true)
-                ->updateExistingPivot(
-                    $game->athletes()->wherePivot('team_id', $data['team_id'])->pluck('athletes.id')->toArray(),
-                    ['is_pitcher' => false]
-                );
+                ->pluck('athletes.id')
+                ->toArray();
+            if ($otherPitchers) {
+                $game->athletes()->updateExistingPivot($otherPitchers, ['is_pitcher' => false]);
+            }
         }
 
-        // syncWithoutDetaching para que si ya existe (edge case), solo actualice
         $game->athletes()->syncWithoutDetaching([
             $data['athlete_id'] => [
                 'team_id' => $data['team_id'],
@@ -79,20 +80,24 @@ class RosterController extends Controller
 
         $athlete = Athlete::find($data['athlete_id']);
 
-        return redirect()
-            ->route('games.roster.index', $game)
-            ->with('status', "«{$athlete->full_name}» agregado al roster.");
+        return $this->rosterResponse(
+            $request,
+            $game,
+            "«{$athlete->full_name}» agregado al roster.",
+        );
     }
 
-    public function update(UpdateRosterEntryRequest $request, Game $game, Athlete $athlete): RedirectResponse
+    public function update(UpdateRosterEntryRequest $request, Game $game, Athlete $athlete): RedirectResponse|JsonResponse
     {
         abort_unless($game->user_id === Auth::id(), 403);
 
         $pivot = $game->athletes()->where('athlete_id', $athlete->id)->first()?->pivot;
         if (! $pivot) {
-            return redirect()
-                ->route('games.roster.index', $game)
-                ->with('error', "«{$athlete->full_name}» no está en el roster.");
+            return $this->rosterResponse(
+                $request, $game,
+                "«{$athlete->full_name}» no está en el roster.",
+                'error',
+            );
         }
 
         $data = array_filter($request->validated(), fn ($v) => $v !== null);
@@ -112,30 +117,33 @@ class RosterController extends Controller
 
         $game->athletes()->updateExistingPivot($athlete->id, $data);
 
-        return redirect()
-            ->route('games.roster.index', $game)
-            ->with('status', "«{$athlete->full_name}» actualizado.");
+        return $this->rosterResponse(
+            $request,
+            $game,
+            "«{$athlete->full_name}» actualizado.",
+        );
     }
 
-    public function destroy(Game $game, Athlete $athlete): RedirectResponse
+    public function destroy(\Illuminate\Http\Request $request, Game $game, Athlete $athlete): RedirectResponse|JsonResponse
     {
         abort_unless($game->user_id === Auth::id(), 403);
 
         $name = $athlete->full_name;
         $game->athletes()->detach($athlete->id);
 
-        return redirect()
-            ->route('games.roster.index', $game)
-            ->with('status', "«{$name}» removido del roster.");
+        return $this->rosterResponse(
+            $request,
+            $game,
+            "«{$name}» removido del roster.",
+        );
     }
 
-    public function substitute(SubstituteAthleteRequest $request, Game $game): RedirectResponse
+    public function substitute(SubstituteAthleteRequest $request, Game $game): RedirectResponse|JsonResponse
     {
         abort_unless($game->user_id === Auth::id(), 403);
 
         $data = $request->validated();
 
-        // Transacción atómica: detach del viejo, attach del nuevo con mismas props
         DB::transaction(function () use ($game, $data, $request) {
             $outPivot = $game->athletes()
                 ->where('athlete_id', $data['out_athlete_id'])
@@ -145,7 +153,6 @@ class RosterController extends Controller
                 abort(422, 'El atleta que sale no está en el roster.');
             }
 
-            // Capturar las stats del atleta que sale (acumuladas hasta la sustitución)
             $stats = [
                 'pitches_thrown' => $outPivot->pitches_thrown,
                 'at_bats' => $outPivot->at_bats,
@@ -154,21 +161,18 @@ class RosterController extends Controller
                 'rbi' => $outPivot->rbi,
             ];
 
-            // Remover al viejo
             $game->athletes()->detach($data['out_athlete_id']);
 
-            // Adjuntar al nuevo con la misma posición / lineup / team
             $attachData = array_merge([
                 'team_id' => $outPivot->team_id,
                 'lineup_order' => $data['lineup_order'] ?? $outPivot->lineup_order,
                 'position' => $data['position'] ?? $outPivot->position,
-                'is_starter' => false, // entra como sustituto
+                'is_starter' => false,
                 'is_pitcher' => $request->boolean('is_pitcher', (bool) $outPivot->is_pitcher),
             ], $stats);
 
             $game->athletes()->attach($data['in_athlete_id'], $attachData);
 
-            // Si el nuevo es pitcher, desmarcar al pitcher actual del equipo
             if ($attachData['is_pitcher']) {
                 $otherPitchers = $game->athletes()
                     ->wherePivot('team_id', $outPivot->team_id)
@@ -185,8 +189,10 @@ class RosterController extends Controller
         $inName = Athlete::find($data['in_athlete_id'])->full_name;
         $outName = Athlete::find($data['out_athlete_id'])->full_name;
 
-        return redirect()
-            ->route('games.roster.index', $game)
-            ->with('status', "Sustitución: «{$inName}» entró por «{$outName}».");
+        return $this->rosterResponse(
+            $request,
+            $game,
+            "Sustitución: «{$inName}» entró por «{$outName}».",
+        );
     }
 }

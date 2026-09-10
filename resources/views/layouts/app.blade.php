@@ -11,6 +11,12 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        {{-- Alpine stores y data components: cargados ANTES del @vite para que
+             el listener de 'alpine:init' se registre antes de que Alpine.start()
+             se ejecute (que es lo que dispara el evento). Mientras el build de
+             Vite no se regenere (Node 22.11 vs Vite 8), esto es un bypass. --}}
+        <script src="{{ asset('js/alpine-stores.js') }}" defer></script>
+
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
@@ -32,5 +38,7 @@
                 {{ $slot }}
             </main>
         </div>
+        {{-- Toast stack global: recibe eventos 'toast' desde cualquier store --}}
+        <x-toast-stack />
     </body>
 </html>
