@@ -68,6 +68,7 @@ gameday-score/
 | **DISI-8**  | Marcar juego como público: ruta pública sin auth para ver avance en vivo                   | ✅ Hecho |
 | **DISI-9**  | UI del Scoreboard nueva (Blade + JS) conectado a la API de Games                           | ✅ Hecho |
 | **DISI-10** | Roster por juego: gestión de alineaciones y sustituciones en vivo (game_athlete pivot)     | ✅ Hecho |
+| **DISI-11** | Roster con AJAX: actualizar/agregar/quitar/sustituir sin recargar página + toasts          | ✅ Hecho |
 
 ## 🔧 Convenciones del Proyecto
 

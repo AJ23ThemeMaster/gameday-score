@@ -6,15 +6,18 @@
         teamName: '',
         available: [],
         athleteId: '',
+        submitting: false,
     }"
     x-on:open-add-modal.window="show = true; teamId = $event.detail.teamId; teamName = $event.detail.teamName; available = $event.detail.available; athleteId = ''"
+    x-on:close-add-modal.window="show = false; submitting = false"
     x-on:close.stop="show = false"
     x-on:keydown.escape.window="show = false"
     x-show="show"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
     style="display: none;">
     <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg mx-4" @click.outside="show = false">
-        <form method="POST" :action="`/games/{{ $game->id }}/roster/athletes`" class="p-6">
+        <form method="POST" :action="`/games/{{ $game->id }}/roster/athletes`" class="p-6"
+              @submit.prevent="submitting = true; $store.roaster.submitAddForm($event.target)">
             @csrf
             <input type="hidden" name="team_id" :value="teamId">
             <input type="hidden" name="athlete_id" :value="athleteId">
@@ -74,9 +77,10 @@
                         class="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">
                     {{ __('Cancelar') }}
                 </button>
-                <button type="submit"
-                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-md">
-                    {{ __('Agregar') }}
+                <button type="submit" :disabled="submitting || !athleteId"
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-md disabled:opacity-50">
+                    <span x-show="!submitting">{{ __('Agregar') }}</span>
+                    <span x-show="submitting">{{ __('Agregando...') }}</span>
                 </button>
             </div>
         </form>

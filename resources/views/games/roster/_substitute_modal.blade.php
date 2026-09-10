@@ -11,15 +11,18 @@
         lineupOrder: 0,
         position: '',
         isPitcher: false,
+        submitting: false,
     }"
     x-on:open-substitute-modal.window="show = true; outId = $event.detail.outAthleteId; outName = $event.detail.outAthleteName; inId = ''; teamId = $event.detail.teamId; teamName = $event.detail.teamName; available = $event.detail.available; lineupOrder = $event.detail.currentLineupOrder || 0; position = $event.detail.currentPosition || ''; isPitcher = !!$event.detail.isPitcher"
+    x-on:close-substitute-modal.window="show = false; submitting = false"
     x-on:close.stop="show = false"
     x-on:keydown.escape.window="show = false"
     x-show="show"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
     style="display: none;">
     <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg mx-4" @click.outside="show = false">
-        <form method="POST" action="{{ route('games.roster.substitute', $game) }}" class="p-6">
+        <form method="POST" action="{{ route('games.roster.substitute', $game) }}" class="p-6"
+              @submit.prevent="submitting = true; $store.roaster.submitSubstituteForm($event.target)">
             @csrf
             <input type="hidden" name="out_athlete_id" :value="outId">
             <input type="hidden" name="in_athlete_id" :value="inId">
@@ -65,9 +68,10 @@
                         class="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">
                     {{ __('Cancelar') }}
                 </button>
-                <button type="submit"
-                        class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-md">
-                    {{ __('Confirmar sustitución') }}
+                <button type="submit" :disabled="submitting || !inId"
+                        class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-md disabled:opacity-50">
+                    <span x-show="!submitting">{{ __('Confirmar sustitución') }}</span>
+                    <span x-show="submitting">{{ __('Procesando...') }}</span>
                 </button>
             </div>
         </form>
