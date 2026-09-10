@@ -161,6 +161,35 @@ class GameplayEngine
                     $strikes = 0;
                     break;
 
+                case 'hit':
+                    $hitSubtype = $event['subtype'] ?? Play::SUBTYPE_HIT_SINGLE;
+                    $runsScored = 0;
+                    $rbi = 0;
+                    [$bases, $runsScored, $rbi] = $this->advanceRunnersForHit(
+                        $bases, $batterId, $hitSubtype
+                    );
+                    $hitDescription = $this->describeHit($hitSubtype, $runsScored);
+                    $createdPlays[] = $this->recordPlay($game, [
+                        'inning' => $inning, 'half' => $half,
+                        'type' => Play::TYPE_HIT,
+                        'subtype' => $hitSubtype,
+                        'result' => $hitDescription,
+                        'batter_id' => $batterId,
+                        'pitcher_id' => $pitcherId,
+                        'outs_before' => $outs, 'outs_after' => $outs,
+                        'balls' => $balls, 'strikes' => $strikes,
+                        'bases_before' => $state['bases'] ?? ['first' => null, 'second' => null, 'third' => null],
+                        'bases_after' => $bases,
+                        'runs_scored' => $runsScored,
+                        'rbi' => $rbi,
+                    ]);
+                    // El bateador SIEMPRE cambia despues de un hit.
+                    [$batterId, $bases, $half, $inning, $outs, $endHalf, $pitcherId] =
+                        $this->advanceBatter($game, $bases, $outs, $half, $inning, $batterId, $pitcherId);
+                    $balls = 0;
+                    $strikes = 0;
+                    break;
+
                 default:
                     throw new \InvalidArgumentException("Tipo de pitcheo no soportado: {$event['type']}");
             }
@@ -185,12 +214,13 @@ class GameplayEngine
             // quien esta al bate. Sin esto, currentState() leeria la jugada
             // walk/strikeout/out (cuyo batter_id es el bateador que SALIO) y
             // devolveria el bateador equivocado.
-            $hadBatterChange = in_array($event['type'], ['ball', 'strike', 'out'], true)
+            $hadBatterChange = in_array($event['type'], ['ball', 'strike', 'out', 'hit'], true)
                 && ! $endHalf
                 && $batterId !== null
                 && (($event['type'] === 'ball' && $isWalk)
                     || ($event['type'] === 'strike' && $isStrikeout)
-                    || $event['type'] === 'out');
+                    || $event['type'] === 'out'
+                    || $event['type'] === 'hit');
             if ($hadBatterChange) {
                 $createdPlays[] = $this->recordPlay($game, [
                     'inning' => $inning, 'half' => $half,
@@ -357,6 +387,95 @@ class GameplayEngine
         // Pero guardamos el 3B -> home.
         // Para preservar el orden, no usamos el valor viejo de third como first.
         return $new;
+    }
+
+    /**
+     * Avanza los corredores en base segun el tipo de hit.
+     * Reglas (Fase 3 - simples):
+     *  - single:  bateador a 1B, corredores avanzan 1 base (3B anota).
+     *  - double:  bateador a 2B, corredores avanzan 2 bases (2B y 3B anotan).
+     *  - triple:  bateador a 3B, corredores avanzan 3 bases (todos anotan).
+     *  - hr:      bateador anota, todos los corredores anotan.
+     *  - inside_park (HR de pierna): bateador anota (1 carrera).
+     *
+     * @return array{0: array, 1: int, 2: int} bases finales, runs scored, rbi
+     */
+    private function advanceRunnersForHit(array $bases, ?int $batterId, string $hitSubtype): array
+    {
+        $runs = 0;
+        $rbi = 0;
+        $newBases = ['first' => null, 'second' => null, 'third' => null];
+        $r2 = $bases['second'];
+        $r3 = $bases['third'];
+
+        switch ($hitSubtype) {
+            case Play::SUBTYPE_HIT_SINGLE:
+                // 3B anota, 2B->3B, 1B->2B, bateador->1B.
+                if ($r3) { $runs++; $rbi++; }
+                $newBases['third'] = $r2;
+                $newBases['second'] = $bases['first'];
+                $newBases['first'] = $batterId;
+                break;
+
+            case Play::SUBTYPE_HIT_DOUBLE:
+                // 3B anota, 2B anota, 1B->3B, bateador->2B.
+                if ($r3) { $runs++; $rbi++; }
+                if ($r2) { $runs++; $rbi++; }
+                $newBases['third'] = $bases['first'];
+                $newBases['second'] = $batterId;
+                // 1B se mantiene vacia (los corredores ya anotaron o se movieron).
+                break;
+
+            case Play::SUBTYPE_HIT_TRIPLE:
+                // Todos los corredores anotan, bateador->3B.
+                if ($r3) { $runs++; $rbi++; }
+                if ($r2) { $runs++; $rbi++; }
+                if ($bases['first']) { $runs++; $rbi++; }
+                $newBases['third'] = $batterId;
+                break;
+
+            case Play::SUBTYPE_HIT_HR:
+                // Todos los corredores + bateador anotan.
+                if ($bases['first']) { $runs++; $rbi++; }
+                if ($r2) { $runs++; $rbi++; }
+                if ($r3) { $runs++; $rbi++; }
+                $runs++; // Bateador anota.
+                $rbi++; // RBI del bateador.
+                // Bases vacias.
+                break;
+
+            case Play::SUBTYPE_HIT_INSIDE_PARK:
+                // HR de pierna: solo el bateador anota (1 carrera).
+                $runs++;
+                $rbi++;
+                break;
+
+            default:
+                // Hit desconocido: tratar como single.
+                if ($r3) { $runs++; $rbi++; }
+                $newBases['third'] = $r2;
+                $newBases['second'] = $bases['first'];
+                $newBases['first'] = $batterId;
+                break;
+        }
+
+        return [$newBases, $runs, $rbi];
+    }
+
+    private function describeHit(string $subtype, int $runs): string
+    {
+        $names = [
+            Play::SUBTYPE_HIT_SINGLE => 'Sencillo',
+            Play::SUBTYPE_HIT_DOUBLE => 'Doble',
+            Play::SUBTYPE_HIT_TRIPLE => 'Triple',
+            Play::SUBTYPE_HIT_HR => 'Home Run',
+            Play::SUBTYPE_HIT_INSIDE_PARK => 'Home Run de pierna',
+        ];
+        $name = $names[$subtype] ?? 'Hit';
+        if ($runs > 0) {
+            return $name . ' (+' . $runs . ' carrera' . ($runs > 1 ? 's' : '') . ')';
+        }
+        return $name;
     }
 
     private function basesWithout(array $bases, string $key): array

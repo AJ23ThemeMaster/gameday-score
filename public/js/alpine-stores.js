@@ -205,8 +205,10 @@ document.addEventListener('alpine:init', () => {
         pollStatus: 'Conectado',
         isPolling: false,
         isPitching: false,
-        modal: null, // 'strike' | 'out-step1' | 'out-step2' | null
+        modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | null
         outSubtype: null,
+        hitSubtype: null,
+        hitConfig: { label: '', description: '', preview: '' },
         defensiveSequence: [],
 
         start() {
@@ -291,6 +293,7 @@ document.addEventListener('alpine:init', () => {
             this.sendPitch({ type: 'out', subtype, defensive_sequence: defensiveSequence });
             this.closeModal();
         },
+        sendHit(subtype) { this.sendPitch({ type: 'hit', subtype }); this.closeModal(); },
 
         openStrikeModal() { this.modal = 'strike'; },
         openOutStep1() { this.modal = 'out-step1'; },
@@ -298,7 +301,67 @@ document.addEventListener('alpine:init', () => {
         confirmOut() { this.sendOut(this.outSubtype, this.defensiveSequence); },
         addFielder(pos) { this.defensiveSequence.push(pos); },
         removeFielder(i) { this.defensiveSequence.splice(i, 1); },
-        closeModal() { this.modal = null; this.outSubtype = null; this.defensiveSequence = []; },
+
+        // Hit modal
+        openHitModal(subtype) {
+            this.hitSubtype = subtype;
+            this.hitConfig = this.hitPreview(subtype);
+            this.modal = 'hit';
+        },
+        confirmHit() { this.sendHit(this.hitSubtype); },
+        hitPreview(subtype) {
+            const bases = this.lastBases || { first: null, second: null, third: null };
+            const onFirst = !!bases.first;
+            const onSecond = !!bases.second;
+            const onThird = !!bases.third;
+            const runnersCount = (onFirst ? 1 : 0) + (onSecond ? 1 : 0) + (onThird ? 1 : 0);
+            const configs = {
+                single: {
+                    label: 'Sencillo',
+                    description: 'El bateador llega a 1B y los corredores avanzan una base.',
+                    runs: onThird ? 1 : 0,
+                    batterTo: '1B',
+                    runners: onFirst ? '1B→2B' : (onSecond ? '2B→3B' : null),
+                },
+                double: {
+                    label: 'Doble',
+                    description: 'El bateador llega a 2B y los corredores avanzan dos bases.',
+                    runs: (onThird ? 1 : 0) + (onSecond ? 1 : 0),
+                    batterTo: '2B',
+                    runners: onFirst ? '1B→3B' : null,
+                },
+                triple: {
+                    label: 'Triple',
+                    description: 'El bateador llega a 3B y todos los corredores anotan carrera.',
+                    runs: runnersCount,
+                    batterTo: '3B',
+                    runners: null,
+                },
+                hr: {
+                    label: 'Home Run',
+                    description: 'El bateador y todos los corredores en base anotan carrera.',
+                    runs: runnersCount + 1,
+                    batterTo: 'Home',
+                    runners: 'Todos anotan',
+                },
+                inside_park: {
+                    label: 'Home Run de pierna',
+                    description: 'El bateador anota una carrera sin que la pelota salga del parque.',
+                    runs: 1,
+                    batterTo: 'Home',
+                    runners: null,
+                },
+            };
+            const c = configs[subtype] || { label: 'Hit', description: '', runs: 0, batterTo: '?', runners: null };
+            const preview = [
+                `<div><b>Bateador:</b> ${c.batterTo}</div>`,
+                c.runners ? `<div><b>Corredores:</b> ${c.runners}</div>` : null,
+                `<div><b>Carreras estimadas:</b> <span class="font-black text-emerald-700">${c.runs}</span></div>`,
+            ].filter(Boolean).join('');
+            return { label: c.label, description: c.description, preview };
+        },
+
+        closeModal() { this.modal = null; this.outSubtype = null; this.hitSubtype = null; this.hitConfig = { label: '', description: '', preview: '' }; this.defensiveSequence = []; },
 
         toast(message, level = 'success') {
             window.dispatchEvent(new CustomEvent('toast', { detail: { message, level } }));
@@ -326,6 +389,10 @@ document.addEventListener('alpine:init', () => {
             this.renderBase('first', s.bases?.first, data.runners?.first);
             this.renderBase('second', s.bases?.second, data.runners?.second);
             this.renderBase('third', s.bases?.third, data.runners?.third);
+
+            // Cachear las bases actuales para que el modal de hit muestre el
+            // preview correcto.
+            this.lastBases = s.bases || { first: null, second: null, third: null };
 
             // Pitcher card
             this.renderAthleteCard('[data-card="pitcher"]', data.pitcher, data.pitcher_stats, 'pitcher-stats', (s) =>

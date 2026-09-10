@@ -276,31 +276,37 @@
                         </button>
                     </div>
 
-                    {{-- Tab content: BATEo (Fase 3) --}}
+                    {{-- Tab content: BATEo (Fase 3 — hits) --}}
                     <div x-show="tab === 'hit'" x-cloak class="grid grid-cols-2 gap-3 p-4">
-                        <button type="button" disabled
-                                class="py-8 bg-sky-500 text-white text-xl font-black rounded-2xl opacity-60 cursor-not-allowed">
+                        <button type="button" @click="openHitModal('single')"
+                                :disabled="isPitching"
+                                class="py-6 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-lg font-black rounded-2xl transition">
                             {{ __('Sencillo') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-1">1B</div>
                         </button>
-                        <button type="button" disabled
-                                class="py-8 bg-indigo-500 text-white text-xl font-black rounded-2xl opacity-60 cursor-not-allowed">
+                        <button type="button" @click="openHitModal('double')"
+                                :disabled="isPitching"
+                                class="py-6 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-lg font-black rounded-2xl transition">
                             {{ __('Doble') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-1">2B</div>
                         </button>
-                        <button type="button" disabled
-                                class="py-8 bg-violet-500 text-white text-xl font-black rounded-2xl opacity-60 cursor-not-allowed">
+                        <button type="button" @click="openHitModal('triple')"
+                                :disabled="isPitching"
+                                class="py-6 bg-violet-500 hover:bg-violet-600 disabled:opacity-50 text-white text-lg font-black rounded-2xl transition">
                             {{ __('Triple') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-1">3B</div>
                         </button>
-                        <button type="button" disabled
-                                class="py-8 bg-rose-600 text-white text-xl font-black rounded-2xl opacity-60 cursor-not-allowed">
+                        <button type="button" @click="openHitModal('hr')"
+                                :disabled="isPitching"
+                                class="py-6 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-lg font-black rounded-2xl transition">
                             {{ __('HR') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-1">Home Run</div>
                         </button>
-                        <button type="button" disabled
-                                class="col-span-2 py-6 bg-fuchsia-600 text-white text-lg font-black rounded-2xl opacity-60 cursor-not-allowed">
+                        <button type="button" @click="openHitModal('inside_park')"
+                                :disabled="isPitching"
+                                class="col-span-2 py-5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-lg font-black rounded-2xl transition">
                             {{ __('HR de pierna') }}
                         </button>
-                        <p class="col-span-2 text-xs text-center text-gray-500 mt-2">
-                            {{ __('Disponible en la Fase 3') }}
-                        </p>
                     </div>
 
                     {{-- Tab content: EXTRAS (Fase 4) --}}
@@ -390,6 +396,38 @@
                                 class="w-full py-4 bg-slate-50 hover:bg-slate-100 text-slate-700 text-lg font-bold rounded-xl border-2 border-slate-200 transition">
                             {{ __('De reglamento') }}
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal: confirmacion de hit (BATEo Fase 3) --}}
+            <div x-show="modal === 'hit'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+                 @keydown.escape.window="closeModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                    <div class="bg-emerald-500 text-white px-5 py-3 flex items-center justify-between">
+                        <h3 class="text-lg font-black uppercase tracking-wider">
+                            <span x-text="hitConfig.label"></span>
+                        </h3>
+                        <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <p class="text-sm text-gray-600">
+                            <span x-text="hitConfig.description"></span>
+                        </p>
+                        <div class="bg-gray-50 rounded-lg p-3 text-sm">
+                            <div class="text-xs text-gray-500 uppercase font-semibold mb-1">{{ __('Resultado esperado') }}</div>
+                            <div class="text-gray-800" x-html="hitConfig.preview"></div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" @click="closeModal()"
+                                    class="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl">
+                                {{ __('Cancelar') }}
+                            </button>
+                            <button type="button" @click="confirmHit()"
+                                    class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl">
+                                {{ __('Registrar hit') }}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

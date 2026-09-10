@@ -119,7 +119,7 @@ class PlayController extends Controller
         abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
 
         $validated = $request->validate([
-            'type' => ['required', 'in:ball,strike,foul,out'],
+            'type' => ['required', 'in:ball,strike,foul,out,hit'],
             'subtype' => ['nullable', 'string', 'max:30'],
             'defensive_sequence' => ['nullable', 'array', 'max:5'],
             'defensive_sequence.*' => ['string', 'max:10'],
