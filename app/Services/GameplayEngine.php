@@ -178,6 +178,33 @@ class GameplayEngine
                 ]);
             }
 
+            // IMPORTANTE: cuando hubo cambio de bateador (walk, strikeout, out)
+            // pero el medio inning continua, registramos una jugada adicional
+            // de tipo 'at_bat_start' con el NUEVO bateador y count 0-0.
+            // Asi, el siguiente currentState() leera esta jugada y sabra
+            // quien esta al bate. Sin esto, currentState() leeria la jugada
+            // walk/strikeout/out (cuyo batter_id es el bateador que SALIO) y
+            // devolveria el bateador equivocado.
+            $hadBatterChange = in_array($event['type'], ['ball', 'strike', 'out'], true)
+                && ! $endHalf
+                && $batterId !== null
+                && (($event['type'] === 'ball' && $isWalk)
+                    || ($event['type'] === 'strike' && $isStrikeout)
+                    || $event['type'] === 'out');
+            if ($hadBatterChange) {
+                $createdPlays[] = $this->recordPlay($game, [
+                    'inning' => $inning, 'half' => $half,
+                    'type' => Play::TYPE_PITCH,
+                    'subtype' => 'at_bat_start',
+                    'result' => 'Nuevo bateador al bate',
+                    'batter_id' => $batterId,
+                    'pitcher_id' => $pitcherId,
+                    'outs_before' => $outs, 'outs_after' => $outs,
+                    'balls' => 0, 'strikes' => 0,
+                    'bases_before' => $bases, 'bases_after' => $bases,
+                ]);
+            }
+
             // State computado: refleja el estado DESPUES de aplicar el evento
             // (con reset de count, avance de bateador, etc.).
             $newState = [

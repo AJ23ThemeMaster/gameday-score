@@ -281,6 +281,12 @@ class Play extends Model
             $subtype = $p->subtype;
 
             if ($type === static::TYPE_PITCH) {
+                // 'at_bat_start' marca el inicio del turno de un bateador
+                // (despues de walk, strikeout, out). NO es un lanzamiento real
+                // y no debe contar en el contador de pitches.
+                if ($subtype === 'at_bat_start') {
+                    continue;
+                }
                 $pitches++;
                 if ($subtype === 'ball') {
                     $balls++;
