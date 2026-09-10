@@ -11,7 +11,7 @@
         </div>
     </x-slot>
 
-    <div class="py-8">
+    <div class="py-8" x-data="{}">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             @include('partials._flash')
@@ -58,7 +58,7 @@
                                 <span class="text-xs text-gray-500">({{ $side['label'] }})</span>
                             </div>
                             <button type="button"
-                                    @click="$dispatch('open-add-modal', { teamId: {{ $side['teamId'] }}, teamName: @js($side['team']->name), available: @js($side['available']->map(fn($a) => ['id' => $a->id, 'name' => $a->full_name, 'number' => $a->number, 'position' => $a->position])->values()) })"
+                                    @click="$dispatch('open-add-modal', { teamId: {{ $side['teamId'] }}, teamName: @js($side['team']->name), available: {{ $side['available']->map(fn($a) => ['id' => $a->id, 'name' => $a->full_name, 'number' => $a->number, 'position' => $a->position])->values()->toJson() }} })"
                                     class="inline-flex items-center px-3 py-1.5 bg-{{ $side['color'] }}-600 hover:bg-{{ $side['color'] }}-700 text-white text-xs font-semibold rounded-md">
                                 + {{ __('Agregar atleta') }}
                             </button>
@@ -134,7 +134,7 @@
                                             </td>
                                             <td class="px-3 py-2 text-right">
                                                 <button type="button"
-                                                        @click="$dispatch('open-substitute-modal', { outAthleteId: {{ $a->id }}, outAthleteName: @js($a->full_name), teamId: {{ $a->pivot->team_id }}, teamName: @js($side['team']->name), available: @js($side['available']->map(fn($x) => ['id' => $x->id, 'name' => $x->full_name, 'number' => $x->number, 'position' => $x->position])->values()), currentLineupOrder: {{ $a->pivot->lineup_order ?? 0 }}, currentPosition: @js($a->pivot->position), isPitcher: {{ $a->pivot->is_pitcher ? 'true' : 'false' }} })"
+                                                        @click="$dispatch('open-substitute-modal', { outAthleteId: {{ $a->id }}, outAthleteName: @js($a->full_name), teamId: {{ $a->pivot->team_id }}, teamName: @js($side['team']->name), available: {{ $side['available']->map(fn($x) => ['id' => $x->id, 'name' => $x->full_name, 'number' => $x->number, 'position' => $x->position])->values()->toJson() }}, currentLineupOrder: {{ $a->pivot->lineup_order ?? 0 }}, currentPosition: @js($a->pivot->position), isPitcher: {{ $a->pivot->is_pitcher ? 'true' : 'false' }} })"
                                                         class="text-xs text-indigo-600 hover:text-indigo-900 mr-2">
                                                     {{ __('Sustituir') }}
                                                 </button>
