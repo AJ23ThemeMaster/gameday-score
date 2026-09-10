@@ -127,12 +127,32 @@ class PlayController extends Controller
 
         $result = $engine->processPitch($game, $validated);
 
+        $summary = null;
+        if ($result['end_half'] ?? false) {
+            // Calcular resumen del inning que se cerro naturalmente.
+            // endHalf cierra el half donde se produjo la jugada. Pero el state
+            // ya leera el half NUEVO (porque advanceBatter lo actualiza). Asi
+            // que el inning que se cerro es el half NUEVO - 1.
+            $closedInning = $result['state']['inning'];
+            $closedHalf = $result['state']['half'];
+            if ($closedHalf === 'top') {
+                // El nuevo half es top, pero el cerrado fue el bottom del inning - 1.
+                $closedInning = max(1, $closedInning - 1);
+                $closedHalf = 'bottom';
+            } else {
+                // El nuevo half es bottom, pero el cerrado fue el top del mismo inning.
+                $closedHalf = 'top';
+            }
+            $summary = $engine->inningSummary($game->fresh(), $closedInning, $closedHalf);
+        }
+
         return response()->json([
             'success' => true,
             'state' => $result['state'],
             'walk' => $result['walk'] ?? false,
             'strikeout' => $result['strikeout'] ?? false,
             'end_half' => $result['end_half'] ?? false,
+            'summary' => $summary,
             'plays' => collect($result['plays'])->map(fn ($p) => [
                 'id' => $p->id,
                 'type' => $p->type,

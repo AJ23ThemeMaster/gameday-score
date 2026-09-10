@@ -291,7 +291,15 @@ document.addEventListener('alpine:init', () => {
                 this.poll();
                 if (data.walk) this.toast('Base por bolas', 'info');
                 else if (data.strikeout) this.toast('Ponche', 'info');
-                else if (data.end_half) this.toast('Fin del inning', 'warning');
+                else if (data.end_half) {
+                    this.toast('Fin del inning', 'warning');
+                    // Fase 5: si el backend devuelve un summary del inning cerrado,
+                    // mostrar el modal de resumen.
+                    if (data.summary) {
+                        this.inningSummary = data.summary;
+                        this.modal = 'inning-summary';
+                    }
+                }
                 else this.toast('Jugada registrada', 'success');
             } catch (e) {
                 this.toast('Error de red: ' + e.message, 'error');
