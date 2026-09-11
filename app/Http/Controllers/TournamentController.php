@@ -36,6 +36,8 @@ class TournamentController extends Controller
     {
         $data = $request->validated();
         $data['active'] = $request->boolean('active', true);
+        // Cast defensivo: league_id a int (PHP 8.4 strict types)
+        $data['league_id'] = (int) $data['league_id'];
 
         if ($request->hasFile('logo')) {
             $data['logo_path'] = $request->file('logo')
@@ -70,6 +72,8 @@ class TournamentController extends Controller
     {
         $data = $request->validated();
         $data['active'] = $request->boolean('active', $tournament->active);
+        // Cast defensivo: league_id a int (PHP 8.4 strict types)
+        $data['league_id'] = (int) $data['league_id'];
 
         if ($request->boolean('remove_logo') && $tournament->logo_path) {
             Storage::disk('public')->delete($tournament->logo_path);

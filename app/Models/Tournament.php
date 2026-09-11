@@ -31,6 +31,7 @@ class Tournament extends Model
     protected function casts(): array
     {
         return [
+            'league_id' => 'integer',
             'starts_at' => 'date',
             'ends_at' => 'date',
             'active' => 'boolean',
@@ -55,15 +56,21 @@ class Tournament extends Model
         });
     }
 
-    public static function generateUniqueSlug(string $name, int $leagueId, ?int $ignoreId = null): string
+    public static function generateUniqueSlug(string $name, int|string $leagueId, ?int $ignoreId = null): string
     {
+        // PHP 8.4 strict types: aceptar string|int y castear defensivo
+        // porque la validacion de Laravel a veces pasa el league_id como
+        // string cuando viene de un FormRequest.
+        $leagueId = (int) $leagueId;
+        $ignoreId = $ignoreId !== null ? (int) $ignoreId : null;
+
         $base = Str::slug($name);
         $slug = $base;
         $i = 1;
         $query = static::query()
             ->where('league_id', $leagueId)
             ->where('slug', $slug);
-        if ($ignoreId) {
+        if ($ignoreId !== null) {
             $query->where('id', '!=', $ignoreId);
         }
         while ($query->exists()) {
@@ -71,7 +78,7 @@ class Tournament extends Model
             $query = static::query()
                 ->where('league_id', $leagueId)
                 ->where('slug', $slug);
-            if ($ignoreId) {
+            if ($ignoreId !== null) {
                 $query->where('id', '!=', $ignoreId);
             }
         }
