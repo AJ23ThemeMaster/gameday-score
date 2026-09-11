@@ -55,17 +55,21 @@ class GameplayEngine
                     if ($balls >= 4) {
                         $isWalk = true;
                         $basesBefore = $bases;
-                        $bases = $this->forceRunnersOnWalk($bases);
+                        [$bases, $walkRuns] = $this->forceRunnersOnWalk($bases, $batterId);
                         $createdPlays[] = $this->recordPlay($game, [
                             'inning' => $inning, 'half' => $half,
                             'type' => Play::TYPE_WALK,
                             'subtype' => 'walk',
-                            'result' => 'Base por bolas',
+                            'result' => $walkRuns > 0
+                                ? "Base por bolas (+{$walkRuns} carrera" . ($walkRuns !== 1 ? 's' : '') . ')'
+                                : 'Base por bolas',
                             'batter_id' => $batterId,
                             'pitcher_id' => $pitcherId,
                             'outs_before' => $outs, 'outs_after' => $outs,
                             'balls' => 3, 'strikes' => $strikes,
                             'bases_before' => $basesBefore, 'bases_after' => $bases,
+                            'runs_scored' => $walkRuns,
+                            'rbi' => $walkRuns,
                         ]);
                         [$batterId, $bases, $half, $inning, $outs, $endHalf, $pitcherId] =
                             $this->advanceBatter($game, $bases, $outs, $half, $inning, $batterId, $pitcherId);
@@ -541,21 +545,41 @@ class GameplayEngine
     }
 
     /**
-     * Aplica la logica de bases por bolas: si hay corredor en 1B, se fuerza
-     * a 2B, 3B y home. Simplificado: 1B->2B, 2B->3B, 3B->home. El bateador va a 1B.
+     * Aplica la logica de bases por bolas (walk) con avance obligatorio:
+     *   - Bateador SIEMPRE va a 1B.
+     *   - Si 1B estaba ocupado, ese corredor avanza a 2B (forzado).
+     *   - Si 2B estaba ocupado, ese corredor avanza a 3B (forzado).
+     *   - Si 3B estaba ocupado, ese corredor anota 1 carrera.
+     *
+     * Devuelve [bases_nuevas, runs_anotados].
+     *
+     * @return array{0: array, 1: int}
      */
-    private function forceRunnersOnWalk(array $bases): array
+    private function forceRunnersOnWalk(array $bases, ?int $batterId): array
     {
+        $runs = 0;
         $new = ['first' => null, 'second' => null, 'third' => null];
-        // Bateador a 1B
-        $new['first'] = $bases['first'];
-        // 2B -> 3B si hay
-        $new['third'] = $bases['second'];
-        // 3B -> home (carrera)
-        // En Fase 2 simplificado: no marcamos carrera; el usuario avanzara en Fase 3/4.
-        // Pero guardamos el 3B -> home.
-        // Para preservar el orden, no usamos el valor viejo de third como first.
-        return $new;
+
+        // Bateador SIEMPRE va a 1B
+        $new['first'] = $batterId;
+
+        // Avance obligatorio de los corredores existentes
+        if (! empty($bases['first'])) {
+            // El viejo corredor de 1B avanza a 2B
+            $new['second'] = $bases['first'];
+
+            if (! empty($bases['second'])) {
+                // El viejo corredor de 2B avanza a 3B
+                $new['third'] = $bases['second'];
+
+                if (! empty($bases['third'])) {
+                    // El viejo corredor de 3B anota
+                    $runs++;
+                }
+            }
+        }
+
+        return [$new, $runs];
     }
 
     /**
