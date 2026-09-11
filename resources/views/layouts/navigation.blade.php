@@ -21,6 +21,16 @@
                     <x-nav-link :href="route('tournaments.index')" :active="request()->routeIs('tournaments.*')">
                         {{ __('Torneos') }}
                     </x-nav-link>
+                    @auth
+                        @if (auth()->user()->isAdmin())
+                            <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                                {{ __('Usuarios') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('roles.index')" :active="request()->routeIs('roles.*')">
+                                {{ __('Roles') }}
+                            </x-nav-link>
+                        @endif
+                    @endauth
                 </div>
             </div>
 
@@ -29,6 +39,13 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                            @if (Auth::user()->avatar_url)
+                                <img src="{{ Auth::user()->avatar_url }}" alt="" class="h-7 w-7 rounded-full object-cover bg-gray-100 me-2">
+                            @else
+                                <span class="inline-flex items-center justify-center h-7 w-7 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold me-2">
+                                    {{ Auth::user()->avatar_initials }}
+                                </span>
+                            @endif
                             <div>{{ Auth::user()->name }}</div>
 
                             <div class="ms-1">
@@ -41,7 +58,7 @@
 
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
+                            {{ __('Mi perfil') }}
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -51,7 +68,7 @@
                             <x-dropdown-link :href="route('logout')"
                                     onclick="event.preventDefault();
                                                 this.closest('form').submit();">
-                                {{ __('Log Out') }}
+                                {{ __('Cerrar sesion') }}
                             </x-dropdown-link>
                         </form>
                     </x-slot>
@@ -82,6 +99,16 @@
             <x-responsive-nav-link :href="route('tournaments.index')" :active="request()->routeIs('tournaments.*')">
                 {{ __('Torneos') }}
             </x-responsive-nav-link>
+            @auth
+                @if (auth()->user()->isAdmin())
+                    <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                        {{ __('Usuarios') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('roles.index')" :active="request()->routeIs('roles.*')">
+                        {{ __('Roles') }}
+                    </x-responsive-nav-link>
+                @endif
+            @endauth
         </div>
 
         <!-- Responsive Settings Options -->
@@ -93,7 +120,7 @@
 
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
+                    {{ __('Mi perfil') }}
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->
@@ -103,7 +130,7 @@
                     <x-responsive-nav-link :href="route('logout')"
                             onclick="event.preventDefault();
                                         this.closest('form').submit();">
-                        {{ __('Log Out') }}
+                        {{ __('Cerrar sesion') }}
                     </x-responsive-nav-link>
                 </form>
             </div>

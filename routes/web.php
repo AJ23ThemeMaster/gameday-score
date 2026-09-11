@@ -9,12 +9,14 @@ use App\Http\Controllers\LeagueController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\RefereeController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RosterController;
 use App\Http\Controllers\ScoreboardController;
 use App\Http\Controllers\ScorekeeperController;
 use App\Http\Controllers\StadiumController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TournamentController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -34,10 +36,18 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-    // Perfil del usuario (Breeze)
+    // Perfil del usuario (Breeze) — extendido en DISI-16
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+    Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // DISI-16: Autenticación en 2 pasos (2FA) con TOTP
+    Route::post('/profile/two-factor/enable', [ProfileController::class, 'enableTwoFactor'])->name('profile.two-factor.enable');
+    Route::post('/profile/two-factor/confirm', [ProfileController::class, 'confirmTwoFactor'])->name('profile.two-factor.confirm');
+    Route::delete('/profile/two-factor', [ProfileController::class, 'disableTwoFactor'])->name('profile.two-factor.disable');
+    Route::post('/profile/two-factor/recovery-codes', [ProfileController::class, 'regenerateRecoveryCodes'])->name('profile.two-factor.recovery-codes');
 
     // CRUDs (DISI-4, DISI-5, DISI-6, DISI-7)
     Route::resource('categories', CategoryController::class);
@@ -50,6 +60,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('leagues', LeagueController::class);
     Route::resource('tournaments', TournamentController::class);
     Route::resource('games', GameController::class);
+    // DISI-16: CRUD de Roles y gestion de Usuarios
+    Route::resource('roles', RoleController::class);
+    Route::get('users', [UserController::class, 'index'])->name('users.index');
+    Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+    Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
 
     // DISI-9: Scoreboard en vivo (control del juego por el owner)
     Route::get('games/{game}/live', [GameController::class, 'live'])->name('games.live');
