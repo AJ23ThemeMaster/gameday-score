@@ -16,7 +16,7 @@ class Team extends Model
     use HasFactory;
 
     protected $fillable = [
-        'tournament_id',
+        'league_id',
         'name',
         'short_name',
         'city',
@@ -29,14 +29,14 @@ class Team extends Model
     protected function casts(): array
     {
         return [
-            'tournament_id' => 'integer',
+            'league_id' => 'integer',
             'active' => 'boolean',
         ];
     }
 
-    public function tournament(): BelongsTo
+    public function league(): BelongsTo
     {
-        return $this->belongsTo(Tournament::class);
+        return $this->belongsTo(League::class);
     }
 
     public function athletes(): HasMany

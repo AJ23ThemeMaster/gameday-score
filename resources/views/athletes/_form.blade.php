@@ -34,7 +34,7 @@
             <option value="">— {{ __('Sin equipo') }} —</option>
             @foreach ($teams as $team)
                 <option value="{{ $team->id }}" {{ (string) old('team_id', $athlete->team_id ?? '') === (string) $team->id ? 'selected' : '' }}>
-                    {{ $team->name }}@if ($team->tournament) ({{ $team->tournament->league->short_name ?? $team->tournament->league->name }} — {{ $team->tournament->name }})@endif
+                    {{ $team->name }}@if ($team->league) ({{ $team->league->short_name ?? $team->league->name }})@endif
                 </option>
             @endforeach
         </select>

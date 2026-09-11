@@ -31,6 +31,7 @@
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Logo') }}</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Nombre / Ciudad') }}</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Liga') }}</th>
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Atletas') }}</th>
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Juegos') }}</th>
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Estado') }}</th>
@@ -56,6 +57,15 @@
                                         </a>
                                         @if ($team->city)
                                             <p class="text-xs text-gray-500">{{ $team->city }}</p>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        @if ($team->league)
+                                            <a href="{{ route('leagues.show', $team->league) }}" class="text-indigo-600 hover:text-indigo-800">
+                                                {{ $team->league->short_name ?? $team->league->name }}
+                                            </a>
+                                        @else
+                                            <span class="text-gray-400 italic">—</span>
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
