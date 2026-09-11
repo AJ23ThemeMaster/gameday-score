@@ -79,9 +79,9 @@
 
                         {{-- Equipos con logos y score CENTRADO entre ellos --}}
                         <div class="px-8 py-6 border-b border-white/20 flex-shrink-0 export-grow">
-                            <div class="grid grid-cols-3 items-center gap-4">
+                            <div class="flex items-center justify-center gap-6">
                                 {{-- Local (logo + nombre a la izquierda) --}}
-                                <div class="flex flex-col items-center gap-3">
+                                <div class="flex flex-col items-center gap-3 w-1/3">
                                     @if ($game->homeTeam->logoUrl)
                                         <img src="{{ $game->homeTeam->logoUrl }}" alt="{{ $game->homeTeam->name }}"
                                              class="h-24 w-24 object-contain bg-white/10 rounded-2xl p-2">
@@ -97,12 +97,12 @@
                                 </div>
 
                                 {{-- Score CENTRADO --}}
-                                <div class="text-center">
+                                <div class="text-center flex-shrink-0 px-4">
                                     <p class="text-6xl font-black">{{ $score['home'] }} - {{ $score['away'] }}</p>
                                 </div>
 
                                 {{-- Visitante (logo + nombre a la derecha) --}}
-                                <div class="flex flex-col items-center gap-3">
+                                <div class="flex flex-col items-center gap-3 w-1/3">
                                     @if ($game->awayTeam->logoUrl)
                                         <img src="{{ $game->awayTeam->logoUrl }}" alt="{{ $game->awayTeam->name }}"
                                              class="h-24 w-24 object-contain bg-white/10 rounded-2xl p-2">
