@@ -48,7 +48,7 @@
                          huecos vacios. Solo durante el export se fuerza 1080x1080. --}}
                     <div id="box-score-wrapper" class="w-full max-w-[1080px]">
                         <div id="box-score-card"
-                             class="mx-auto bg-gradient-to-br from-indigo-900 via-indigo-800 to-blue-900 text-white shadow-2xl rounded-xl flex flex-col overflow-hidden"
+                             class="mx-auto bg-indigo-900 text-white shadow-2xl rounded-xl flex flex-col overflow-hidden border-0 outline-none"
                              style="width: 1080px; transform-origin: top center;">
 
                         {{-- Header --}}
@@ -77,46 +77,43 @@
                             </div>
                         </div>
 
-                        {{-- Equipos con logos --}}
+                        {{-- Equipos con logos y score CENTRADO entre ellos --}}
                         <div class="px-8 py-6 border-b border-white/20 flex-shrink-0 export-grow">
-                            <div class="grid grid-cols-2 gap-8 items-center">
-                                {{-- Local --}}
-                                <div class="flex items-center gap-4">
+                            <div class="grid grid-cols-3 items-center gap-4">
+                                {{-- Local (logo + nombre a la izquierda) --}}
+                                <div class="flex flex-col items-center gap-3">
                                     @if ($game->homeTeam->logoUrl)
                                         <img src="{{ $game->homeTeam->logoUrl }}" alt="{{ $game->homeTeam->name }}"
-                                             class="h-20 w-20 object-contain bg-white/10 rounded-full p-1">
+                                             class="h-24 w-24 object-contain bg-white/10 rounded-2xl p-2">
                                     @else
-                                        <div class="h-20 w-20 rounded-full bg-white/10 flex items-center justify-center text-2xl font-bold">
+                                        <div class="h-24 w-24 rounded-2xl bg-white/10 flex items-center justify-center text-2xl font-bold">
                                             {{ mb_substr($game->homeTeam->name, 0, 3) }}
                                         </div>
                                     @endif
-                                    <div class="flex-1 min-w-0">
+                                    <div class="text-center min-w-0">
                                         <p class="text-xs uppercase tracking-widest text-indigo-200">Local</p>
-                                        <p class="text-2xl font-bold leading-tight truncate" title="{{ $game->homeTeam->name }}">{{ $game->homeTeam->name }}</p>
-                                        @if ($game->homeTeam->short_name && $game->homeTeam->short_name !== $game->homeTeam->name)
-                                            <p class="text-xs text-indigo-300">({{ $game->homeTeam->short_name }})</p>
-                                        @endif
-                                        <p class="text-5xl font-black mt-2">{{ $score['home'] }}</p>
+                                        <p class="text-lg font-bold leading-tight truncate" title="{{ $game->homeTeam->name }}">{{ $game->homeTeam->name }}</p>
                                     </div>
                                 </div>
 
-                                {{-- Visitante --}}
-                                <div class="flex items-center gap-4 flex-row-reverse text-right">
+                                {{-- Score CENTRADO --}}
+                                <div class="text-center">
+                                    <p class="text-6xl font-black">{{ $score['home'] }} - {{ $score['away'] }}</p>
+                                </div>
+
+                                {{-- Visitante (logo + nombre a la derecha) --}}
+                                <div class="flex flex-col items-center gap-3">
                                     @if ($game->awayTeam->logoUrl)
                                         <img src="{{ $game->awayTeam->logoUrl }}" alt="{{ $game->awayTeam->name }}"
-                                             class="h-20 w-20 object-contain bg-white/10 rounded-full p-1">
+                                             class="h-24 w-24 object-contain bg-white/10 rounded-2xl p-2">
                                     @else
-                                        <div class="h-20 w-20 rounded-full bg-white/10 flex items-center justify-center text-2xl font-bold">
+                                        <div class="h-24 w-24 rounded-2xl bg-white/10 flex items-center justify-center text-2xl font-bold">
                                             {{ mb_substr($game->awayTeam->name, 0, 3) }}
                                         </div>
                                     @endif
-                                    <div class="flex-1 min-w-0">
+                                    <div class="text-center min-w-0">
                                         <p class="text-xs uppercase tracking-widest text-indigo-200">Visitante</p>
-                                        <p class="text-2xl font-bold leading-tight truncate" title="{{ $game->awayTeam->name }}">{{ $game->awayTeam->name }}</p>
-                                        @if ($game->awayTeam->short_name && $game->awayTeam->short_name !== $game->awayTeam->name)
-                                            <p class="text-xs text-indigo-300">({{ $game->awayTeam->short_name }})</p>
-                                        @endif
-                                        <p class="text-5xl font-black mt-2">{{ $score['away'] }}</p>
+                                        <p class="text-lg font-bold leading-tight truncate" title="{{ $game->awayTeam->name }}">{{ $game->awayTeam->name }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -161,51 +158,37 @@
                             </table>
                         </div>
 
-                        {{-- Pitchers + MVP --}}
-                        <div class="px-8 py-6 border-b border-white/20 flex-shrink-0 export-grow">
-                            <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-indigo-200 font-semibold uppercase tracking-wider text-xs w-32">Pitcher ganador</span>
-                                    <span class="font-semibold">
-                                        @if ($game->winningPitcher)
-                                            #{{ $game->winningPitcher->number }} {{ $game->winningPitcher->full_name }}
-                                        @else
-                                            <span class="text-indigo-300 italic">Sin asignar</span>
-                                        @endif
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-indigo-200 font-semibold uppercase tracking-wider text-xs w-32">Pitcher perdedor</span>
-                                    <span class="font-semibold">
-                                        @if ($game->losingPitcher)
-                                            #{{ $game->losingPitcher->number }} {{ $game->losingPitcher->full_name }}
-                                        @else
-                                            <span class="text-indigo-300 italic">Sin asignar</span>
-                                        @endif
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-indigo-200 font-semibold uppercase tracking-wider text-xs w-32">Juego salvado</span>
-                                    <span class="font-semibold">
-                                        @if ($game->savePitcher)
-                                            #{{ $game->savePitcher->number }} {{ $game->savePitcher->full_name }}
-                                        @else
-                                            <span class="text-indigo-300 italic">N/A</span>
-                                        @endif
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-yellow-300 font-semibold uppercase tracking-wider text-xs w-32">⭐ MVP</span>
-                                    <span class="font-semibold">
-                                        @if ($game->mvp)
-                                            #{{ $game->mvp->number }} {{ $game->mvp->full_name }}
-                                        @else
-                                            <span class="text-indigo-300 italic">Sin asignar</span>
-                                        @endif
-                                    </span>
+                        {{-- Pitchers + MVP (solo se muestran los asignados) --}}
+                        @if ($game->winningPitcher || $game->losingPitcher || $game->savePitcher || $game->mvp)
+                            <div class="px-8 py-6 border-b border-white/20 flex-shrink-0 export-grow">
+                                <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                                    @if ($game->winningPitcher)
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-indigo-200 font-semibold uppercase tracking-wider text-xs w-32">Pitcher ganador</span>
+                                            <span class="font-semibold">#{{ $game->winningPitcher->number }} {{ $game->winningPitcher->full_name }}</span>
+                                        </div>
+                                    @endif
+                                    @if ($game->losingPitcher)
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-indigo-200 font-semibold uppercase tracking-wider text-xs w-32">Pitcher perdedor</span>
+                                            <span class="font-semibold">#{{ $game->losingPitcher->number }} {{ $game->losingPitcher->full_name }}</span>
+                                        </div>
+                                    @endif
+                                    @if ($game->savePitcher)
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-indigo-200 font-semibold uppercase tracking-wider text-xs w-32">Juego salvado</span>
+                                            <span class="font-semibold">#{{ $game->savePitcher->number }} {{ $game->savePitcher->full_name }}</span>
+                                        </div>
+                                    @endif
+                                    @if ($game->mvp)
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-yellow-300 font-semibold uppercase tracking-wider text-xs w-32">⭐ MVP</span>
+                                            <span class="font-semibold">#{{ $game->mvp->number }} {{ $game->mvp->full_name }}</span>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
-                        </div>
+                        @endif
 
                         {{-- Footer --}}
                         <div class="px-8 py-4 flex items-center justify-between text-xs text-indigo-200 border-t border-white/20 flex-shrink-0">
