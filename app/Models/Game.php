@@ -18,6 +18,7 @@ class Game extends Model
     protected $fillable = [
         'user_id',
         'category_id',
+        'tournament_id',
         'stadium_id',
         'home_team_id',
         'away_team_id',
@@ -86,6 +87,11 @@ class Game extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function tournament(): BelongsTo
+    {
+        return $this->belongsTo(Tournament::class);
     }
 
     public function stadium(): BelongsTo

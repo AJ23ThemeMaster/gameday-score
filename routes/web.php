@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\AthleteController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\GameController;
+use App\Http\Controllers\LeagueController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\RefereeController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\ScoreboardController;
 use App\Http\Controllers\ScorekeeperController;
 use App\Http\Controllers\StadiumController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\TournamentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -44,6 +46,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('athletes', AthleteController::class);
     Route::resource('scorekeepers', ScorekeeperController::class);
     Route::resource('referees', RefereeController::class);
+    // DISI-13: CRUDs de Ligas y Torneos
+    Route::resource('leagues', LeagueController::class);
+    Route::resource('tournaments', TournamentController::class);
     Route::resource('games', GameController::class);
 
     // DISI-9: Scoreboard en vivo (control del juego por el owner)

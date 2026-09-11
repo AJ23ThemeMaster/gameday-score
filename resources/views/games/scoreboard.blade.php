@@ -78,6 +78,44 @@
             {{-- ============ HEADER: LOGOS + SCORES + COUNT ============ --}}
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
 
+                {{-- Breadcrumb Liga / Torneo / Categoria (DISI-13) --}}
+                <div class="px-4 py-2 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center gap-2 text-xs">
+                    @if ($game->tournament?->league)
+                        <a href="{{ route('leagues.show', $game->tournament->league) }}"
+                           class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded-md hover:border-indigo-400 transition"
+                           title="{{ $game->tournament->league->name }}">
+                            @if ($game->tournament->league->logo_url)
+                                <img src="{{ $game->tournament->league->logo_url }}" alt="" class="h-4 w-4 object-contain">
+                            @endif
+                            <span class="font-semibold text-gray-700">{{ $game->tournament->league->short_name ?? $game->tournament->league->name }}</span>
+                        </a>
+                        <span class="text-gray-400">/</span>
+                    @endif
+                    @if ($game->tournament)
+                        <a href="{{ route('tournaments.show', $game->tournament) }}"
+                           class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded-md hover:border-indigo-400 transition"
+                           title="{{ $game->tournament->name }}">
+                            @if ($game->tournament->logo_url)
+                                <img src="{{ $game->tournament->logo_url }}" alt="" class="h-4 w-4 object-contain">
+                            @endif
+                            <span class="font-semibold text-gray-700">{{ $game->tournament->name }}</span>
+                            @if ($game->tournament->season)
+                                <span class="text-gray-500 text-[10px]">({{ $game->tournament->season }})</span>
+                            @endif
+                        </a>
+                        <span class="text-gray-400">/</span>
+                    @endif
+                    @if ($game->category)
+                        <span class="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md font-bold">
+                            {{ $game->category->name }}
+                        </span>
+                    @else
+                        <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-500 rounded-md italic">
+                            {{ __('Sin categoría') }}
+                        </span>
+                    @endif
+                </div>
+
                 {{-- Logos + scores (Local | Inning | Visitante) --}}
                 <div class="flex items-stretch border-b-2 border-gray-100">
                     {{-- Local --}}

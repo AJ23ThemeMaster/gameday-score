@@ -125,7 +125,8 @@ class ScoreboardController extends Controller
         abort_unless($game->user_id === Auth::id(), 403);
 
         $game->load([
-            'category', 'stadium', 'homeTeam', 'awayTeam',
+            'category', 'tournament', 'tournament.league', 'stadium',
+            'homeTeam', 'awayTeam',
             'homeTeam.athletes', 'awayTeam.athletes',
         ]);
 
