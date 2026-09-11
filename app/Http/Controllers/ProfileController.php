@@ -117,7 +117,7 @@ class ProfileController extends Controller
      * Iniciar el flujo de activacion de 2FA.
      * Genera el secreto, lo persiste y devuelve la vista con QR + secret.
      */
-    public function enableTwoFactor(Request $request): View
+    public function enableTwoFactor(Request $request): View|RedirectResponse
     {
         $user = $request->user();
 
@@ -203,7 +203,7 @@ class ProfileController extends Controller
     /**
      * Regenerar codigos de recuperacion.
      */
-    public function regenerateRecoveryCodes(Request $request): View
+    public function regenerateRecoveryCodes(Request $request): View|RedirectResponse
     {
         $user = $request->user();
 
