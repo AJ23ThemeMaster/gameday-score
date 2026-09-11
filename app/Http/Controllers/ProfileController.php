@@ -201,7 +201,26 @@ class ProfileController extends Controller
     }
 
     /**
-     * Regenerar codigos de recuperacion.
+     * Mostrar los codigos de recuperacion existentes (sin regenerarlos).
+     * Ruta GET para el enlace "Ver codigos de recuperacion" del perfil.
+     */
+    public function showRecoveryCodes(Request $request): View|RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user->hasTwoFactorEnabled()) {
+            return Redirect::route('profile.edit')
+                ->with('error', 'La autenticacion en 2 pasos no esta activa.');
+        }
+
+        return view('profile.two-factor.recovery-codes', [
+            'recoveryCodes' => $user->twoFactorRecoveryCodes(),
+            'user' => $user,
+        ]);
+    }
+
+    /**
+     * Regenerar codigos de recuperacion (invalida los anteriores).
      */
     public function regenerateRecoveryCodes(Request $request): View|RedirectResponse
     {

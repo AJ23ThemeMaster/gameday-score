@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\AthleteController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\LeagueController;
@@ -35,7 +36,15 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+// DISI-16b: rutas de challenge 2FA (solo auth, NO protegidas por 2fa.challenge)
 Route::middleware('auth')->group(function () {
+    Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'show'])->name('two-factor.challenge');
+    Route::post('/two-factor-challenge', [TwoFactorChallengeController::class, 'verify'])->name('two-factor.challenge.verify');
+    Route::get('/two-factor-challenge/cancel', [TwoFactorChallengeController::class, 'cancel'])->name('two-factor.challenge.cancel');
+});
+
+// DISI-16b: resto de rutas autenticadas (protegidas por 2fa.challenge si aplica)
+Route::middleware(['auth', '2fa.challenge'])->group(function () {
     // Perfil del usuario (Breeze) — extendido en DISI-16
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -47,6 +56,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/two-factor/enable', [ProfileController::class, 'enableTwoFactor'])->name('profile.two-factor.enable');
     Route::post('/profile/two-factor/confirm', [ProfileController::class, 'confirmTwoFactor'])->name('profile.two-factor.confirm');
     Route::delete('/profile/two-factor', [ProfileController::class, 'disableTwoFactor'])->name('profile.two-factor.disable');
+    // DISI-16b: GET para "Ver codigos", POST para "Regenerar codigos"
+    Route::get('/profile/two-factor/recovery-codes', [ProfileController::class, 'showRecoveryCodes'])->name('profile.two-factor.recovery-codes.show');
     Route::post('/profile/two-factor/recovery-codes', [ProfileController::class, 'regenerateRecoveryCodes'])->name('profile.two-factor.recovery-codes');
 
     // CRUDs (DISI-4, DISI-5, DISI-6, DISI-7)

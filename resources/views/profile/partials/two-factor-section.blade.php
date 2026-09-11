@@ -34,38 +34,103 @@
         </div>
 
         <div class="mt-6 flex flex-wrap gap-3">
-            <a href="{{ route('profile.two-factor.recovery-codes') }}"
+            <a href="{{ route('profile.two-factor.recovery-codes.show') }}"
                class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-md transition">
                 {{ __('Ver codigos de recuperacion') }}
             </a>
-            <form method="post" action="{{ route('profile.two-factor.recovery-codes') }}" class="inline"
-                  onsubmit="return confirm('Regenerar los codigos invalida los anteriores. ¿Continuar?');">
-                @csrf
-                @method('post')
-                <button type="submit" class="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-md transition">
-                    {{ __('Regenerar codigos') }}
-                </button>
-            </form>
-            <form method="post" action="{{ route('profile.two-factor.disable') }}" class="inline"
-                  onsubmit="return confirm('¿Desactivar 2FA? Tu cuenta quedara protegida solo por la contraseña.');">
-                @csrf
-                @method('delete')
-                <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-md transition">
-                    {{ __('Desactivar 2FA') }}
-                </button>
-            </form>
+
+            {{-- Boton Regenerar codigos (abre modal con password) --}}
+            <button type="button"
+                    x-data=""
+                    x-on:click.prevent="$dispatch('open-modal', 'confirm-regenerate-codes')"
+                    class="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-md transition">
+                {{ __('Regenerar codigos') }}
+            </button>
+
+            {{-- Boton Desactivar 2FA (abre modal con password) --}}
+            <button type="button"
+                    x-data=""
+                    x-on:click.prevent="$dispatch('open-modal', 'confirm-disable-two-factor')"
+                    class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-md transition">
+                {{ __('Desactivar 2FA') }}
+            </button>
         </div>
 
-        @if ($errors->disableTwoFactor->isNotEmpty())
-            <div class="mt-3 text-sm text-red-600">
-                {{ $errors->disableTwoFactor->first() }}
-            </div>
-        @endif
-        @if ($errors->regenerateCodes->isNotEmpty())
-            <div class="mt-3 text-sm text-red-600">
-                {{ $errors->regenerateCodes->first() }}
-            </div>
-        @endif
+        {{-- Modal: Regenerar codigos --}}
+        <x-modal name="confirm-regenerate-codes" :show="$errors->regenerateCodes->isNotEmpty()" focusable>
+            <form method="post" action="{{ route('profile.two-factor.recovery-codes') }}" class="p-6">
+                @csrf
+                @method('post')
+
+                <h2 class="text-lg font-medium text-gray-900">
+                    {{ __('¿Regenerar codigos de recuperacion?') }}
+                </h2>
+
+                <p class="mt-1 text-sm text-gray-600">
+                    {{ __('Los 8 codigos anteriores dejaran de ser validos inmediatamente. Se generaran 8 nuevos codigos que deberas guardar en un lugar seguro.') }}
+                </p>
+
+                <div class="mt-6">
+                    <x-input-label for="regenerate_password" :value="__('Tu contraseña')" class="sr-only" />
+                    <x-text-input
+                        id="regenerate_password"
+                        name="password"
+                        type="password"
+                        class="mt-1 block w-3/4"
+                        :placeholder="__('Contraseña actual')"
+                    />
+                    <x-input-error :messages="$errors->regenerateCodes->get('password')" class="mt-2" />
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <x-secondary-button x-on:click="$dispatch('close')">
+                        {{ __('Cancelar') }}
+                    </x-secondary-button>
+
+                    <x-primary-button class="ms-3 bg-amber-500 hover:bg-amber-600">
+                        {{ __('Regenerar') }}
+                    </x-primary-button>
+                </div>
+            </form>
+        </x-modal>
+
+        {{-- Modal: Desactivar 2FA --}}
+        <x-modal name="confirm-disable-two-factor" :show="$errors->disableTwoFactor->isNotEmpty()" focusable>
+            <form method="post" action="{{ route('profile.two-factor.disable') }}" class="p-6">
+                @csrf
+                @method('delete')
+
+                <h2 class="text-lg font-medium text-gray-900">
+                    {{ __('¿Desactivar autenticacion en 2 pasos?') }}
+                </h2>
+
+                <p class="mt-1 text-sm text-gray-600">
+                    {{ __('Tu cuenta quedara protegida solo por la contraseña. Cualquier persona con tu contraseña podra acceder.') }}
+                </p>
+
+                <div class="mt-6">
+                    <x-input-label for="disable_password" :value="__('Tu contraseña')" class="sr-only" />
+                    <x-text-input
+                        id="disable_password"
+                        name="password"
+                        type="password"
+                        class="mt-1 block w-3/4"
+                        :placeholder="__('Contraseña actual')"
+                    />
+                    <x-input-error :messages="$errors->disableTwoFactor->get('password')" class="mt-2" />
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <x-secondary-button x-on:click="$dispatch('close')">
+                        {{ __('Cancelar') }}
+                    </x-secondary-button>
+
+                    <x-danger-button class="ms-3">
+                        {{ __('Desactivar') }}
+                    </x-danger-button>
+                </div>
+            </form>
+        </x-modal>
     @else
         <div class="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700">
             {{ __('La autenticacion en 2 pasos no esta activa. Te recomendamos activarla para mejorar la seguridad de tu cuenta.') }}
