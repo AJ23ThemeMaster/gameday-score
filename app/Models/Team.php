@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +16,7 @@ class Team extends Model
     use HasFactory;
 
     protected $fillable = [
+        'tournament_id',
         'name',
         'short_name',
         'city',
@@ -27,13 +29,24 @@ class Team extends Model
     protected function casts(): array
     {
         return [
+            'tournament_id' => 'integer',
             'active' => 'boolean',
         ];
+    }
+
+    public function tournament(): BelongsTo
+    {
+        return $this->belongsTo(Tournament::class);
     }
 
     public function athletes(): HasMany
     {
         return $this->hasMany(Athlete::class);
+    }
+
+    public function categories(): HasMany
+    {
+        return $this->hasMany(Category::class);
     }
 
     public function homeGames(): HasMany

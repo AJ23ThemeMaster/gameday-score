@@ -16,6 +16,7 @@ class UpdateTeamRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'tournament_id' => ['nullable', 'integer', 'exists:tournaments,id'],
             'name' => ['required', 'string', 'max:150'],
             'short_name' => ['nullable', 'string', 'max:50'],
             'city' => ['nullable', 'string', 'max:100'],
@@ -30,6 +31,7 @@ class UpdateTeamRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'tournament_id.exists' => 'El torneo seleccionado no existe.',
             'name.required' => 'El nombre del equipo es obligatorio.',
             'logo.image' => 'El logo debe ser una imagen válida.',
             'logo.mimes' => 'El logo debe ser JPG, PNG, WEBP o SVG.',

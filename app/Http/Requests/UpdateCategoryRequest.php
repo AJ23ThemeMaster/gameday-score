@@ -19,6 +19,7 @@ class UpdateCategoryRequest extends FormRequest
         $categoryId = $this->route('category');
 
         return [
+            'team_id' => ['nullable', 'integer', 'exists:teams,id'],
             'name' => ['required', 'string', 'max:100'],
             'slug' => ['required', 'string', 'max:100', 'lowercase', Rule::unique('categories', 'slug')->ignore($categoryId)],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -33,6 +34,7 @@ class UpdateCategoryRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'team_id.exists' => 'El equipo seleccionado no existe.',
             'name.required' => 'El nombre es obligatorio.',
             'slug.unique' => 'Ya existe otra categoría con ese slug.',
             'innings_count.between' => 'Los innings deben estar entre :min y :max.',

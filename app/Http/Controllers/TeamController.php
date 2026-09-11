@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreTeamRequest;
 use App\Http\Requests\UpdateTeamRequest;
 use App\Models\Team;
+use App\Models\Tournament;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -15,7 +16,8 @@ class TeamController extends Controller
 {
     public function index(): View
     {
-        $teams = Team::orderBy('name')
+        $teams = Team::with('tournament.league')
+            ->orderBy('name')
             ->withCount(['athletes', 'homeGames', 'awayGames'])
             ->paginate(15);
 
@@ -24,13 +26,20 @@ class TeamController extends Controller
 
     public function create(): View
     {
-        return view('teams.create');
+        $tournaments = Tournament::with('league')
+            ->where('active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('teams.create', compact('tournaments'));
     }
 
     public function store(StoreTeamRequest $request): RedirectResponse
     {
         $data = $request->validated();
         $data['active'] = $request->boolean('active', true);
+        // Cast defensivo para PHP 8.4 strict types
+        $data['tournament_id'] = $data['tournament_id'] !== null ? (int) $data['tournament_id'] : null;
 
         if ($request->hasFile('logo')) {
             $data['logo_path'] = $request->file('logo')->store('teams/logos', 'public');
@@ -45,23 +54,29 @@ class TeamController extends Controller
 
     public function show(Team $team): View
     {
-        $team->loadCount(['athletes', 'homeGames', 'awayGames']);
-        $team->load(['athletes' => function ($q) {
+        $team->load(['tournament.league', 'athletes' => function ($q) {
             $q->orderBy('number')->limit(15);
         }]);
+        $team->loadCount(['athletes', 'homeGames', 'awayGames', 'categories']);
 
         return view('teams.show', compact('team'));
     }
 
     public function edit(Team $team): View
     {
-        return view('teams.edit', compact('team'));
+        $tournaments = Tournament::with('league')
+            ->where('active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('teams.edit', compact('team', 'tournaments'));
     }
 
     public function update(UpdateTeamRequest $request, Team $team): RedirectResponse
     {
         $data = $request->validated();
         $data['active'] = $request->boolean('active', $team->active);
+        $data['tournament_id'] = $data['tournament_id'] !== null ? (int) $data['tournament_id'] : null;
 
         if ($request->hasFile('logo')) {
             $this->deleteLogo($team);

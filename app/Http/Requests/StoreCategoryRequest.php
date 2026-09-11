@@ -17,6 +17,7 @@ class StoreCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'team_id' => ['nullable', 'integer', 'exists:teams,id'],
             'name' => ['required', 'string', 'max:100'],
             'slug' => ['required', 'string', 'max:100', 'lowercase', Rule::unique('categories', 'slug')],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -31,6 +32,7 @@ class StoreCategoryRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'team_id.exists' => 'El equipo seleccionado no existe.',
             'name.required' => 'El nombre es obligatorio.',
             'name.max' => 'El nombre no puede tener más de :max caracteres.',
             'slug.required' => 'El slug es obligatorio.',

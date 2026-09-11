@@ -24,6 +24,7 @@ class UpdateAthleteRequest extends FormRequest
             'birth_date' => ['nullable', 'date'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'team_id' => ['nullable', 'integer', 'exists:teams,id'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'number' => ['nullable', 'integer', 'between:0,99'],
             'position' => ['nullable', 'in:P,C,1B,2B,3B,SS,LF,CF,RF,DH'],
             'bats' => ['nullable', 'in:L,R,S'],

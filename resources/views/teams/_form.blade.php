@@ -8,6 +8,21 @@
         <x-input-error :messages="$errors->get('name')" class="mt-2" />
     </div>
 
+    <div class="md:col-span-2">
+        <x-input-label for="tournament_id" :value="__('Torneo (opcional)')" />
+        <select id="tournament_id" name="tournament_id"
+                class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+            <option value="">-- {{ __('Sin torneo asignado') }} --</option>
+            @foreach ($tournaments ?? [] as $t)
+                <option value="{{ $t->id }}" {{ (string) old('tournament_id', $team->tournament_id ?? '') === (string) $t->id ? 'selected' : '' }}>
+                    {{ $t->league->short_name ?? $t->league->name }} — {{ $t->name }}{{ $t->category ? ' (' . $t->category . ')' : '' }}{{ $t->season ? ' [' . $t->season . ']' : '' }}
+                </option>
+            @endforeach
+        </select>
+        <x-input-error :messages="$errors->get('tournament_id')" class="mt-2" />
+        <p class="mt-1 text-xs text-gray-500">{{ __('DISI-14: 1 equipo pertenece a 1 torneo.') }}</p>
+    </div>
+
     <div>
         <x-input-label for="short_name" :value="__('Nombre corto / Siglas')" />
         <x-text-input id="short_name" name="short_name" type="text" maxlength="50"

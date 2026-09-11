@@ -34,11 +34,25 @@
             <option value="">— {{ __('Sin equipo') }} —</option>
             @foreach ($teams as $team)
                 <option value="{{ $team->id }}" {{ (string) old('team_id', $athlete->team_id ?? '') === (string) $team->id ? 'selected' : '' }}>
-                    {{ $team->name }}
+                    {{ $team->name }}@if ($team->tournament) ({{ $team->tournament->league->short_name ?? $team->tournament->league->name }} — {{ $team->tournament->name }})@endif
                 </option>
             @endforeach
         </select>
         <x-input-error :messages="$errors->get('team_id')" class="mt-2" />
+    </div>
+
+    <div>
+        <x-input-label for="category_id" :value="__('Categoría')" />
+        <select id="category_id" name="category_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+            <option value="">— {{ __('Sin categoría') }} —</option>
+            @foreach ($categories as $cat)
+                <option value="{{ $cat->id }}" {{ (string) old('category_id', $athlete->category_id ?? '') === (string) $cat->id ? 'selected' : '' }}>
+                    {{ $cat->name }}@if ($cat->team) ({{ $cat->team->short_name ?? $cat->team->name }})@endif
+                </option>
+            @endforeach
+        </select>
+        <x-input-error :messages="$errors->get('category_id')" class="mt-2" />
+        <p class="mt-1 text-xs text-gray-500">{{ __('DISI-14: 1 atleta pertenece a 1 equipo Y 1 categoría.') }}</p>
     </div>
 
     <div>

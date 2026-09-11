@@ -9,6 +9,21 @@
     </div>
 
     <div class="md:col-span-2">
+        <x-input-label for="team_id" :value="__('Equipo (opcional)')" />
+        <select id="team_id" name="team_id"
+                class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+            <option value="">-- {{ __('Sin equipo (categoría global)') }} --</option>
+            @foreach ($teams ?? [] as $t)
+                <option value="{{ $t->id }}" {{ (string) old('team_id', $category->team_id ?? '') === (string) $t->id ? 'selected' : '' }}>
+                    {{ $t->name }}@if ($t->short_name) ({{ $t->short_name }})@endif
+                </option>
+            @endforeach
+        </select>
+        <x-input-error :messages="$errors->get('team_id')" class="mt-2" />
+        <p class="mt-1 text-xs text-gray-500">{{ __('DISI-14: 1 categoría pertenece a 1 equipo. Déjalo vacío para una categoría global.') }}</p>
+    </div>
+
+    <div class="md:col-span-2">
         <x-input-label for="slug" :value="__('Slug (URL amigable, en minúsculas)')" />
         <x-text-input id="slug" name="slug" type="text" class="block mt-1 w-full"
                       :value="old('slug', $category->slug ?? '')" required />

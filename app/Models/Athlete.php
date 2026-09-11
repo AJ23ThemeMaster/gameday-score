@@ -21,6 +21,7 @@ class Athlete extends Model
         'birth_date',
         'photo_path',
         'team_id',
+        'category_id',
         'number',
         'position',
         'bats',
@@ -32,6 +33,8 @@ class Athlete extends Model
     {
         return [
             'birth_date' => 'date',
+            'team_id' => 'integer',
+            'category_id' => 'integer',
             'number' => 'integer',
             'active' => 'boolean',
         ];
@@ -40,6 +43,11 @@ class Athlete extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public function games(): BelongsToMany
