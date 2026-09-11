@@ -157,7 +157,7 @@ class ProfileController extends Controller
     /**
      * Confirmar el 2FA validando un codigo TOTP del usuario.
      */
-    public function confirmTwoFactor(ConfirmTwoFactorRequest $request): RedirectResponse
+    public function confirmTwoFactor(ConfirmTwoFactorRequest $request): View|RedirectResponse
     {
         $user = $request->user();
 
