@@ -42,11 +42,12 @@
                     {{ __('La imagen generada es cuadrada (1080x1080), incluye logos de los equipos, inning-by-inning con carreras/hits/errores y pitchers/MVP del juego.') }}
                 </p>
 
-                <div class="overflow-auto">
-                    {{-- Contenedor fijo 1:1 que se renderiza a 1080x1080 al exportar --}}
-                    <div id="box-score-card"
-                         class="mx-auto bg-gradient-to-br from-indigo-900 via-indigo-800 to-blue-900 text-white relative"
-                         style="width: 1080px; height: 1080px; transform-origin: top left;">
+                <div class="flex justify-center">
+                    {{-- Contenedor de escala: el card mide 1080x1080 nativamente, pero se escala con CSS transform para caber en el viewport --}}
+                    <div id="box-score-wrapper" class="w-full max-w-[1080px]">
+                        <div id="box-score-card"
+                             class="mx-auto bg-gradient-to-br from-indigo-900 via-indigo-800 to-blue-900 text-white relative shadow-2xl"
+                             style="width: 1080px; height: 1080px; transform-origin: top center;">
 
                         {{-- Header --}}
                         <div class="px-8 py-6 border-b border-white/20">
@@ -84,12 +85,15 @@
                                              class="h-20 w-20 object-contain bg-white/10 rounded-full p-1">
                                     @else
                                         <div class="h-20 w-20 rounded-full bg-white/10 flex items-center justify-center text-2xl font-bold">
-                                            {{ mb_substr($game->homeTeam->short_name ?? $game->homeTeam->name, 0, 3) }}
+                                            {{ mb_substr($game->homeTeam->name, 0, 3) }}
                                         </div>
                                     @endif
-                                    <div class="flex-1">
+                                    <div class="flex-1 min-w-0">
                                         <p class="text-xs uppercase tracking-widest text-indigo-200">Local</p>
-                                        <p class="text-3xl font-bold">{{ $game->homeTeam->short_name ?? $game->homeTeam->name }}</p>
+                                        <p class="text-2xl font-bold leading-tight truncate" title="{{ $game->homeTeam->name }}">{{ $game->homeTeam->name }}</p>
+                                        @if ($game->homeTeam->short_name && $game->homeTeam->short_name !== $game->homeTeam->name)
+                                            <p class="text-xs text-indigo-300">({{ $game->homeTeam->short_name }})</p>
+                                        @endif
                                         <p class="text-5xl font-black mt-2">{{ $score['home'] }}</p>
                                     </div>
                                 </div>
@@ -101,12 +105,15 @@
                                              class="h-20 w-20 object-contain bg-white/10 rounded-full p-1">
                                     @else
                                         <div class="h-20 w-20 rounded-full bg-white/10 flex items-center justify-center text-2xl font-bold">
-                                            {{ mb_substr($game->awayTeam->short_name ?? $game->awayTeam->name, 0, 3) }}
+                                            {{ mb_substr($game->awayTeam->name, 0, 3) }}
                                         </div>
                                     @endif
-                                    <div class="flex-1">
+                                    <div class="flex-1 min-w-0">
                                         <p class="text-xs uppercase tracking-widest text-indigo-200">Visitante</p>
-                                        <p class="text-3xl font-bold">{{ $game->awayTeam->short_name ?? $game->awayTeam->name }}</p>
+                                        <p class="text-2xl font-bold leading-tight truncate" title="{{ $game->awayTeam->name }}">{{ $game->awayTeam->name }}</p>
+                                        @if ($game->awayTeam->short_name && $game->awayTeam->short_name !== $game->awayTeam->name)
+                                            <p class="text-xs text-indigo-300">({{ $game->awayTeam->short_name }})</p>
+                                        @endif
                                         <p class="text-5xl font-black mt-2">{{ $score['away'] }}</p>
                                     </div>
                                 </div>
@@ -130,7 +137,7 @@
                                 <tbody>
                                     {{-- Visitante (top) --}}
                                     <tr class="text-lg font-medium border-b border-white/10">
-                                        <td class="py-2 text-left pl-4">{{ $game->awayTeam->short_name ?? $game->awayTeam->name }}</td>
+                                        <td class="py-2 text-left pl-4 truncate" title="{{ $game->awayTeam->name }}">{{ $game->awayTeam->name }}</td>
                                         @for ($i = 1; $i <= $totalInnings; $i++)
                                             <td class="py-2 px-2">{{ $lineScore[$i]['away'] ?: '' }}</td>
                                         @endfor
@@ -140,7 +147,7 @@
                                     </tr>
                                     {{-- Local (bottom) --}}
                                     <tr class="text-lg font-medium">
-                                        <td class="py-2 text-left pl-4">{{ $game->homeTeam->short_name ?? $game->homeTeam->name }}</td>
+                                        <td class="py-2 text-left pl-4 truncate" title="{{ $game->homeTeam->name }}">{{ $game->homeTeam->name }}</td>
                                         @for ($i = 1; $i <= $totalInnings; $i++)
                                             <td class="py-2 px-2">{{ $lineScore[$i]['home'] ?: '' }}</td>
                                         @endfor
@@ -203,6 +210,7 @@
                             <span>Generado con ⚾ Gameday Score</span>
                             <span>{{ now()->format('d/m/Y H:i') }}</span>
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -312,21 +320,40 @@
             const card = document.getElementById('box-score-card');
             if (!card) return;
 
+            // ---- Escalado responsivo del preview (el card mide 1080x1080 nativamente,
+            //      pero se reduce con CSS transform para caber en el viewport) ----
+            const NATIVE_W = 1080;
+            const NATIVE_H = 1080;
+            function fitCard() {
+                const wrapperWidth = card.parentElement.clientWidth;
+                const scale = Math.min(1, wrapperWidth / NATIVE_W);
+                card.style.transform = 'scale(' + scale + ')';
+                // Ajustar la altura del wrapper para que el contenido escalado no se desborde
+                card.parentElement.style.height = (NATIVE_H * scale) + 'px';
+            }
+            fitCard();
+            window.addEventListener('resize', fitCard);
+
+            // ---- Snapshot para descargar/compartir (siempre a tamaño nativo 1080x1080) ----
             async function snapshot(scale = 1) {
-                // Asegurar que el card esta a tamaño completo antes de capturar
+                // Restaurar escala 1 antes de capturar
                 const originalTransform = card.style.transform;
+                const originalHeight = card.parentElement.style.height;
                 card.style.transform = 'scale(1)';
+                card.parentElement.style.height = NATIVE_H + 'px';
 
                 const canvas = await html2canvas(card, {
                     backgroundColor: null,
                     scale: scale,
-                    width: 1080,
-                    height: 1080,
+                    width: NATIVE_W,
+                    height: NATIVE_H,
                     useCORS: true,
                     allowTaint: true,
                 });
 
+                // Restaurar escala del preview
                 card.style.transform = originalTransform;
+                card.parentElement.style.height = originalHeight;
                 return canvas;
             }
 
@@ -365,17 +392,15 @@
                                 try {
                                     await navigator.share({
                                         files: [file],
-                                        title: 'Box score — {{ $game->homeTeam->short_name ?? $game->homeTeam->name }} vs {{ $game->awayTeam->short_name ?? $game->awayTeam->name }}',
+                                        title: 'Box score — {{ $game->homeTeam->name }} vs {{ $game->awayTeam->name }}',
                                         text: '{{ $score["home"] }} - {{ $score["away"] }} · Gameday Score',
                                     });
                                 } catch (e) {
-                                    // usuario cancelo o no soporta
                                     if (e.name !== 'AbortError') {
                                         alert('No se pudo compartir: ' + e.message);
                                     }
                                 }
                             } else {
-                                // Fallback: descarga directa
                                 const link = document.createElement('a');
                                 link.download = 'boxscore-{{ $game->id }}.png';
                                 link.href = canvas.toDataURL('image/png');
