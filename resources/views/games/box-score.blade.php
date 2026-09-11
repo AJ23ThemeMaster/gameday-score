@@ -48,7 +48,7 @@
                          huecos vacios. Solo durante el export se fuerza 1080x1080. --}}
                     <div id="box-score-wrapper" class="w-full max-w-[1080px]">
                         <div id="box-score-card"
-                             class="mx-auto bg-gradient-to-br from-indigo-900 via-indigo-800 to-blue-900 text-white shadow-2xl flex flex-col"
+                             class="mx-auto bg-gradient-to-br from-indigo-900 via-indigo-800 to-blue-900 text-white shadow-2xl rounded-xl flex flex-col overflow-hidden"
                              style="width: 1080px; transform-origin: top center;">
 
                         {{-- Header --}}
