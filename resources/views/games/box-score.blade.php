@@ -312,40 +312,87 @@
                 const wrapperWidth = card.parentElement.clientWidth;
                 const scale = Math.min(1, wrapperWidth / NATIVE_W);
                 card.style.transform = 'scale(' + scale + ')';
-                // Ajustar la altura del wrapper a la altura natural del card escalado
                 const naturalHeight = card.scrollHeight;
                 card.parentElement.style.height = (naturalHeight * scale) + 'px';
             }
             fitCard();
             window.addEventListener('resize', fitCard);
 
-            // ---- Snapshot para descargar/compartir (1080x1080 con secciones expandidas) ----
+            // Convierte <img src="http://..."> a data URL base64 para evitar
+            // problemas de CORS al capturar con html2canvas. Si falla, deja
+            // el src original (la imagen saldra vacia pero el resto se vera OK).
+            async function inlineImages(rootEl) {
+                const imgs = rootEl.querySelectorAll('img');
+                await Promise.all([...imgs].map(async (img) => {
+                    const src = img.getAttribute('src');
+                    if (!src || src.startsWith('data:')) return;
+                    try {
+                        const res = await fetch(src, { mode: 'cors', credentials: 'omit' });
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        const blob = await res.blob();
+                        const dataUrl = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = reject;
+                            reader.readAsDataURL(blob);
+                        });
+                        img.src = dataUrl;
+                    } catch (e) {
+                        console.warn('No se pudo inlinear imagen:', src, e.message);
+                    }
+                }));
+            }
+
+            // ---- Snapshot para descargar/compartir (1080x1080 con card clonado) ----
             async function snapshot(scale = 1) {
-                // Forzar 1:1 (1080x1080) y activar flex-grow en las secciones
+                // 1) Esperar a que las imagenes reales del DOM terminen de cargar
+                await inlineImages(card);
+
+                // 2) Restaurar escala del preview (la card queda a tamano natural)
                 const originalTransform = card.style.transform;
-                const originalHeight = card.parentElement.style.height;
-                const originalCardHeight = card.style.height;
-                const growEls = card.querySelectorAll('.export-grow');
-                growEls.forEach(el => el.style.flexGrow = '1');
+                card.style.transform = 'none';
 
-                card.style.transform = 'scale(1)';
-                card.style.height = NATIVE_W + 'px';
-                card.parentElement.style.height = NATIVE_W + 'px';
+                // 3) Clonar el card para exportarlo sin afectar el preview
+                const clone = card.cloneNode(true);
+                clone.style.transform = 'none';
+                clone.style.width = NATIVE_W + 'px';
+                clone.style.height = 'auto';
+                clone.style.boxShadow = 'none';
 
-                const canvas = await html2canvas(card, {
+                // 4) Envoltorio 1080x1080 con fondo indigo para forzar el 1:1
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = [
+                    'position: fixed',
+                    'top: -100000px',
+                    'left: -100000px',
+                    'width: ' + NATIVE_W + 'px',
+                    'height: ' + NATIVE_W + 'px',
+                    'background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 50%, #1e3a8a 100%)',
+                    'display: flex',
+                    'flex-direction: column',
+                    'padding: 40px',
+                    'box-sizing: border-box',
+                    'z-index: -1',
+                ].join(';');
+                document.body.appendChild(wrapper);
+                wrapper.appendChild(clone);
+
+                // 5) Pequeña pausa para que el navegador renderice el clon + imagenes
+                await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+                const canvas = await html2canvas(wrapper, {
                     backgroundColor: null,
                     scale: scale,
                     width: NATIVE_W,
                     height: NATIVE_W,
                     useCORS: true,
                     allowTaint: true,
+                    logging: false,
                 });
 
-                // Restaurar estado del preview
+                // 6) Limpieza
+                document.body.removeChild(wrapper);
                 card.style.transform = originalTransform;
-                card.style.height = originalCardHeight;
-                card.parentElement.style.height = originalHeight;
-                growEls.forEach(el => el.style.flexGrow = '');
 
                 return canvas;
             }
