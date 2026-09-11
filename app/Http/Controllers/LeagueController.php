@@ -13,6 +13,11 @@ use Illuminate\View\View;
 
 class LeagueController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('admin');
+    }
+
     public function index(): View
     {
         $leagues = League::orderBy('name')

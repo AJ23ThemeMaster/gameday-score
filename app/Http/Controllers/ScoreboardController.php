@@ -28,7 +28,7 @@ class ScoreboardController extends Controller
      */
     public function stats(Request $request, Game $game): JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        $this->authorize('view', $game);
 
         $game->load('homeTeam', 'awayTeam');
         $totalInnings = (int) ($game->innings_count ?: 7);
@@ -83,7 +83,7 @@ class ScoreboardController extends Controller
      */
     public function reorderLineup(Request $request, Game $game): JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        $this->authorize('score', $game);
 
         $data = $request->validate([
             'team_id' => 'required|integer',
@@ -122,7 +122,7 @@ class ScoreboardController extends Controller
      */
     public function show(Request $request, Game $game): View|JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        $this->authorize('view', $game);
 
         $game->load([
             'category', 'tournament', 'tournament.league', 'stadium',
@@ -162,7 +162,7 @@ class ScoreboardController extends Controller
      */
     public function poll(Request $request, Game $game): JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        $this->authorize('view', $game);
 
         [$state, $pitcher, $batter, $onDeck, $pitcherStats, $batterStats] =
             $this->buildSnapshot($game);

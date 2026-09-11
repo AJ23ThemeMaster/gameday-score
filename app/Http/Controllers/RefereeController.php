@@ -13,6 +13,11 @@ use Illuminate\View\View;
 
 class RefereeController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('admin');
+    }
+
     public function index(): View
     {
         $referees = Referee::orderBy('last_name')

@@ -15,6 +15,11 @@ use Illuminate\View\View;
 
 class AthleteController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('admin');
+    }
+
     public function index(): View
     {
         $athletes = Athlete::with(['team', 'category'])

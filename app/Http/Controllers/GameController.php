@@ -17,13 +17,32 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class GameController extends Controller
 {
     public function index(): View
     {
-        $games = Game::with(['category', 'stadium', 'homeTeam', 'awayTeam'])
+        // DISI-15: admin y anotador pueden ver juegos.
+        // Admin: ve todos los juegos.
+        // Anotador: solo ve los juegos donde esta asignado (game_scorekeeper
+        //          apunta a un scorekeeper cuyo user_id == Auth::id()).
+        abort_unless(Gate::allows('view games'), 403);
+
+        $query = Game::with(['category', 'stadium', 'homeTeam', 'awayTeam']);
+        if (Auth::user()->hasRole('anotador')) {
+            $scorekeeperIds = Scorekeeper::where('user_id', Auth::id())->pluck('id');
+            $gameIds = \DB::table('game_scorekeeper')
+                ->whereIn('scorekeeper_id', $scorekeeperIds)
+                ->pluck('game_id');
+            $query->whereIn('id', $gameIds);
+        } elseif (! Auth::user()->hasRole('admin')) {
+            // Otros: solo sus propios juegos
+            $query->where('user_id', Auth::id());
+        }
+        $games = $query
             ->ownedBy(Auth::id())
             ->orderByDesc('scheduled_at')
             ->paginate(15);
@@ -41,6 +60,9 @@ class GameController extends Controller
 
     public function create(): View
     {
+        // DISI-15: solo admin puede crear juegos
+        abort_unless(Gate::allows('manage games crud'), 403);
+
         $categories = Category::active()->orderBy('name')->get();
         $stadiums = Stadium::active()->orderBy('name')->get();
         $teams = Team::active()->orderBy('name')->get();
@@ -53,6 +75,9 @@ class GameController extends Controller
 
     public function store(StoreGameRequest $request): RedirectResponse
     {
+        // DISI-15: solo admin puede crear juegos
+        abort_unless(Gate::allows('manage games crud'), 403);
+
         $data = $request->validated();
         $data['user_id'] = Auth::id();
         $data['is_public'] = $request->boolean('is_public');
@@ -77,8 +102,8 @@ class GameController extends Controller
 
     public function show(Game $game): View
     {
-        // Solo el owner puede ver sus juegos
-        abort_unless($game->user_id === Auth::id(), 403);
+        // DISI-15: usar policy para owner/admin/anotador asignado
+        $this->authorize('view', $game);
 
         $game->load([
             'category', 'stadium', 'homeTeam', 'awayTeam', 'user',
@@ -90,7 +115,7 @@ class GameController extends Controller
 
     public function edit(Game $game): View
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        $this->authorize('update', $game);
 
         $categories = Category::active()->orderBy('name')->get();
         $stadiums = Stadium::active()->orderBy('name')->get();
@@ -105,7 +130,7 @@ class GameController extends Controller
 
     public function update(UpdateGameRequest $request, Game $game): RedirectResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        $this->authorize('update', $game);
 
         $data = $request->validated();
         $data['is_public'] = $request->boolean('is_public');
@@ -130,7 +155,7 @@ class GameController extends Controller
 
     public function destroy(Game $game): RedirectResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        $this->authorize('delete', $game);
 
         $game->delete();
 
@@ -145,7 +170,7 @@ class GameController extends Controller
 
     public function live(Game $game): View
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        $this->authorize('view', $game);
 
         $game->load([
             'category', 'stadium', 'homeTeam', 'awayTeam',
@@ -158,7 +183,7 @@ class GameController extends Controller
 
     public function updateState(UpdateGameStateRequest $request, Game $game): RedirectResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        $this->authorize('score', $game);
 
         $data = array_filter($request->validated(), fn ($v) => $v !== null);
 
@@ -180,7 +205,7 @@ class GameController extends Controller
 
     public function addRun(Request $request, Game $game): RedirectResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        $this->authorize('score', $game);
 
         $request->validate([
             'team' => ['required', 'in:home,away'],
@@ -201,7 +226,7 @@ class GameController extends Controller
 
     public function endInning(Request $request, Game $game): RedirectResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        $this->authorize('score', $game);
 
         // Si es la parte de arriba (top), cambiar a parte de abajo (bottom) del mismo inning
         // Si es la parte de abajo, avanzar al siguiente inning, parte de arriba

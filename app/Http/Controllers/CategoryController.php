@@ -13,6 +13,11 @@ use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('admin');
+    }
+
     public function index(): View
     {
         $categories = Category::with('team')

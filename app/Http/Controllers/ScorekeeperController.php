@@ -13,6 +13,11 @@ use Illuminate\View\View;
 
 class ScorekeeperController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('admin');
+    }
+
     public function index(): View
     {
         $scorekeepers = Scorekeeper::orderBy('last_name')
