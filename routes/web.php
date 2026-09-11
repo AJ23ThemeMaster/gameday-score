@@ -91,6 +91,9 @@ Route::middleware(['auth', '2fa.challenge'])->group(function () {
     Route::get('games/{game}/scoreboard/stats', [ScoreboardController::class, 'stats'])->name('games.scoreboard.stats');
     // DISI-12 MEJ-4: reordenar lineup (drag&drop)
     Route::patch('games/{game}/lineup/order', [ScoreboardController::class, 'reorderLineup'])->name('games.lineup.reorder');
+    // DISI-17: Box score inning-by-inning + pitchers + MVP + compartir imagen
+    Route::get('games/{game}/box-score', [ScoreboardController::class, 'boxScore'])->name('games.box-score');
+    Route::patch('games/{game}/box-score/attributions', [ScoreboardController::class, 'updateAttributions'])->name('games.box-score.attributions');
     // DISI-12 (fases siguientes): registrar jugadas
     Route::post('games/{game}/plays', [\App\Http\Controllers\PlayController::class, 'store'])->name('games.plays.store');
     Route::get('games/{game}/plays', [\App\Http\Controllers\PlayController::class, 'index'])->name('games.plays.index');

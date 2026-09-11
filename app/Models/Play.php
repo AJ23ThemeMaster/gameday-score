@@ -236,26 +236,50 @@ class Play extends Model
     }
 
     /**
-     * Calcula el score del juego contando carreras por inning.
+     * Calcula el score del juego contando carreras, hits y errores por inning.
+     *
+     * Devuelve:
+     *  - home/away: totales de carreras
+     *  - by_inning: [inning => [top => ['R'=>N, 'H'=>N, 'E'=>N], bottom => {...}]]
+     *  - totals_hits: totales de hits por equipo (home/away)
+     *  - totals_errors: totales de errores por equipo (home/away)
+     *
+     * Hits: plays.type = 'hit' (single, double, triple, HR, inside-the-park).
+     * Errors: plays.type = 'error'.
      */
     public static function scoreboard(int $gameId): array
     {
-        $game = Game::find($gameId);
-
-        // Carreras por inning y equipo
-        $plays = static::where('game_id', $gameId)
+        // Carreras: solo plays con runs_scored > 0
+        $runPlays = static::where('game_id', $gameId)
             ->where('runs_scored', '>', 0)
             ->orderBy('inning')
             ->orderBy('half')
             ->orderBy('sequence')
             ->get();
 
-        $byInning = []; // [inning => [top => N, bottom => N]]
-        $totals = ['home' => 0, 'away' => 0];
+        // Hits: una jugada por hit (single, double, triple, HR, ITP)
+        $hitPlays = static::where('game_id', $gameId)
+            ->where('type', static::TYPE_HIT)
+            ->orderBy('inning')
+            ->orderBy('half')
+            ->orderBy('sequence')
+            ->get();
 
-        foreach ($plays as $p) {
-            $byInning[$p->inning][$p->half] = ($byInning[$p->inning][$p->half] ?? 0) + $p->runs_scored;
-            // top = visitante batea, bottom = local batea
+        // Errores: una jugada por error
+        $errorPlays = static::where('game_id', $gameId)
+            ->where('type', static::TYPE_ERROR)
+            ->orderBy('inning')
+            ->orderBy('half')
+            ->orderBy('sequence')
+            ->get();
+
+        $byInning = []; // [inning => [half => ['R'=>N, 'H'=>N, 'E'=>N]]]
+        $totals = ['home' => 0, 'away' => 0];
+        $totalsHits = ['home' => 0, 'away' => 0];
+        $totalsErrors = ['home' => 0, 'away' => 0];
+
+        foreach ($runPlays as $p) {
+            $byInning[$p->inning][$p->half]['R'] = ($byInning[$p->inning][$p->half]['R'] ?? 0) + $p->runs_scored;
             if ($p->half === 'top') {
                 $totals['away'] += $p->runs_scored;
             } else {
@@ -263,9 +287,32 @@ class Play extends Model
             }
         }
 
+        foreach ($hitPlays as $p) {
+            $byInning[$p->inning][$p->half]['H'] = ($byInning[$p->inning][$p->half]['H'] ?? 0) + 1;
+            if ($p->half === 'top') {
+                $totalsHits['away']++;
+            } else {
+                $totalsHits['home']++;
+            }
+        }
+
+        foreach ($errorPlays as $p) {
+            $byInning[$p->inning][$p->half]['E'] = ($byInning[$p->inning][$p->half]['E'] ?? 0) + 1;
+            // Errors se cuentan al equipo que DEFENDE (no al que batea).
+            // top = visitante batea, local DEFENDE => error de HOME
+            // bottom = local batea, visitante DEFENDE => error de AWAY
+            if ($p->half === 'top') {
+                $totalsErrors['home']++;
+            } else {
+                $totalsErrors['away']++;
+            }
+        }
+
         return [
             'home' => $totals['home'],
             'away' => $totals['away'],
+            'totals_hits' => $totalsHits,
+            'totals_errors' => $totalsErrors,
             'by_inning' => $byInning,
         ];
     }

@@ -43,6 +43,10 @@ class Game extends Model
         'roster',
         'started_at',
         'ended_at',
+        'winning_pitcher_id',
+        'losing_pitcher_id',
+        'save_pitcher_id',
+        'mvp_athlete_id',
         'notes',
     ];
 
@@ -107,6 +111,27 @@ class Game extends Model
     public function awayTeam(): BelongsTo
     {
         return $this->belongsTo(Team::class, 'away_team_id');
+    }
+
+    // DISI-17: atribuciones de jugadores al final del juego
+    public function winningPitcher(): BelongsTo
+    {
+        return $this->belongsTo(Athlete::class, 'winning_pitcher_id');
+    }
+
+    public function losingPitcher(): BelongsTo
+    {
+        return $this->belongsTo(Athlete::class, 'losing_pitcher_id');
+    }
+
+    public function savePitcher(): BelongsTo
+    {
+        return $this->belongsTo(Athlete::class, 'save_pitcher_id');
+    }
+
+    public function mvp(): BelongsTo
+    {
+        return $this->belongsTo(Athlete::class, 'mvp_athlete_id');
     }
 
     public function scorekeepers(): BelongsToMany

@@ -306,4 +306,83 @@ class ScoreboardController extends Controller
 
         return $out;
     }
+
+    // ===================================================================
+    // DISI-17: Box score inning-by-inning + pitchers + MVP + share image
+    // ===================================================================
+
+    /**
+     * Vista del box score inning-by-inning con carreras/hits/errores,
+     * pitchers (G/P/SV), MVP, y boton para compartir como imagen 1:1.
+     */
+    public function boxScore(Request $request, Game $game): View
+    {
+        $this->authorize('view', $game);
+
+        $game->load([
+            'category', 'tournament', 'tournament.league', 'stadium',
+            'homeTeam', 'awayTeam',
+            'winningPitcher', 'losingPitcher', 'savePitcher', 'mvp',
+        ]);
+
+        $totalInnings = (int) ($game->innings_count ?: 7);
+        $score = Play::scoreboard($game->id);
+
+        // Construir el line score: array por inning (1..N) con R/H/E para local y visitante
+        $lineScore = [];
+        for ($i = 1; $i <= $totalInnings; $i++) {
+            $lineScore[$i] = [
+                'home' => $score['by_inning'][$i]['bottom']['R'] ?? 0,
+                'away' => $score['by_inning'][$i]['top']['R'] ?? 0,
+                'home_h' => $score['by_inning'][$i]['bottom']['H'] ?? 0,
+                'away_h' => $score['by_inning'][$i]['top']['H'] ?? 0,
+                'home_e' => $score['by_inning'][$i]['bottom']['E'] ?? 0,
+                'away_e' => $score['by_inning'][$i]['top']['E'] ?? 0,
+            ];
+        }
+
+        // Atletas elegibles para pitcher/MVP (todos los de los dos equipos del juego)
+        $athletes = Athlete::with('team')
+            ->whereIn('team_id', [$game->home_team_id, $game->away_team_id])
+            ->orderBy('team_id')
+            ->orderBy('number')
+            ->get();
+
+        return view('games.box-score', compact(
+            'game', 'score', 'lineScore', 'totalInnings', 'athletes'
+        ));
+    }
+
+    /**
+     * Actualizar las atribuciones del juego (pitchers + MVP).
+     * Solo admin o anotador del juego.
+     */
+    public function updateAttributions(Request $request, Game $game)
+    {
+        $this->authorize('score', $game);
+
+        $data = $request->validate([
+            'winning_pitcher_id' => ['nullable', 'integer'],
+            'losing_pitcher_id' => ['nullable', 'integer'],
+            'save_pitcher_id' => ['nullable', 'integer'],
+            'mvp_athlete_id' => ['nullable', 'integer'],
+        ]);
+
+        // Validar que los atletas pertenecen a uno de los dos equipos del juego
+        $validIds = Athlete::whereIn('team_id', [$game->home_team_id, $game->away_team_id])
+            ->pluck('id')
+            ->all();
+
+        foreach (['winning_pitcher_id', 'losing_pitcher_id', 'save_pitcher_id', 'mvp_athlete_id'] as $field) {
+            if (! empty($data[$field]) && ! in_array((int) $data[$field], $validIds, true)) {
+                return back()->withErrors([
+                    $field => 'El atleta seleccionado no pertenece a ninguno de los equipos del juego.',
+                ])->withInput();
+            }
+        }
+
+        $game->update($data);
+
+        return back()->with('status', 'Atribuciones actualizadas correctamente.');
+    }
 }
