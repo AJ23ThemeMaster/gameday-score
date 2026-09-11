@@ -80,7 +80,7 @@
                                     </td>
                                     <td class="px-6 py-3 text-right text-sm font-medium">
                                         @if (in_array($g->status, ['scheduled', 'in_progress', 'paused']))
-                                            <a href="{{ route('games.live', $g) }}" class="text-amber-600 hover:text-amber-900 mr-3">{{ __('En vivo') }}</a>
+                                            <a href="{{ route('games.scoreboard', $g) }}" class="text-amber-600 hover:text-amber-900 mr-3">{{ __('En vivo') }}</a>
                                         @endif
                                         <a href="{{ route('games.edit', $g) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">{{ __('Editar') }}</a>
                                         <form action="{{ route('games.destroy', $g) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar el juego?');">
