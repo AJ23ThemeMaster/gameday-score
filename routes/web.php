@@ -32,10 +32,6 @@ Route::get('/juego/publico/{token}', [PublicGameController::class, 'show'])
 Route::get('/juego/publico/{token}/state', [PublicGameController::class, 'stateJson'])
     ->name('public.games.state');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
 // DISI-16b: rutas de challenge 2FA (solo auth, NO protegidas por 2fa.challenge)
 Route::middleware('auth')->group(function () {
     Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'show'])->name('two-factor.challenge');
@@ -43,8 +39,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/two-factor-challenge/cancel', [TwoFactorChallengeController::class, 'cancel'])->name('two-factor.challenge.cancel');
 });
 
-// DISI-16b: resto de rutas autenticadas (protegidas por 2fa.challenge si aplica)
+// DISI-16b: dashboard y resto de rutas autenticadas (protegidas por 2fa.challenge)
 Route::middleware(['auth', '2fa.challenge'])->group(function () {
+    // Dashboard con 'verified' adicional
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->middleware('verified')->name('dashboard');
+
     // Perfil del usuario (Breeze) — extendido en DISI-16
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
