@@ -1,6 +1,6 @@
 # Refactor: Gameday Score con Laravel + MySQL
 
-> **Estado actual (DISI-10):** Roster y sustituciones en vivo completas. La PWA original sigue accesible en `/legacy/`.
+> **Estado actual (DISI-16):** CRUD de Roles y Usuarios + módulo "Mi perfil" con 2FA (TOTP). Scoreboard completo, permisología con roles admin/anotador, jerarquía Liga→Equipo→Categoría. La PWA original sigue accesible en `/legacy/`.
 
 ## 🎯 Objetivo
 
@@ -70,6 +70,10 @@ gameday-score/
 | **DISI-10** | Roster por juego: gestión de alineaciones y sustituciones en vivo (game_athlete pivot)     | ✅ Hecho |
 | **DISI-11** | Roster con AJAX: actualizar/agregar/quitar/sustituir sin recargar página + toasts          | ✅ Hecho |
 | **DISI-12** | Scoreboard con jugadas modernas (PITCHEo + BATEo) — Fases 1-5 + BUG-12.a + MEJ-1..4       | ✅ Hecho (Fases 1, 2, 2.5, 3, 4, 4b, 5, BUG-12.a y MEJ-1..4) |
+| **DISI-13** | CRUD de Ligas y Torneos + breadcrumb Liga/Torneo/Categoría en scoreboard                  | ✅ Hecho |
+| **DISI-14** | Jerarquía `team→tournament`, `category→team`, `athlete→{team,category}` (corregido en 14b: `team→league`) | ✅ Hecho |
+| **DISI-15** | Permisología con spatie/laravel-permission: roles `admin` (gestiona todo) y `anotador` (solo ve + anota donde está asignado) | ✅ Hecho |
+| **DISI-16** | CRUD de Roles y Usuarios para asignación de permisos + módulo "Mi perfil" (datos, fotografía, contraseña, 2FA con TOTP/Google Authenticator) | ✅ Hecho |
 
 ## 🔧 Convenciones del Proyecto
 
