@@ -46,11 +46,11 @@
                     {{-- Contenedor de escala: el card mide 1080x1080 nativamente, pero se escala con CSS transform para caber en el viewport --}}
                     <div id="box-score-wrapper" class="w-full max-w-[1080px]">
                         <div id="box-score-card"
-                             class="mx-auto bg-gradient-to-br from-indigo-900 via-indigo-800 to-blue-900 text-white relative shadow-2xl"
-                             style="width: 1080px; height: 1080px; transform-origin: top center;">
+                             class="mx-auto bg-gradient-to-br from-indigo-900 via-indigo-800 to-blue-900 text-white shadow-2xl flex flex-col"
+                             style="width: 1080px; min-height: 1080px; transform-origin: top center;">
 
                         {{-- Header --}}
-                        <div class="px-8 py-6 border-b border-white/20">
+                        <div class="px-8 py-6 border-b border-white/20 flex-shrink-0">
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-xs uppercase tracking-widest text-indigo-200">Box Score</p>
@@ -76,7 +76,7 @@
                         </div>
 
                         {{-- Equipos con logos --}}
-                        <div class="px-8 py-6 border-b border-white/20">
+                        <div class="px-8 py-6 border-b border-white/20 flex-shrink-0">
                             <div class="grid grid-cols-2 gap-8 items-center">
                                 {{-- Local --}}
                                 <div class="flex items-center gap-4">
@@ -121,7 +121,7 @@
                         </div>
 
                         {{-- Line score: inning-by-inning --}}
-                        <div class="px-8 py-6 border-b border-white/20">
+                        <div class="px-8 py-6 border-b border-white/20 flex-shrink-0">
                             <table class="w-full text-center">
                                 <thead>
                                     <tr class="text-xs uppercase tracking-widest text-indigo-200 border-b border-white/20">
@@ -159,8 +159,11 @@
                             </table>
                         </div>
 
+                        {{-- Spacer que empuja el footer hacia abajo cuando el contenido es corto --}}
+                        <div class="flex-grow"></div>
+
                         {{-- Pitchers + MVP --}}
-                        <div class="px-8 py-6 border-b border-white/20">
+                        <div class="px-8 py-6 border-b border-white/20 flex-shrink-0">
                             <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
                                 <div class="flex items-center gap-2">
                                     <span class="text-indigo-200 font-semibold uppercase tracking-wider text-xs w-32">Pitcher ganador</span>
@@ -205,8 +208,8 @@
                             </div>
                         </div>
 
-                        {{-- Footer --}}
-                        <div class="px-8 py-4 absolute bottom-0 left-0 right-0 flex items-center justify-between text-xs text-indigo-200">
+                        {{-- Footer (siempre al final, no absolute) --}}
+                        <div class="px-8 py-4 flex items-center justify-between text-xs text-indigo-200 border-t border-white/20 flex-shrink-0">
                             <span>Generado con ⚾ Gameday Score</span>
                             <span>{{ now()->format('d/m/Y H:i') }}</span>
                         </div>
@@ -320,8 +323,9 @@
             const card = document.getElementById('box-score-card');
             if (!card) return;
 
-            // ---- Escalado responsivo del preview (el card mide 1080x1080 nativamente,
-            //      pero se reduce con CSS transform para caber en el viewport) ----
+            // ---- Escalado responsivo del preview (el card mide 1080px de ancho,
+            //      alto minimo 1080px para mantener el formato 1:1, pero se escala
+            //      con CSS transform para caber en el viewport) ----
             const NATIVE_W = 1080;
             const NATIVE_H = 1080;
             function fitCard() {
@@ -334,13 +338,15 @@
             fitCard();
             window.addEventListener('resize', fitCard);
 
-            // ---- Snapshot para descargar/compartir (siempre a tamaño nativo 1080x1080) ----
+            // ---- Snapshot para descargar/compartir (siempre 1080x1080) ----
             async function snapshot(scale = 1) {
-                // Restaurar escala 1 antes de capturar
+                // Restaurar escala 1 antes de capturar y forzar altura 1080px
                 const originalTransform = card.style.transform;
                 const originalHeight = card.parentElement.style.height;
+                const originalCardHeight = card.style.minHeight;
                 card.style.transform = 'scale(1)';
                 card.parentElement.style.height = NATIVE_H + 'px';
+                card.style.minHeight = NATIVE_H + 'px';
 
                 const canvas = await html2canvas(card, {
                     backgroundColor: null,
@@ -354,6 +360,7 @@
                 // Restaurar escala del preview
                 card.style.transform = originalTransform;
                 card.parentElement.style.height = originalHeight;
+                card.style.minHeight = originalCardHeight;
                 return canvas;
             }
 
