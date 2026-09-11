@@ -27,20 +27,20 @@
         }
 
         /* MEJ-5: indicador del equipo que esta bateando.
-           Cuando data-batting="1" se aplica fondo sutil + anillo exterior
-           + escala ligera. La transicion CSS hace que el cambio entre
-           equipos sea suave (no abrupto). Solo color, sin texto. */
+           Cuando data-batting="1" se aplica un fondo verde MUY sutil
+           y el nombre del equipo + label cambian a verde bold.
+           SIN anillo, SIN escala, SIN box-shadow (estructura limpia
+           similar al scoreboard del adjunto). */
         .team-zone {
-            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            transition: background-color 0.3s ease;
             position: relative;
+            border-radius: 1rem;
+            padding: 1rem;
         }
         .team-zone[data-batting="1"] {
-            background-color: rgba(16, 185, 129, 0.10);
-            box-shadow: inset 0 0 0 2px #10b981;
-            transform: scale(1.04);
-            z-index: 1;
+            background-color: rgba(16, 185, 129, 0.08);
         }
-        .team-zone[data-batting="1"] .team-score {
+        .team-zone[data-batting="1"] .team-name {
             color: #047857;
         }
         .team-zone[data-batting="1"] .team-label-local,
@@ -116,46 +116,49 @@
                     @endif
                 </div>
 
-                {{-- Logos + scores (Local | Inning | Visitante) --}}
-                <div class="flex items-stretch border-b-2 border-gray-100">
-                    {{-- Local --}}
-                    <div class="team-zone flex-1 flex flex-col items-center justify-center gap-1.5 p-4 rounded-tl-2xl"
+                {{-- Header: Local | Score centrado | Visitante (estructura del adjunto) --}}
+                <div class="flex items-center justify-between gap-2 sm:gap-4 border-b-2 border-gray-100 py-5 px-3 sm:px-6">
+
+                    {{-- Local: logo arriba, nombre medio, label abajo (alineado a la derecha hacia el centro) --}}
+                    <div class="team-zone flex-1 flex flex-col items-center sm:items-end gap-1.5"
                          data-team-zone="home"
                          data-batting="{{ $state['half'] === 'bottom' ? '1' : '0' }}">
                         @if ($game->homeTeam->logoUrl)
-                            <img src="{{ $game->homeTeam->logoUrl }}" class="h-14 w-14 object-contain">
+                            <img src="{{ $game->homeTeam->logoUrl }}" class="h-16 w-16 sm:h-20 sm:w-20 object-contain">
                         @else
-                            <div class="h-14 w-14 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs">LOGO</div>
+                            <div class="h-16 w-16 sm:h-20 sm:w-20 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs">LOGO</div>
                         @endif
-                        <div class="text-5xl font-black text-gray-900 leading-none team-score" data-score="home">{{ $score['home'] }}</div>
-                        <div class="text-sm font-bold text-gray-800 text-center leading-tight">{{ $game->homeTeam->name }}</div>
-                        <div class="text-[10px] uppercase tracking-wider text-gray-500 team-label-local">{{ __('Local') }}</div>
+                        <div class="team-name text-sm sm:text-base font-bold text-gray-800 text-center sm:text-right leading-tight">{{ $game->homeTeam->name }}</div>
+                        <div class="team-label-local text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider">{{ __('Local') }}</div>
                     </div>
 
-                    {{-- Inning indicator (centro) --}}
-                    <div class="flex flex-col items-center justify-center px-3 py-2 bg-gray-50 min-w-[80px] overflow-hidden" data-inning-indicator>
-                        <div class="text-[10px] uppercase tracking-wider text-gray-500">{{ __('Inning') }}</div>
-                        <div class="relative" style="height: 1.75rem; min-width: 2.5rem;">
-                            <div class="absolute inset-0 flex items-center justify-center text-2xl font-black text-gray-900 inning-anim-host" data-inning-number data-inning-anim>{{ $state['inning'] }}</div>
+                    {{-- Centro: score "home - away" + Inning indicator --}}
+                    <div class="flex flex-col items-center justify-center min-w-[120px] sm:min-w-[160px] gap-1">
+                        <div class="flex items-baseline gap-2 sm:gap-3 text-3xl sm:text-5xl font-black text-gray-900 leading-none">
+                            <span data-score="home">{{ $score['home'] }}</span>
+                            <span class="text-gray-400">-</span>
+                            <span data-score="away">{{ $score['away'] }}</span>
                         </div>
-                        <div class="relative" style="height: 1rem; min-width: 1.25rem;">
-                            <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold uppercase text-gray-600 inning-anim-host" data-inning-half data-inning-anim>{{ $state['half'] === 'top' ? '▲' : '▼' }}</div>
+                        <div class="text-xs sm:text-sm text-gray-500 flex items-center gap-1" data-inning-indicator>
+                            <span>{{ __('Inning') }}</span>
+                            <span class="font-bold text-gray-700 inning-anim-host" data-inning-number data-inning-anim>{{ $state['inning'] }}</span>
+                            <span class="text-gray-600 inning-anim-host" data-inning-half data-inning-anim>{{ $state['half'] === 'top' ? '▲' : '▼' }}</span>
                         </div>
                     </div>
 
-                    {{-- Visitante --}}
-                    <div class="team-zone flex-1 flex flex-col items-center justify-center gap-1.5 p-4 rounded-tr-2xl"
+                    {{-- Visitante: logo arriba, nombre medio, label abajo (alineado a la izquierda hacia el centro) --}}
+                    <div class="team-zone flex-1 flex flex-col items-center sm:items-start gap-1.5"
                          data-team-zone="away"
                          data-batting="{{ $state['half'] === 'top' ? '1' : '0' }}">
                         @if ($game->awayTeam->logoUrl)
-                            <img src="{{ $game->awayTeam->logoUrl }}" class="h-14 w-14 object-contain">
+                            <img src="{{ $game->awayTeam->logoUrl }}" class="h-16 w-16 sm:h-20 sm:w-20 object-contain">
                         @else
-                            <div class="h-14 w-14 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs">LOGO</div>
+                            <div class="h-16 w-16 sm:h-20 sm:w-20 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs">LOGO</div>
                         @endif
-                        <div class="text-5xl font-black text-gray-900 leading-none team-score" data-score="away">{{ $score['away'] }}</div>
-                        <div class="text-sm font-bold text-gray-800 text-center leading-tight">{{ $game->awayTeam->name }}</div>
-                        <div class="text-[10px] uppercase tracking-wider text-gray-500 team-label-away">{{ __('Visitante') }}</div>
+                        <div class="team-name text-sm sm:text-base font-bold text-gray-800 text-center sm:text-left leading-tight">{{ $game->awayTeam->name }}</div>
+                        <div class="team-label-away text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider">{{ __('Visitante') }}</div>
                     </div>
+
                 </div>
 
                 {{-- Count: BOLAS / STRIKES / OUTS --}}
