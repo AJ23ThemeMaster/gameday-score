@@ -199,7 +199,7 @@ class GameController extends Controller
         $game->update($data);
 
         return redirect()
-            ->route('games.live', $game)
+            ->route('games.scoreboard', $game)
             ->with('status', __('Marcador actualizado.'));
     }
 
@@ -220,7 +220,7 @@ class GameController extends Controller
         }
 
         return redirect()
-            ->route('games.live', $game)
+            ->route('games.scoreboard', $game)
             ->with('status', __('Carrera sumada.'));
     }
 
@@ -244,7 +244,7 @@ class GameController extends Controller
                     'ended_at' => now(),
                 ]);
                 return redirect()
-                    ->route('games.live', $game)
+                    ->route('games.scoreboard', $game)
                     ->with('status', __('¡Juego finalizado!'));
             }
 
@@ -259,7 +259,7 @@ class GameController extends Controller
         }
 
         return redirect()
-            ->route('games.live', $game)
+            ->route('games.scoreboard', $game)
             ->with('status', __('Inning avanzado.'));
     }
 
