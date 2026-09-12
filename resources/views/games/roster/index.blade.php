@@ -6,7 +6,7 @@
             </h2>
             <div class="flex gap-2">
                 <a href="{{ route('games.show', $game) }}" class="text-sm text-gray-600 hover:text-gray-800">{{ __('Detalle') }}</a>
-                <a href="{{ route('games.live', $game) }}" class="inline-flex items-center px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-md">{{ __('Scoreboard en vivo') }}</a>
+                <a href="{{ route('games.scoreboard', $game) }}" class="inline-flex items-center px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-md">{{ __('Scoreboard en vivo') }}</a>
             </div>
         </div>
     </x-slot>

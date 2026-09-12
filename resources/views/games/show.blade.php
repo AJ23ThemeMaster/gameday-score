@@ -10,7 +10,7 @@
                 <a href="{{ route('games.index') }}" class="text-sm text-gray-600 hover:text-gray-800">{{ __('Listado') }}</a>
                 <a href="{{ route('games.roster.index', $game) }}" class="inline-flex items-center px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-md">{{ __('Roster') }}</a>
                 @if (in_array($game->status, ['scheduled', 'in_progress', 'paused']))
-                    <a href="{{ route('games.live', $game) }}" class="inline-flex items-center px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-md">{{ __('Scoreboard en vivo') }}</a>
+                    <a href="{{ route('games.scoreboard', $game) }}" class="inline-flex items-center px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-md">{{ __('Scoreboard en vivo') }}</a>
                 @endif
                 <a href="{{ route('games.edit', $game) }}" class="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-md">{{ __('Editar') }}</a>
             </div>
