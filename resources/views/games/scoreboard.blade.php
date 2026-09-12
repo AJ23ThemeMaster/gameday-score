@@ -394,7 +394,7 @@
                     </div>
 
                     {{-- Tab content: PITCHEo (Fase 2 — funcional) --}}
-                    <div x-show="tab === 'pitch'" x-cloak class="grid grid-cols-1 gap-2 p-4">
+                    <div x-show="tab === 'pitch'" x-cloak class="grid grid-cols-4 gap-2 p-4">
                         <button type="button" @click="sendBall()"
                                 :disabled="isPitching"
                                 class="py-6 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
