@@ -450,51 +450,51 @@
                         </button>
                     </div>
 
-                    {{-- Tab content: EXTRAS (Fase 4) --}}
-                    <div x-show="tab === 'extra'" x-cloak class="grid grid-cols-1 gap-2 p-4">
+                    {{-- Tab content: EXTRAS (Fase 4) — 2x4 grid --}}
+                    <div x-show="tab === 'extra'" x-cloak class="grid grid-cols-4 gap-2 p-4">
                         <button type="button" @click="openSubstituteModal()"
                                 :disabled="isPitching"
-                                class="py-3 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-base font-bold rounded-lg transition">
+                                class="py-3 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
                             {{ __('Sustituir') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Pitcher, bateador o corredor') }}</div>
+                            <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Pitcher, bateador o corredor') }}</div>
                         </button>
                         <button type="button" @click="sendBalk()"
                                 :disabled="isPitching"
-                                class="py-3 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white text-base font-bold rounded-lg transition">
+                                class="py-3 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
                             {{ __('Balk') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Corredores avanzan 1 base') }}</div>
+                            <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Corredores avanzan 1 base') }}</div>
                         </button>
                         <button type="button" @click="openBuntModal()"
                                 :disabled="isPitching"
-                                class="py-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-base font-bold rounded-lg transition">
+                                class="py-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
                             {{ __('Toque de bolas') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Sacrifice o bunt single') }}</div>
+                            <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Sacrifice o bunt single') }}</div>
                         </button>
                         <button type="button" @click="openLineupModal()"
                                 :disabled="isPitching"
-                                class="py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-base font-bold rounded-lg transition">
+                                class="py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
                             {{ __('Reordenar lineup') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Drag & drop para cambiar el orden de bateo') }}</div>
+                            <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Drag & drop para cambiar el orden de bateo') }}</div>
                         </button>
                         <button type="button" @click="openStatsModal()"
                                 :disabled="isPitching"
-                                class="py-3 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-base font-bold rounded-lg transition">
+                                class="py-3 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
                             {{ __('Stats del juego') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Box score completo: pitcheo y bateo') }}</div>
+                            <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo: pitcheo y bateo') }}</div>
                         </button>
                         <a href="{{ route('games.box-score', $game) }}"
-                           class="py-3 bg-slate-700 hover:bg-slate-800 text-white text-base font-bold rounded-lg transition text-center block">
-                            📋 {{ __('Box Score inning-by-inning') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Carreras, hits, errores por inning + pitchers y MVP') }}</div>
+                           class="py-3 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-lg transition text-center block">
+                            📋 {{ __('Box Score') }}
+                            <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Carreras, hits, errores por inning') }}</div>
                         </a>
                         <button type="button" @click="openEndInningModal()"
                                 :disabled="isPitching"
-                                class="py-3 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 text-base font-bold rounded-lg border border-rose-200 transition">
+                                class="py-3 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 text-sm font-bold rounded-lg border border-rose-200 transition">
                             {{ __('Finalizar inning') }}
                         </button>
                         <button type="button" @click="openEndGameModal()"
                                 :disabled="isPitching"
-                                class="py-3 bg-rose-100 hover:bg-rose-200 disabled:opacity-50 text-rose-800 text-base font-bold rounded-lg border border-rose-300 transition">
+                                class="py-3 bg-rose-100 hover:bg-rose-200 disabled:opacity-50 text-rose-800 text-sm font-bold rounded-lg border border-rose-300 transition">
                             {{ __('Finalizar juego') }}
                         </button>
                     </div>
