@@ -104,6 +104,8 @@ Route::middleware(['auth', '2fa.challenge'])->group(function () {
     Route::post('games/{game}/end-game', [\App\Http\Controllers\PlayController::class, 'endGame'])->name('games.plays.end-game');
     // DISI-12 Fase 4b: sustituciones (pitcher, bateador, pinch runner)
     Route::post('games/{game}/substitute', [\App\Http\Controllers\PlayController::class, 'substitute'])->name('games.plays.substitute');
+    // DISI-20: gestion de corredores en el terreno (avance, robo, wild pitch, OBS, etc.)
+    Route::post('games/{game}/runner/action', [\App\Http\Controllers\PlayController::class, 'runnerAction'])->name('games.plays.runner');
 
     // DISI-10: Roster y sustituciones
     Route::get('games/{game}/roster', [RosterController::class, 'index'])->name('games.roster.index');

@@ -59,6 +59,7 @@
             'endInningUrl' => route('games.plays.end-inning', $game),
             'endGameUrl' => route('games.plays.end-game', $game),
             'substituteUrl' => route('games.plays.substitute', $game),
+            'runnerUrl' => route('games.plays.runner', $game),
             'homeName' => $game->homeTeam->name,
             'awayName' => $game->awayTeam->name,
             'homeShort' => $game->homeTeam->short_name ?? $game->homeTeam->name,
@@ -66,8 +67,8 @@
             'homeTeamId' => $game->home_team_id,
             'awayTeamId' => $game->away_team_id,
             'csrf' => csrf_token(),
-            'rosterAway' => $game->athletes()->wherePivot('team_id', $game->away_team_id)->orderBy('game_athlete.lineup_order')->get(['athletes.id', 'athletes.first_name', 'athletes.last_name', 'game_athlete.lineup_order'])->map(fn($a) => ['id' => $a->id, 'first_name' => $a->first_name, 'last_name' => $a->last_name, 'lineup_order' => $a->pivot->lineup_order])->values(),
-            'rosterHome' => $game->athletes()->wherePivot('team_id', $game->home_team_id)->orderBy('game_athlete.lineup_order')->get(['athletes.id', 'athletes.first_name', 'athletes.last_name', 'game_athlete.lineup_order'])->map(fn($a) => ['id' => $a->id, 'first_name' => $a->first_name, 'last_name' => $a->last_name, 'lineup_order' => $a->pivot->lineup_order])->values(),
+            'rosterAway' => $game->athletes()->wherePivot('team_id', $game->away_team_id)->orderBy('game_athlete.lineup_order')->get(['athletes.id', 'athletes.first_name', 'athletes.last_name', 'athletes.number', 'game_athlete.lineup_order', 'game_athlete.position'])->map(fn($a) => ['id' => $a->id, 'first_name' => $a->first_name, 'last_name' => $a->last_name, 'number' => $a->number, 'lineup_order' => $a->pivot->lineup_order, 'position' => $a->pivot->position])->values(),
+            'rosterHome' => $game->athletes()->wherePivot('team_id', $game->home_team_id)->orderBy('game_athlete.lineup_order')->get(['athletes.id', 'athletes.first_name', 'athletes.last_name', 'athletes.number', 'game_athlete.lineup_order', 'game_athlete.position'])->map(fn($a) => ['id' => $a->id, 'first_name' => $a->first_name, 'last_name' => $a->last_name, 'number' => $a->number, 'lineup_order' => $a->pivot->lineup_order, 'position' => $a->pivot->position])->values(),
             'statsUrl' => route('games.scoreboard.stats', $game),
             'lineupReorderUrl' => route('games.lineup.reorder', $game),
         ]))"
@@ -271,43 +272,88 @@
                 {{-- Diamond: corredores en base --}}
                 {{-- Contenedor: cuadrado verde con bases, home y pitcher mound posicionados dentro. --}}
                 <div class="bg-emerald-700 px-3 py-4 relative" style="background-image: radial-gradient(ellipse at center, #15803d 0%, #14532d 100%);">
-                    <div class="mx-auto relative" style="width: 240px; height: 240px;" data-diamond>
+                    <div class="mx-auto relative" style="width: 280px; height: 280px;" data-diamond>
                         {{-- 2B (arriba) --}}
                         <div class="absolute top-2 left-1/2 -translate-x-1/2" data-base="second">
-                            <div class="w-11 h-11 {{ ! empty($runners['second']) ? 'bg-amber-300 border-2 border-amber-500 shadow-md' : 'bg-emerald-50/90 border-2 border-white' }} rounded flex items-center justify-center font-bold text-xs {{ ! empty($runners['second']) ? 'text-amber-900' : 'text-emerald-700/40' }}">
+                            <div class="flex flex-col items-center gap-1">
+                                <button type="button"
+                                        @click="openRunnerModal('second')"
+                                        :disabled="!lastBases?.second"
+                                        :class="lastBases?.second ? 'cursor-pointer hover:scale-110 transition-transform' : 'cursor-default'"
+                                        class="w-11 h-11 {{ ! empty($runners['second']) ? 'bg-amber-300 border-2 border-amber-500 shadow-md' : 'bg-emerald-50/90 border-2 border-white' }} rounded flex items-center justify-center font-bold text-xs {{ ! empty($runners['second']) ? 'text-amber-900' : 'text-emerald-700/40' }}">
+                                    @if (! empty($runners['second']))
+                                        <div class="text-center leading-tight">
+                                            <div class="text-[9px] font-bold">2B</div>
+                                            <div class="text-[11px] font-black">{{ $runners['second']['number'] ?? '' }}</div>
+                                        </div>
+                                    @else
+                                        2B
+                                    @endif
+                                </button>
                                 @if (! empty($runners['second']))
-                                    <div class="text-center leading-tight">
-                                        <div class="text-[9px] font-bold">2B</div>
-                                        <div class="text-[11px] font-black">{{ $runners['second']['number'] ?? '' }}</div>
+                                    <div class="bg-white/95 rounded px-1.5 py-0.5 text-[10px] leading-tight text-center shadow-md" data-runner-label="second">
+                                        <div class="font-bold text-gray-900 truncate max-w-[80px]" title="{{ $runners['second']['name'] ?? '' }}">{{ $runners['second']['name'] ?? '' }}</div>
                                     </div>
-                                @else
-                                    2B
+                                    <button type="button" @click="openRunnerModal('second')"
+                                            class="bg-amber-600 hover:bg-amber-700 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow">
+                                        Opciones
+                                    </button>
                                 @endif
                             </div>
                         </div>
                         {{-- 3B (izquierda) --}}
                         <div class="absolute top-1/2 left-2 -translate-y-1/2" data-base="third">
-                            <div class="w-11 h-11 {{ ! empty($runners['third']) ? 'bg-amber-300 border-2 border-amber-500 shadow-md' : 'bg-emerald-50/90 border-2 border-white' }} rounded flex items-center justify-center font-bold text-xs {{ ! empty($runners['third']) ? 'text-amber-900' : 'text-emerald-700/40' }}">
+                            <div class="flex flex-col items-center gap-1">
+                                <button type="button"
+                                        @click="openRunnerModal('third')"
+                                        :disabled="!lastBases?.third"
+                                        :class="lastBases?.third ? 'cursor-pointer hover:scale-110 transition-transform' : 'cursor-default'"
+                                        class="w-11 h-11 {{ ! empty($runners['third']) ? 'bg-amber-300 border-2 border-amber-500 shadow-md' : 'bg-emerald-50/90 border-2 border-white' }} rounded flex items-center justify-center font-bold text-xs {{ ! empty($runners['third']) ? 'text-amber-900' : 'text-emerald-700/40' }}">
+                                    @if (! empty($runners['third']))
+                                        <div class="text-center leading-tight">
+                                            <div class="text-[9px] font-bold">3B</div>
+                                            <div class="text-[11px] font-black">{{ $runners['third']['number'] ?? '' }}</div>
+                                        </div>
+                                    @else
+                                        3B
+                                    @endif
+                                </button>
                                 @if (! empty($runners['third']))
-                                    <div class="text-center leading-tight">
-                                        <div class="text-[9px] font-bold">3B</div>
-                                        <div class="text-[11px] font-black">{{ $runners['third']['number'] ?? '' }}</div>
+                                    <div class="bg-white/95 rounded px-1.5 py-0.5 text-[10px] leading-tight text-center shadow-md" data-runner-label="third">
+                                        <div class="font-bold text-gray-900 truncate max-w-[80px]" title="{{ $runners['third']['name'] ?? '' }}">{{ $runners['third']['name'] ?? '' }}</div>
                                     </div>
-                                @else
-                                    3B
+                                    <button type="button" @click="openRunnerModal('third')"
+                                            class="bg-amber-600 hover:bg-amber-700 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow">
+                                        Opciones
+                                    </button>
                                 @endif
                             </div>
                         </div>
                         {{-- 1B (derecha) --}}
                         <div class="absolute top-1/2 right-2 -translate-y-1/2" data-base="first">
-                            <div class="w-11 h-11 {{ ! empty($runners['first']) ? 'bg-amber-300 border-2 border-amber-500 shadow-md' : 'bg-emerald-50/90 border-2 border-white' }} rounded flex items-center justify-center font-bold text-xs {{ ! empty($runners['first']) ? 'text-amber-900' : 'text-emerald-700/40' }}">
+                            <div class="flex flex-col items-center gap-1">
+                                <button type="button"
+                                        @click="openRunnerModal('first')"
+                                        :disabled="!lastBases?.first"
+                                        :class="lastBases?.first ? 'cursor-pointer hover:scale-110 transition-transform' : 'cursor-default'"
+                                        class="w-11 h-11 {{ ! empty($runners['first']) ? 'bg-amber-300 border-2 border-amber-500 shadow-md' : 'bg-emerald-50/90 border-2 border-white' }} rounded flex items-center justify-center font-bold text-xs {{ ! empty($runners['first']) ? 'text-amber-900' : 'text-emerald-700/40' }}">
+                                    @if (! empty($runners['first']))
+                                        <div class="text-center leading-tight">
+                                            <div class="text-[9px] font-bold">1B</div>
+                                            <div class="text-[11px] font-black">{{ $runners['first']['number'] ?? '' }}</div>
+                                        </div>
+                                    @else
+                                        1B
+                                    @endif
+                                </button>
                                 @if (! empty($runners['first']))
-                                    <div class="text-center leading-tight">
-                                        <div class="text-[9px] font-bold">1B</div>
-                                        <div class="text-[11px] font-black">{{ $runners['first']['number'] ?? '' }}</div>
+                                    <div class="bg-white/95 rounded px-1.5 py-0.5 text-[10px] leading-tight text-center shadow-md" data-runner-label="first">
+                                        <div class="font-bold text-gray-900 truncate max-w-[80px]" title="{{ $runners['first']['name'] ?? '' }}">{{ $runners['first']['name'] ?? '' }}</div>
                                     </div>
-                                @else
-                                    1B
+                                    <button type="button" @click="openRunnerModal('first')"
+                                            class="bg-amber-600 hover:bg-amber-700 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow">
+                                        Opciones
+                                    </button>
                                 @endif
                             </div>
                         </div>
@@ -1064,6 +1110,194 @@
                                 {{ __('Sustituir') }}
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- DISI-20: Modal "GESTIONAR CORREDOR" --}}
+            {{-- Se abre al hacer click en un corredor del diamond (data-base). --}}
+            <div x-show="modal === 'runner'" x-cloak
+                 class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+                 @keydown.escape.window="closeModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeModal()">
+                    {{-- Header: nombre de la base --}}
+                    <div class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-5 py-3 flex items-center justify-between flex-shrink-0">
+                        <div>
+                            <div class="text-[10px] uppercase tracking-widest opacity-90 font-semibold">{{ __('Gestionar corredor') }}</div>
+                            <h3 class="text-xl font-black uppercase tracking-wider" x-text="runnerModalTitle()"></h3>
+                        </div>
+                        <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
+
+                    {{-- Card del corredor --}}
+                    <div class="px-5 py-4 bg-gray-50 border-b border-gray-200 flex-shrink-0">
+                        <div class="flex items-center gap-3" x-show="runnerModalRunner()">
+                            <div class="w-14 h-14 bg-amber-500 text-white rounded-full flex items-center justify-center font-black text-xl flex-shrink-0"
+                                 x-text="runnerModalRunner()?.number ?? '?'"></div>
+                            <div class="min-w-0 flex-1">
+                                <div class="text-base font-bold text-gray-900 truncate" x-text="(runnerModalRunner()?.first_name || '') + ' ' + (runnerModalRunner()?.last_name || '')"></div>
+                                <div class="text-xs text-gray-600 mt-0.5">
+                                    <span class="font-semibold" x-text="'#' + (runnerModalRunner()?.lineup_order || '-')"></span>
+                                    <span class="text-gray-400">·</span>
+                                    <span x-text="runnerModalRunner()?.position || '—'"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div x-show="!runnerModalRunner()" class="text-sm text-gray-500 italic">
+                            {{ __('Sin corredor identificado en esta base.') }}
+                        </div>
+                    </div>
+
+                    {{-- Grid de acciones --}}
+                    <div class="p-4 overflow-y-auto flex-1">
+                        <div class="grid grid-cols-2 gap-2" x-show="runnerModalRunner()">
+                            {{-- Avanza a siguiente base --}}
+                            <button type="button" @click="sendRunnerAction('advance')"
+                                    :disabled="isPitching"
+                                    class="px-3 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center text-center">
+                                <span class="block leading-tight">
+                                    <span class="block text-base">→</span>
+                                    <span class="block text-xs">{{ __('Avanza siguiente base') }}</span>
+                                    <span class="block text-[9px] font-normal opacity-80" x-text="runnerAdvanceLabel()"></span>
+                                </span>
+                            </button>
+
+                            {{-- Robo de base --}}
+                            <button type="button" @click="sendRunnerAction('stolen_base')"
+                                    :disabled="isPitching || runnerBase === 'third'"
+                                    class="px-3 py-3 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center text-center">
+                                <span class="block leading-tight">
+                                    <span class="block text-base">🏃</span>
+                                    <span class="block text-xs">{{ __('Robo de base') }}</span>
+                                    <span class="block text-[9px] font-normal opacity-80">{{ __('Steal') }}</span>
+                                </span>
+                            </button>
+
+                            {{-- Avanza por error --}}
+                            <button type="button" @click="sendRunnerAction('error_advance')"
+                                    :disabled="isPitching"
+                                    class="px-3 py-3 bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center text-center">
+                                <span class="block leading-tight">
+                                    <span class="block text-base">⚠️</span>
+                                    <span class="block text-xs">{{ __('Avanza por error') }}</span>
+                                </span>
+                            </button>
+
+                            {{-- Wild pitch --}}
+                            <button type="button" @click="sendRunnerAction('wild_pitch')"
+                                    :disabled="isPitching"
+                                    class="px-3 py-3 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center text-center">
+                                <span class="block leading-tight">
+                                    <span class="block text-base">⚾</span>
+                                    <span class="block text-xs">{{ __('Wild Pitch') }}</span>
+                                    <span class="block text-[9px] font-normal opacity-80">{{ __('Corredor avanza') }}</span>
+                                </span>
+                            </button>
+
+                            {{-- Passed ball --}}
+                            <button type="button" @click="sendRunnerAction('passed_ball')"
+                                    :disabled="isPitching"
+                                    class="px-3 py-3 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center text-center">
+                                <span class="block leading-tight">
+                                    <span class="block text-base">🥎</span>
+                                    <span class="block text-xs">{{ __('Passed Ball') }}</span>
+                                    <span class="block text-[9px] font-normal opacity-80">{{ __('Corredor avanza') }}</span>
+                                </span>
+                            </button>
+
+                            {{-- OBS / Obstruccion --}}
+                            <button type="button" @click="sendRunnerAction('obstruction')"
+                                    :disabled="isPitching"
+                                    class="px-3 py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center text-center">
+                                <span class="block leading-tight">
+                                    <span class="block text-base">🚧</span>
+                                    <span class="block text-xs">{{ __('OBS (Obstrucción)') }}</span>
+                                </span>
+                            </button>
+
+                            {{-- Anota (RBI) --}}
+                            <button type="button" @click="sendRunnerAction('score_rbi')"
+                                    :disabled="isPitching || runnerBase === 'third'"
+                                    class="px-3 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center text-center">
+                                <span class="block leading-tight">
+                                    <span class="block text-base">🏃‍♂️‍➡️</span>
+                                    <span class="block text-xs">{{ __('Anota (RBI)') }}</span>
+                                    <span class="block text-[9px] font-normal opacity-80">{{ __('Carrera con RBI') }}</span>
+                                </span>
+                            </button>
+
+                            {{-- Anota (sin RBI) --}}
+                            <button type="button" @click="sendRunnerAction('score_no_rbi')"
+                                    :disabled="isPitching || runnerBase === 'third'"
+                                    class="px-3 py-3 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center text-center">
+                                <span class="block leading-tight">
+                                    <span class="block text-base">🏃‍♂️</span>
+                                    <span class="block text-xs">{{ __('Anota (sin RBI)') }}</span>
+                                    <span class="block text-[9px] font-normal opacity-80">{{ __('Sin credito al bateador') }}</span>
+                                </span>
+                            </button>
+
+                            {{-- Out @ 2da --}}
+                            <button type="button" @click="sendRunnerAction('out_at_2b')"
+                                    :disabled="isPitching"
+                                    class="px-3 py-3 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center text-center">
+                                <span class="block leading-tight">
+                                    <span class="block text-base">❌</span>
+                                    <span class="block text-xs">{{ __('Out @ 2da') }}</span>
+                                    <span class="block text-[9px] font-normal opacity-80">{{ __('Out en 2B') }}</span>
+                                </span>
+                            </button>
+
+                            {{-- Out @ 3ra --}}
+                            <button type="button" @click="sendRunnerAction('out_at_3b')"
+                                    :disabled="isPitching"
+                                    class="px-3 py-3 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center text-center">
+                                <span class="block leading-tight">
+                                    <span class="block text-base">❌</span>
+                                    <span class="block text-xs">{{ __('Out @ 3ra') }}</span>
+                                    <span class="block text-[9px] font-normal opacity-80">{{ __('Out en 3B') }}</span>
+                                </span>
+                            </button>
+
+                            {{-- Caught Stealing --}}
+                            <button type="button" @click="sendRunnerAction('caught_stealing')"
+                                    :disabled="isPitching"
+                                    class="px-3 py-3 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center text-center">
+                                <span class="block leading-tight">
+                                    <span class="block text-base">🛑</span>
+                                    <span class="block text-xs">{{ __('Caught Stealing') }}</span>
+                                    <span class="block text-[9px] font-normal opacity-80">{{ __('Out por robo') }}</span>
+                                </span>
+                            </button>
+
+                            {{-- Viraje / Pickoff --}}
+                            <button type="button" @click="sendRunnerAction('pickoff')"
+                                    :disabled="isPitching"
+                                    class="px-3 py-3 bg-red-700 hover:bg-red-800 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center text-center">
+                                <span class="block leading-tight">
+                                    <span class="block text-base">🖐️</span>
+                                    <span class="block text-xs">{{ __('Viraje / Pickoff') }}</span>
+                                    <span class="block text-[9px] font-normal opacity-80">{{ __('Out en la base') }}</span>
+                                </span>
+                            </button>
+                        </div>
+
+                        {{-- Sustitucion (PR): sub-modal con roster --}}
+                        <div class="mt-3 border-t border-gray-200 pt-3" x-show="runnerModalRunner()">
+                            <button type="button" @click="openSubstituteModal()"
+                                    class="w-full py-3 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center gap-2">
+                                <span>🔄</span>
+                                <span>{{ __('Sustituir corredor (Pinch Runner)') }}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Footer --}}
+                    <div class="px-5 py-3 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+                        <button type="button" @click="closeModal()"
+                                class="w-full py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl">
+                            {{ __('Cancelar') }}
+                        </button>
                     </div>
                 </div>
             </div>
