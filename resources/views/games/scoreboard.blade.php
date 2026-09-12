@@ -117,10 +117,10 @@
                 </div>
 
                 {{-- Header: Local | Score centrado | Visitante (estructura del adjunto) --}}
-                <div class="flex items-center justify-between gap-2 sm:gap-4 border-b-2 border-gray-100 py-5 px-3 sm:px-6">
+                <div class="grid grid-cols-3 items-center gap-2 sm:gap-4 border-b-2 border-gray-100 py-5 px-3 sm:px-6">
 
-                    {{-- Local: logo arriba, nombre medio, label abajo (alineado a la derecha hacia el centro) --}}
-                    <div class="team-zone flex-1 flex flex-col items-center sm:items-end gap-1.5"
+                    {{-- Local: logo arriba, nombre medio, label abajo (centrado en su columna) --}}
+                    <div class="team-zone flex flex-col items-center gap-1.5"
                          data-team-zone="home"
                          data-batting="{{ $state['half'] === 'bottom' ? '1' : '0' }}">
                         @if ($game->homeTeam->logoUrl)
@@ -128,12 +128,12 @@
                         @else
                             <div class="h-16 w-16 sm:h-20 sm:w-20 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs">LOGO</div>
                         @endif
-                        <div class="team-name text-sm sm:text-base font-bold text-gray-800 text-center sm:text-right leading-tight">{{ $game->homeTeam->name }}</div>
+                        <div class="team-name text-sm sm:text-base font-bold text-gray-800 text-center leading-tight">{{ $game->homeTeam->name }}</div>
                         <div class="team-label-local text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider">{{ __('Local') }}</div>
                     </div>
 
                     {{-- Centro: score "home - away" + Inning indicator --}}
-                    <div class="flex flex-col items-center justify-center min-w-[120px] sm:min-w-[160px] gap-1">
+                    <div class="flex flex-col items-center justify-center gap-1">
                         <div class="flex items-baseline gap-2 sm:gap-3 text-3xl sm:text-5xl font-black text-gray-900 leading-none">
                             <span data-score="home">{{ $score['home'] }}</span>
                             <span class="text-gray-400">-</span>
@@ -146,8 +146,8 @@
                         </div>
                     </div>
 
-                    {{-- Visitante: logo arriba, nombre medio, label abajo (alineado a la izquierda hacia el centro) --}}
-                    <div class="team-zone flex-1 flex flex-col items-center sm:items-start gap-1.5"
+                    {{-- Visitante: logo arriba, nombre medio, label abajo (centrado en su columna) --}}
+                    <div class="team-zone flex flex-col items-center gap-1.5"
                          data-team-zone="away"
                          data-batting="{{ $state['half'] === 'top' ? '1' : '0' }}">
                         @if ($game->awayTeam->logoUrl)
@@ -155,7 +155,7 @@
                         @else
                             <div class="h-16 w-16 sm:h-20 sm:w-20 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs">LOGO</div>
                         @endif
-                        <div class="team-name text-sm sm:text-base font-bold text-gray-800 text-center sm:text-left leading-tight">{{ $game->awayTeam->name }}</div>
+                        <div class="team-name text-sm sm:text-base font-bold text-gray-800 text-center leading-tight">{{ $game->awayTeam->name }}</div>
                         <div class="team-label-away text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider">{{ __('Visitante') }}</div>
                     </div>
 
@@ -436,6 +436,11 @@
                             {{ __('Stats del juego') }}
                             <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Box score completo: pitcheo y bateo') }}</div>
                         </button>
+                        <a href="{{ route('games.box-score', $game) }}"
+                           class="py-3 bg-slate-700 hover:bg-slate-800 text-white text-base font-bold rounded-lg transition text-center block">
+                            📋 {{ __('Box Score inning-by-inning') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-1">{{ __('Carreras, hits, errores por inning + pitchers y MVP') }}</div>
+                        </a>
                         <button type="button" @click="openEndInningModal()"
                                 :disabled="isPitching"
                                 class="py-3 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 text-base font-bold rounded-lg border border-rose-200 transition">
