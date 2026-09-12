@@ -1131,11 +1131,11 @@ document.addEventListener('alpine:init', () => {
             if (!inner) return;
             const baseButton = inner.querySelector('button');
             if (!baseButton) return;
-            // Eliminar labels/buttons que pueda haber añadido un poll anterior
-            const existingLabel = inner.querySelector('[data-runner-label]');
-            if (existingLabel) existingLabel.remove();
-            const existingOpBtn = inner.querySelector('[data-runner-options-btn]');
-            if (existingOpBtn) existingOpBtn.remove();
+            // Eliminar TODOS los hijos EXCEPTO el baseButton (limpia el server-render
+            // y evita duplicacion de OPCIONES cuando hay corredor).
+            while (inner.children.length > 1) {
+                inner.removeChild(inner.lastChild);
+            }
             if (athleteId && runner) {
                 baseButton.className = 'w-11 h-11 bg-amber-300 border-2 border-amber-500 shadow-md rounded flex items-center justify-center font-bold text-xs text-amber-900 cursor-pointer hover:scale-110 transition-transform';
                 baseButton.disabled = false;
@@ -1152,9 +1152,6 @@ document.addEventListener('alpine:init', () => {
                 opBtn.setAttribute('data-runner-options-btn', base);
                 opBtn.className = 'bg-amber-600 hover:bg-amber-700 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow';
                 opBtn.textContent = 'Opciones';
-                // Re-bind: como Alpine re-renderiza, usamos window.__scoreboardOpenRunner
-                // que setea el base y abre el modal. Pero como el scoreboardApp vive en Alpine,
-                // podemos llamar directamente al metodo expuesto.
                 opBtn.addEventListener('click', () => {
                     window.dispatchEvent(new CustomEvent('open-runner-modal', { detail: { base } }));
                 });
