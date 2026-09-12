@@ -418,34 +418,34 @@
                     </div>
 
                     {{-- Tab content: BATEo (Fase 3 — hits) --}}
-                    <div x-show="tab === 'hit'" x-cloak class="grid grid-cols-2 gap-3 p-4">
+                    <div x-show="tab === 'hit'" x-cloak class="grid grid-cols-4 gap-2 p-4">
                         <button type="button" @click="openHitModal('single')"
                                 :disabled="isPitching"
-                                class="py-6 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-lg font-black rounded-2xl transition">
+                                class="py-6 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
                             {{ __('Sencillo') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-1">1B</div>
+                            <div class="text-[10px] font-normal opacity-80 mt-0.5">1B</div>
                         </button>
                         <button type="button" @click="openHitModal('double')"
                                 :disabled="isPitching"
-                                class="py-6 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-lg font-black rounded-2xl transition">
+                                class="py-6 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
                             {{ __('Doble') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-1">2B</div>
+                            <div class="text-[10px] font-normal opacity-80 mt-0.5">2B</div>
                         </button>
                         <button type="button" @click="openHitModal('triple')"
                                 :disabled="isPitching"
-                                class="py-6 bg-violet-500 hover:bg-violet-600 disabled:opacity-50 text-white text-lg font-black rounded-2xl transition">
+                                class="py-6 bg-violet-500 hover:bg-violet-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
                             {{ __('Triple') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-1">3B</div>
+                            <div class="text-[10px] font-normal opacity-80 mt-0.5">3B</div>
                         </button>
                         <button type="button" @click="openHitModal('hr')"
                                 :disabled="isPitching"
-                                class="py-6 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-lg font-black rounded-2xl transition">
+                                class="py-6 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
                             {{ __('HR') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-1">Home Run</div>
+                            <div class="text-[10px] font-normal opacity-80 mt-0.5">Home Run</div>
                         </button>
                         <button type="button" @click="openHitModal('inside_park')"
                                 :disabled="isPitching"
-                                class="col-span-2 py-5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-lg font-black rounded-2xl transition">
+                                class="col-span-4 py-5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-lg font-black rounded-2xl transition">
                             {{ __('HR de pierna') }}
                         </button>
                     </div>
