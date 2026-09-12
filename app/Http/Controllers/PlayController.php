@@ -149,6 +149,7 @@ class PlayController extends Controller
         return response()->json([
             'success' => true,
             'state' => $result['state'],
+            'score' => Play::scoreboard($game->id), // DISI-21: incluir score para reflejar carreras inmediatamente
             'walk' => $result['walk'] ?? false,
             'strikeout' => $result['strikeout'] ?? false,
             'end_half' => $result['end_half'] ?? false,

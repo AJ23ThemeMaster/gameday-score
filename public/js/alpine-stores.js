@@ -229,6 +229,8 @@ document.addEventListener('alpine:init', () => {
         subInId: '',
         subBase: 'first',
         lastBases: { first: null, second: null, third: null },
+        lastRunners: {},
+        lastScore: { home: 0, away: 0 },
         // Estado reactivo del juego (para los modales de sustitucion)
         stateHalf: 'top',
         stateBatterId: null,
@@ -327,14 +329,16 @@ document.addEventListener('alpine:init', () => {
                     this.toast(data.message || 'Error al registrar la jugada', 'error');
                     return;
                 }
-                // Refresca el state inmediatamente (no espera al poll).
-                this.poll();
+                // DISI-21: Aplicar el state del response INMEDIATAMENTE para que
+                // out/strike/ball se reflejen sin esperar al proximo poll automatica.
+                // El poll refresca despues para traer pitcher/batter/on-deck/runners.
+                if (data.state) {
+                    this.applyPitchState(data.state, data.score || this.lastScore);
+                }
                 if (data.walk) this.toast('Base por bolas', 'info');
                 else if (data.strikeout) this.toast('Ponche', 'info');
                 else if (data.end_half) {
                     this.toast('Fin del inning', 'warning');
-                    // Fase 5: si el backend devuelve un summary del inning cerrado,
-                    // mostrar el modal de resumen.
                     if (data.summary) {
                         this.inningSummary = data.summary;
                         this.modal = 'inning-summary';
@@ -342,11 +346,68 @@ document.addEventListener('alpine:init', () => {
                     }
                 }
                 else this.toast('Jugada registrada', 'success');
+                // Refresca despues para traer la info completa (runners, pitcher, batter).
+                // AWAIT para garantizar que se aplique antes de que el usuario vea el estado.
+                await this.pollNow();
             } catch (e) {
                 this.toast('Error de red: ' + e.message, 'error');
             } finally {
                 this.isPitching = false;
             }
+        },
+
+        // DISI-21: Aplica solo el subconjunto de state que viene en la respuesta
+        // del pitch (balls, strikes, outs, bases, inning/half). El poll completo
+        // trae despues el resto (pitcher, batter, on_deck, runners, etc.).
+        applyPitchState(state, score) {
+            if (!state) return;
+            const s = state;
+            if (score) {
+                const homeScore = document.querySelector('[data-score="home"]');
+                const awayScore = document.querySelector('[data-score="away"]');
+                if (homeScore) homeScore.textContent = score.home;
+                if (awayScore) awayScore.textContent = score.away;
+            }
+
+            const inningNum = document.querySelector('[data-inning-number]');
+            const inningHalf = document.querySelector('[data-inning-half]');
+            const inningAnimChanged = inningNum && inningNum.textContent !== String(s.inning);
+            const halfAnimChanged = inningHalf && inningHalf.textContent !== (s.half === 'top' ? '▲' : '▼');
+            if (inningNum) inningNum.textContent = s.inning;
+            if (inningHalf) inningHalf.textContent = s.half === 'top' ? '▲' : '▼';
+            if (inningAnimChanged || halfAnimChanged) {
+                this.triggerInningFlip();
+            }
+
+            const homeZone = document.querySelector('[data-team-zone="home"]');
+            const awayZone = document.querySelector('[data-team-zone="away"]');
+            if (homeZone && awayZone) {
+                const newHomeBatting = s.half === 'bottom' ? '1' : '0';
+                const newAwayBatting = s.half === 'top' ? '1' : '0';
+                if (homeZone.dataset.batting !== newHomeBatting) homeZone.dataset.batting = newHomeBatting;
+                if (awayZone.dataset.batting !== newAwayBatting) awayZone.dataset.batting = newAwayBatting;
+            }
+
+            this.renderDots('[data-balls]', s.balls ?? 0, 'bg-emerald-500', 'bg-gray-200', 4);
+            this.renderDots('[data-strikes]', s.strikes ?? 0, 'bg-amber-500', 'bg-gray-200', 3);
+            this.renderDots('[data-outs]', s.outs ?? 0, 'bg-rose-500', 'bg-gray-200', 3);
+
+            const bases = s.bases || { first: null, second: null, third: null };
+            // No tenemos info de corredores en el response, asi que solo actualizamos
+            // la base (con el jersey si ya estaba identificado en lastRunners).
+            this.renderBase('first', bases.first, this.lastRunners?.first || null);
+            this.renderBase('second', bases.second, this.lastRunners?.second || null);
+            this.renderBase('third', bases.third, this.lastRunners?.third || null);
+
+            this.lastBases = bases;
+            this.stateHalf = s.half;
+            this.stateBatterId = s.current_batter_id;
+            this.statePitcherId = s.current_pitcher_id;
+            this.stateBases = bases;
+
+            this.prevInning = s.inning;
+            this.prevHalf = s.half;
+            this.stateBases = s.bases || { first: null, second: null, third: null };
         },
 
         sendBall() { this.sendPitch({ type: 'ball' }); },
@@ -970,6 +1031,8 @@ document.addEventListener('alpine:init', () => {
             // Cachear las bases actuales para que el modal de hit muestre el
             // preview correcto.
             this.lastBases = s.bases || { first: null, second: null, third: null };
+            this.lastRunners = data.runners || this.lastRunners || {};
+            this.lastScore = score;
             this.stateHalf = s.half;
             this.stateBatterId = s.current_batter_id;
             this.statePitcherId = s.current_pitcher_id;
