@@ -866,6 +866,270 @@ class GameplayEngine
     }
 
     /**
+     * Accion del anotador sobre un corredor en base (DISI-20).
+     *
+     * $base:   'first' | 'second' | 'third' (base donde esta el corredor)
+     * $action: 'advance' | 'stolen_base' | 'wild_pitch' | 'passed_ball'
+     *          | 'error_advance' | 'obstruction' (corredor AVANZA una base;
+     *          desde 3B anota carrera)
+     *          | 'score_rbi' | 'score_no_rbi' (corredor ANOTA, con o sin RBI)
+     *          | 'caught_stealing' | 'pickoff' | 'out_at_2b' | 'out_at_3b'
+     *          (corredor OUT — suma 1 out; con 3 outs cierra el medio inning)
+     *
+     * Restricciones:
+     *  - Debe haber un corredor identificado en $base (bases[$base] !== null).
+     *  - outs < 3. Si outs >= 3 el caller debe cerrar el inning primero.
+     *
+     * El bateador NO cambia (es una accion entre pitcheos). Si el out lleva
+     * a 3 outs, se cierra el medio inning via advanceBatter (mismo patron
+     * que processPitch para strikeout/groundout).
+     */
+    public function runnerAction(Game $game, string $base, string $action): array
+    {
+        return DB::transaction(function () use ($game, $base, $action) {
+            if (! in_array($base, ['first', 'second', 'third'], true)) {
+                throw new \InvalidArgumentException("Base invalida: {$base}");
+            }
+
+            $state = Play::currentState($game->id);
+            $inning = (int) $state['inning'];
+            $half = $state['half'];
+            $outs = (int) $state['outs'];
+            $balls = (int) $state['balls'];
+            $strikes = (int) $state['strikes'];
+            $bases = $state['bases'] ?? ['first' => null, 'second' => null, 'third' => null];
+            $runnerId = $bases[$base] ?? null;
+            $currentBatterId = $state['current_batter_id'];
+            $pitcherId = $state['current_pitcher_id'];
+
+            if (! $runnerId) {
+                throw new \InvalidArgumentException("No hay corredor identificado en {$base}.");
+            }
+            if ($outs >= 3) {
+                throw new \InvalidArgumentException("No se pueden modificar corredores con 3 outs. Cierra el inning primero.");
+            }
+
+            // Obtener el nombre del corredor para los mensajes y la jugada
+            $runnerName = $game->athletes()
+                ->where('athletes.id', $runnerId)
+                ->first()?->full_name ?? "Corredor #{$runnerId}";
+            $runnerNumber = $game->athletes()
+                ->where('athletes.id', $runnerId)
+                ->first()?->number;
+
+            $baseLabel = ['first' => '1B', 'second' => '2B', 'third' => '3B'][$base];
+
+            $runsScored = 0;
+            $rbi = 0;
+            $newBases = $bases;
+            $newOuts = $outs;
+            $type = null;
+            $subtype = null;
+            $result = '';
+
+            switch ($action) {
+                // ----- Acciones que AVANZAN al corredor una base -----
+                case 'advance':
+                case 'stolen_base':
+                case 'wild_pitch':
+                case 'passed_ball':
+                case 'error_advance':
+                case 'obstruction':
+                    $newBases = $this->moveRunnerOneBase($bases, $base);
+                    // Si el corredor estaba en 3B y avanza, anota carrera.
+                    if ($base === 'third') {
+                        $runsScored = 1;
+                        // Wild pitch y passed ball NO son RBI (cobra el pitcher).
+                        $rbi = in_array($action, ['wild_pitch', 'passed_ball', 'obstruction'], true) ? 0 : 1;
+                    }
+                    $type = Play::TYPE_RUNNER_MOVEMENT;
+                    $subtype = match ($action) {
+                        'advance' => Play::SUBTYPE_RUNNER_ADVANCE,
+                        'stolen_base' => Play::SUBTYPE_RUNNER_STOLEN_BASE,
+                        'wild_pitch' => Play::SUBTYPE_RUNNER_WILD_PITCH,
+                        'passed_ball' => Play::SUBTYPE_RUNNER_PASSED_BALL,
+                        'error_advance' => Play::SUBTYPE_RUNNER_ERROR_ADVANCE,
+                        'obstruction' => Play::SUBTYPE_RUNNER_OBSTRUCTION,
+                    };
+                    $result = $this->describeRunnerAction($action, $baseLabel, $runnerName, $runsScored);
+                    break;
+
+                // ----- Acciones donde el corredor ANOTA -----
+                case 'score_rbi':
+                case 'score_no_rbi':
+                    if ($base === 'third') {
+                        throw new \InvalidArgumentException("Para anotar desde 3B usa 'advance' (anota automatico).");
+                    }
+                    $newBases = $this->clearBase($bases, $base);
+                    $runsScored = 1;
+                    $rbi = $action === 'score_rbi' ? 1 : 0;
+                    $type = Play::TYPE_RUNNER_MOVEMENT;
+                    $subtype = $action === 'score_rbi'
+                        ? Play::SUBTYPE_RUNNER_SCORE
+                        : Play::SUBTYPE_RUNNER_SCORE_NO_RBI;
+                    $result = $this->describeRunnerAction($action, $baseLabel, $runnerName, 1);
+                    break;
+
+                // ----- Acciones donde el corredor es OUT -----
+                case 'caught_stealing':
+                case 'pickoff':
+                case 'out_at_2b':
+                case 'out_at_3b':
+                    $newBases = $this->clearBase($bases, $base);
+                    $newOuts = $outs + 1;
+                    $type = Play::TYPE_OUT;
+                    $subtype = match ($action) {
+                        'caught_stealing' => Play::SUBTYPE_OUT_CAUGHT_STEALING,
+                        'pickoff' => Play::SUBTYPE_OUT_PICKOFF,
+                        'out_at_2b' => Play::SUBTYPE_OUT_AT_2B,
+                        'out_at_3b' => Play::SUBTYPE_OUT_AT_3B,
+                    };
+                    $result = $this->describeRunnerOut($subtype, $baseLabel, $runnerName);
+                    break;
+
+                default:
+                    throw new \InvalidArgumentException("Accion de corredor no soportada: {$action}");
+            }
+
+            $created = [];
+            $created[] = $this->recordPlay($game, [
+                'inning' => $inning, 'half' => $half,
+                'type' => $type,
+                'subtype' => $subtype,
+                'result' => $result,
+                'batter_id' => $currentBatterId, // el bateador no cambia
+                'pitcher_id' => $pitcherId,
+                'outs_before' => $outs, 'outs_after' => $newOuts,
+                'balls' => $balls, 'strikes' => $strikes,
+                'bases_before' => $bases, 'bases_after' => $newBases,
+                'runs_scored' => $runsScored,
+                'rbi' => $rbi,
+                'meta' => [
+                    'runner_id' => $runnerId,
+                    'runner_name' => $runnerName,
+                    'runner_number' => $runnerNumber,
+                    'from_base' => $base,
+                    'action' => $action,
+                ],
+            ]);
+
+            // Si la accion llevo a 3 outs, cerrar el medio inning.
+            $endHalf = $newOuts >= 3;
+            if ($endHalf) {
+                $created[] = $this->recordPlay($game, [
+                    'inning' => $inning, 'half' => $half,
+                    'type' => Play::TYPE_INNING_END,
+                    'result' => "Fin del inning {$inning} {$half} (out de corredor)",
+                    'batter_id' => null,
+                    'pitcher_id' => $pitcherId,
+                    'outs_before' => $newOuts, 'outs_after' => $newOuts,
+                    'balls' => 0, 'strikes' => 0,
+                    'bases_before' => $newBases,
+                    'bases_after' => ['first' => null, 'second' => null, 'third' => null],
+                ]);
+                // Actualizar el state del juego: cambiar half/inning
+                [$nextBatterId, $newBasesAfterEnd, $newHalf, $newInning, $newOuts, $endHalfActual, $newPitcherId] =
+                    $this->advanceBatter($game, $newBases, $newOuts, $half, $inning, $currentBatterId, $pitcherId);
+                // Si advanceBatter registro game_end, endHalfActual viene true pero
+                // ya esta guardado en created. Si NO lo registro (caso normal),
+                // advanceBatter no guarda inning_end (porque ya lo hicimos nosotros).
+                // Asi que sincronizamos el Game con el nuevo half/inning:
+                if (($endHalfActual ?? false) && ($newInning ?? 0) > 0) {
+                    $game->update([
+                        'current_inning' => $newInning,
+                        'inning_half' => $newHalf,
+                    ]);
+                }
+            }
+
+            return [
+                'success' => true,
+                'action' => $action,
+                'base' => $base,
+                'bases' => $newBases,
+                'outs' => $newOuts,
+                'runs_scored' => $runsScored,
+                'rbi' => $rbi,
+                'end_half' => $endHalf,
+                'plays' => $created,
+            ];
+        });
+    }
+
+    /**
+     * Mueve al corredor de una base a la siguiente.
+     * - third -> null (anota, lo registra el caller)
+     * - second -> third
+     * - first -> second
+     */
+    private function moveRunnerOneBase(array $bases, string $fromBase): array
+    {
+        $runnerId = $bases[$fromBase] ?? null;
+        if (! $runnerId) {
+            return $bases;
+        }
+        $new = $bases;
+        $new[$fromBase] = null;
+        if ($fromBase === 'first') {
+            $new['second'] = $runnerId;
+        } elseif ($fromBase === 'second') {
+            $new['third'] = $runnerId;
+        } else {
+            // third: ya se desconto al hacer null; el caller sumara la carrera.
+        }
+        return $new;
+    }
+
+    /**
+     * Saca al corredor de la base (lo deja en null) sin asignarlo a otra.
+     */
+    private function clearBase(array $bases, string $base): array
+    {
+        $new = $bases;
+        $new[$base] = null;
+        return $new;
+    }
+
+    /**
+     * Descripcion en espanol de la accion del corredor (para el resultado de la jugada).
+     */
+    private function describeRunnerAction(string $action, string $baseLabel, string $runnerName, int $runs): string
+    {
+        $from = $baseLabel;
+        $to = match ($baseLabel) {
+            '1B' => '2B',
+            '2B' => '3B',
+            '3B' => 'Home',
+        };
+        $tail = $runs > 0 ? " (+{$runs} carrera" . ($runs !== 1 ? 's' : '') . ')' : '';
+        return match ($action) {
+            'advance' => "{$runnerName} avanza de {$from} a {$to}{$tail}",
+            'stolen_base' => "{$runnerName} roba {$to}{$tail}",
+            'wild_pitch' => "{$runnerName} avanza por Wild Pitch a {$to}{$tail}",
+            'passed_ball' => "{$runnerName} avanza por Passed Ball a {$to}{$tail}",
+            'error_advance' => "{$runnerName} avanza por error a {$to}{$tail}",
+            'obstruction' => "OBS — {$runnerName} avanza a {$to}{$tail}",
+            'score_rbi' => "{$runnerName} anota (RBI) desde {$from}",
+            'score_no_rbi' => "{$runnerName} anota (sin RBI) desde {$from}",
+            default => "{$runnerName} desde {$from}{$tail}",
+        };
+    }
+
+    /**
+     * Descripcion en espanol del out del corredor (para el resultado de la jugada).
+     */
+    private function describeRunnerOut(string $subtype, string $baseLabel, string $runnerName): string
+    {
+        return match ($subtype) {
+            Play::SUBTYPE_OUT_CAUGHT_STEALING => "{$runnerName} OUT en intento de robo desde {$baseLabel}",
+            Play::SUBTYPE_OUT_PICKOFF => "{$runnerName} OUT por pickoff (viraje) en {$baseLabel}",
+            Play::SUBTYPE_OUT_AT_2B => "{$runnerName} OUT en 2B",
+            Play::SUBTYPE_OUT_AT_3B => "{$runnerName} OUT en 3B",
+            default => "{$runnerName} OUT desde {$baseLabel}",
+        };
+    }
+
+    /**
      * Registra una sustitucion de pitcher, bateador o pinch runner.
      * $kind: 'pitcher' | 'batter' | 'pr'
      * $outAthleteId: atleta que sale

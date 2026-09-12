@@ -121,6 +121,24 @@ class Play extends Model
     public const SUBTYPE_SUB_RUNNER = 'runner_change';
     public const SUBTYPE_SUB_PR = 'pr_change'; // pinch runner
 
+    // Subtipos de runner_movement (DISI-20) — acciones del anotador
+    // sobre un corredor identificado en una base. NO son resultado del
+    // bateador (hit, walk, etc.) sino del propio juego / estrategia.
+    public const SUBTYPE_RUNNER_ADVANCE = 'advance';             // Avanza por jugada del juego
+    public const SUBTYPE_RUNNER_STOLEN_BASE = 'stolen_base';     // Robo de base (steal)
+    public const SUBTYPE_RUNNER_WILD_PITCH = 'wild_pitch';       // Wild pitch (corredor avanza)
+    public const SUBTYPE_RUNNER_PASSED_BALL = 'passed_ball';     // Passed ball (corredor avanza)
+    public const SUBTYPE_RUNNER_ERROR_ADVANCE = 'error_advance'; // Avanza por error
+    public const SUBTYPE_RUNNER_OBSTRUCTION = 'obstruction';     // OBS (obstrucción del corredor)
+    public const SUBTYPE_RUNNER_SCORE = 'score_rbi';             // Anota con RBI (1)
+    public const SUBTYPE_RUNNER_SCORE_NO_RBI = 'score_no_rbi';   // Anota sin RBI (0)
+
+    // Subtipos de out del corredor (caugth stealing, pickoff, out al intentar avanzar)
+    public const SUBTYPE_OUT_CAUGHT_STEALING = 'caught_stealing';
+    public const SUBTYPE_OUT_PICKOFF = 'pickoff';
+    public const SUBTYPE_OUT_AT_2B = 'out_at_2b';
+    public const SUBTYPE_OUT_AT_3B = 'out_at_3b';
+
     public function game(): BelongsTo
     {
         return $this->belongsTo(Game::class);

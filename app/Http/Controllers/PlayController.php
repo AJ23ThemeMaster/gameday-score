@@ -235,4 +235,35 @@ class PlayController extends Controller
             'result' => $result,
         ]);
     }
+
+    /**
+     * DISI-20: Accion del anotador sobre un corredor identificado en una base.
+     * El frontend envia {base, action} y el engine crea la jugada correspondiente
+     * (avance, robo, wild pitch, passed ball, OBS, anotada con/sin RBI, out
+     * por robo/pickoff, out al intentar avanzar a 2B/3B).
+     */
+    public function runnerAction(Request $request, Game $game, GameplayEngine $engine): JsonResponse
+    {
+        abort_unless($game->user_id === Auth::id(), 403);
+        abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
+
+        $validated = $request->validate([
+            'base' => ['required', 'in:first,second,third'],
+            'action' => ['required', 'in:advance,stolen_base,wild_pitch,passed_ball,error_advance,obstruction,score_rbi,score_no_rbi,caught_stealing,pickoff,out_at_2b,out_at_3b'],
+        ]);
+
+        try {
+            $result = $engine->runnerAction($game, $validated['base'], $validated['action']);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'result' => $result,
+        ]);
+    }
 }

@@ -268,6 +268,8 @@ class ScoreboardController extends Controller
         return [
             'id' => $a->id,
             'name' => $a->full_name,
+            'first_name' => $a->first_name,
+            'last_name' => $a->last_name,
             'number' => $a->number,
             'team_id' => $a->team?->id,
             'photo_url' => $a->photoUrl,

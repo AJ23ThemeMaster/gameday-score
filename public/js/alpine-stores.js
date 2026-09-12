@@ -201,6 +201,7 @@ document.addEventListener('alpine:init', () => {
         endInningUrl: config.endInningUrl,
         endGameUrl: config.endGameUrl,
         substituteUrl: config.substituteUrl,
+        runnerUrl: config.runnerUrl,
         statsUrl: config.statsUrl,
         lineupReorderUrl: config.lineupReorderUrl,
         homeName: config.homeName,
@@ -216,8 +217,10 @@ document.addEventListener('alpine:init', () => {
         pollStatus: 'Conectado',
         isPolling: false,
         isPitching: false,
-        modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'inning-summary' | 'end-game' | 'substitute' | 'stats' | 'lineup' | null
+        modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'inning-summary' | 'end-game' | 'substitute' | 'stats' | 'lineup' | 'runner' | null
         outSubtype: null,
+        // DISI-20: base seleccionada en el modal "Gestionar corredor"
+        runnerBase: null, // 'first' | 'second' | 'third' | null
         hitSubtype: null,
         hitConfig: { label: '', description: '', preview: '' },
         defensiveSequence: [],
@@ -254,6 +257,13 @@ document.addEventListener('alpine:init', () => {
         start() {
             this.pollInterval = setInterval(() => this.poll(), 5000);
             this.poll();
+            // Listener global para botones OPCIONES que se re-renderizan via renderBase
+            // (no son parte del DOM reactivo de Alpine, asi que necesitan un evento custom).
+            this._onOpenRunnerModal = (ev) => {
+                const base = ev?.detail?.base;
+                if (base) this.openRunnerModal(base);
+            };
+            window.addEventListener('open-runner-modal', this._onOpenRunnerModal);
         },
 
         async pollNow() {
@@ -414,7 +424,14 @@ document.addEventListener('alpine:init', () => {
             return { label: c.label, description: c.description, preview };
         },
 
-        closeModal() { this.modal = null; this.outSubtype = null; this.hitSubtype = null; this.hitConfig = { label: '', description: '', preview: '' }; this.defensiveSequence = []; },
+        closeModal() {
+            this.modal = null;
+            this.outSubtype = null;
+            this.hitSubtype = null;
+            this.hitConfig = { label: '', description: '', preview: '' };
+            this.defensiveSequence = [];
+            this.runnerBase = null;
+        },
 
         // ============= FASE 4: EXTRAS =============
         // Balk: directo (no requiere modal de confirmacion)
@@ -558,6 +575,113 @@ document.addEventListener('alpine:init', () => {
 
         toast(message, level = 'success') {
             window.dispatchEvent(new CustomEvent('toast', { detail: { message, level } }));
+        },
+
+        // ============= DISI-20: GESTION DE CORREDORES =============
+        // Abre el modal de gestion de corredor sobre la base indicada.
+        // Solo se abre si hay un corredor identificado en la base.
+        openRunnerModal(base) {
+            if (!base || !['first', 'second', 'third'].includes(base)) return;
+            const id = (this.lastBases || {})[base];
+            if (!id) {
+                this.toast('No hay corredor identificado en ' + this.baseLabel(base), 'warning');
+                return;
+            }
+            this.runnerBase = base;
+            this.modal = 'runner';
+        },
+
+        // Cierra el modal de corredor (la accion closeModal ya limpia
+        // runnerBase por la extension que hicimos a closeRunnerModal).
+        closeRunnerModal() {
+            this.runnerBase = null;
+        },
+
+        // Devuelve el atleta identificado en runnerBase (desde rosterAway/Home).
+        runnerModalRunner() {
+            if (!this.runnerBase) return null;
+            const id = (this.lastBases || {})[this.runnerBase];
+            if (!id) return null;
+            return [...(this.rosterAway || []), ...(this.rosterHome || [])].find(r => r.id === id) || null;
+        },
+
+        // Titulo del modal (1RA BASE / 2DA BASE / 3RA BASE).
+        runnerModalTitle() {
+            if (!this.runnerBase) return '';
+            return this.baseLabel(this.runnerBase);
+        },
+
+        // Label humano para la accion "avanza a siguiente base" (cambia segun base).
+        runnerAdvanceLabel() {
+            if (!this.runnerBase) return '';
+            switch (this.runnerBase) {
+                case 'first': return 'Avanza a 2B';
+                case 'second': return 'Avanza a 3B';
+                case 'third': return 'Anota carrera';
+                default: return '—';
+            }
+        },
+
+        baseLabel(base) {
+            switch (base) {
+                case 'first': return '1RA BASE';
+                case 'second': return '2DA BASE';
+                case 'third': return '3RA BASE';
+                default: return '';
+            }
+        },
+
+        // Envia la accion del anotador sobre el corredor en runnerBase.
+        async sendRunnerAction(action) {
+            if (this.isPitching) return;
+            if (!this.runnerBase) return;
+            const base = this.runnerBase;
+            try {
+                const body = new FormData();
+                body.append('base', base);
+                body.append('action', action);
+                const resp = await fetch(this.runnerUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': this.csrf,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body,
+                    credentials: 'same-origin',
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok || !data.success) {
+                    this.toast(data.error || data.message || 'Error al registrar la accion', 'error');
+                    return;
+                }
+                this.closeRunnerModal();
+                this.closeModal();
+                // Mensaje segun la accion
+                const r = data.result || {};
+                let msg = 'Accion registrada';
+                if (action === 'advance') msg = base === 'third' ? 'Corredor anota carrera' : 'Corredor avanza';
+                else if (action === 'stolen_base') msg = 'Robo de base exitoso';
+                else if (action === 'wild_pitch') msg = 'Wild pitch registrado';
+                else if (action === 'passed_ball') msg = 'Passed ball registrado';
+                else if (action === 'error_advance') msg = 'Avanza por error';
+                else if (action === 'obstruction') msg = 'Obstruccion registrada';
+                else if (action === 'score_rbi') msg = 'Carrera anotada (con RBI)';
+                else if (action === 'score_no_rbi') msg = 'Carrera anotada (sin RBI)';
+                else if (action === 'caught_stealing') msg = 'Out por robo de base';
+                else if (action === 'pickoff') msg = 'Out por pickoff';
+                else if (action === 'out_at_2b') msg = 'Out en 2B';
+                else if (action === 'out_at_3b') msg = 'Out en 3B';
+                if (r.runs_scored) msg += ' (+' + r.runs_scored + ' carrera)';
+                this.toast(msg, r.end_half ? 'warning' : 'success');
+                if (r.end_half) {
+                    this.playInningEndBeep();
+                }
+                await this.pollNow();
+            } catch (e) {
+                console.error('runnerAction error', e);
+                this.toast('Error de red: ' + e.message, 'error');
+            }
         },
 
         // ============= MEJ-3: MODAL DE STATS DEL JUEGO =============
@@ -938,15 +1062,51 @@ document.addEventListener('alpine:init', () => {
         },
 
         renderBase(base, athleteId, runner) {
-            const el = document.querySelector(`[data-base="${base}"] > div`);
-            if (!el) return;
+            const wrapper = document.querySelector(`[data-base="${base}"]`);
+            if (!wrapper) return;
+            const inner = wrapper.querySelector(':scope > div');
+            if (!inner) return;
+            const baseButton = inner.querySelector('button');
+            if (!baseButton) return;
+            // Eliminar labels/buttons que pueda haber añadido un poll anterior
+            const existingLabel = inner.querySelector('[data-runner-label]');
+            if (existingLabel) existingLabel.remove();
+            const existingOpBtn = inner.querySelector('[data-runner-options-btn]');
+            if (existingOpBtn) existingOpBtn.remove();
             if (athleteId && runner) {
-                el.className = 'w-11 h-11 bg-amber-300 border-2 border-amber-500 shadow-md rounded flex items-center justify-center font-bold text-xs text-amber-900';
-                el.innerHTML = `<div class="text-center leading-tight"><div class="text-[9px] font-bold">${base.toUpperCase()}</div><div class="text-[11px] font-black">${runner.number ?? ''}</div></div>`;
+                baseButton.className = 'w-11 h-11 bg-amber-300 border-2 border-amber-500 shadow-md rounded flex items-center justify-center font-bold text-xs text-amber-900 cursor-pointer hover:scale-110 transition-transform';
+                baseButton.disabled = false;
+                baseButton.innerHTML = `<div class="text-center leading-tight"><div class="text-[9px] font-bold">${base.toUpperCase()}</div><div class="text-[11px] font-black">${runner.number ?? ''}</div></div>`;
+                // Agregar el label con el nombre del corredor + boton OPCIONES.
+                const label = document.createElement('div');
+                label.className = 'bg-white/95 rounded px-1.5 py-0.5 text-[10px] leading-tight text-center shadow-md';
+                label.setAttribute('data-runner-label', base);
+                const fullName = (runner.first_name || '') + ' ' + (runner.last_name || '');
+                label.innerHTML = `<div class="font-bold text-gray-900 truncate max-w-[80px]" title="${this.escapeHtml(fullName)}">${this.escapeHtml(fullName)}</div>`;
+                inner.appendChild(label);
+                const opBtn = document.createElement('button');
+                opBtn.type = 'button';
+                opBtn.setAttribute('data-runner-options-btn', base);
+                opBtn.className = 'bg-amber-600 hover:bg-amber-700 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow';
+                opBtn.textContent = 'Opciones';
+                // Re-bind: como Alpine re-renderiza, usamos window.__scoreboardOpenRunner
+                // que setea el base y abre el modal. Pero como el scoreboardApp vive en Alpine,
+                // podemos llamar directamente al metodo expuesto.
+                opBtn.addEventListener('click', () => {
+                    window.dispatchEvent(new CustomEvent('open-runner-modal', { detail: { base } }));
+                });
+                inner.appendChild(opBtn);
             } else {
-                el.className = 'w-11 h-11 bg-emerald-50/90 border-2 border-white rounded flex items-center justify-center font-bold text-xs text-emerald-700/40';
-                el.textContent = base.toUpperCase();
+                baseButton.className = 'w-11 h-11 bg-emerald-50/90 border-2 border-white rounded flex items-center justify-center font-bold text-xs text-emerald-700/40 cursor-default';
+                baseButton.disabled = true;
+                baseButton.textContent = base.toUpperCase();
             }
+        },
+
+        escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
         },
     }));
 });
