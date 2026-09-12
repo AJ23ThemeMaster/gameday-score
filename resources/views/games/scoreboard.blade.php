@@ -394,25 +394,25 @@
                     </div>
 
                     {{-- Tab content: PITCHEo (Fase 2 — funcional) --}}
-                    <div x-show="tab === 'pitch'" x-cloak class="grid grid-cols-2 gap-3 p-4">
+                    <div x-show="tab === 'pitch'" x-cloak class="grid grid-cols-1 gap-2 p-4">
                         <button type="button" @click="sendBall()"
                                 :disabled="isPitching"
-                                class="py-8 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
+                                class="py-6 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
                             {{ __('Ball') }}
                         </button>
                         <button type="button" @click="openStrikeModal()"
                                 :disabled="isPitching"
-                                class="py-8 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
+                                class="py-6 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
                             {{ __('Strike') }}
                         </button>
                         <button type="button" @click="sendFoul()"
                                 :disabled="isPitching"
-                                class="py-8 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
+                                class="py-6 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
                             {{ __('Foul') }}
                         </button>
                         <button type="button" @click="openOutStep1()"
                                 :disabled="isPitching"
-                                class="py-8 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
+                                class="py-6 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
                             {{ __('Out') }}
                         </button>
                     </div>
