@@ -22,7 +22,11 @@ class RosterController extends Controller
 
     public function index(Game $game): View
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        abort_unless(
+            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
+            403,
+            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
+        );
 
         $game->load([
             'category', 'stadium', 'homeTeam', 'awayTeam',
@@ -51,7 +55,11 @@ class RosterController extends Controller
 
     public function store(AddAthleteToRosterRequest $request, Game $game): RedirectResponse|JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        abort_unless(
+            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
+            403,
+            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
+        );
 
         $data = $request->validated();
         $data['is_starter'] = $request->boolean('is_starter', true);
@@ -89,7 +97,11 @@ class RosterController extends Controller
 
     public function update(UpdateRosterEntryRequest $request, Game $game, Athlete $athlete): RedirectResponse|JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        abort_unless(
+            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
+            403,
+            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
+        );
 
         $pivot = $game->athletes()->where('athlete_id', $athlete->id)->first()?->pivot;
         if (! $pivot) {
@@ -126,7 +138,11 @@ class RosterController extends Controller
 
     public function destroy(\Illuminate\Http\Request $request, Game $game, Athlete $athlete): RedirectResponse|JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        abort_unless(
+            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
+            403,
+            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
+        );
 
         $name = $athlete->full_name;
         $game->athletes()->detach($athlete->id);
@@ -140,7 +156,11 @@ class RosterController extends Controller
 
     public function substitute(SubstituteAthleteRequest $request, Game $game): RedirectResponse|JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        abort_unless(
+            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
+            403,
+            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
+        );
 
         $data = $request->validated();
 
