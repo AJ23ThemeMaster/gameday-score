@@ -982,7 +982,10 @@ document.addEventListener('alpine:init', () => {
             this.lineupDirty = true;
         },
 
-        // DISI-31: enviar payload completo (9 atletas con orden, posicion, pitcher)
+        // DISI-31: enviar payload completo (9 atletas con orden, posicion, pitcher).
+        // DISI-32: defaults robustos en position/is_pitcher por si algun item del
+        // lineup llega sin esos campos (ej: atletas agregados via drag&drop que
+        // no han pasado por el modal de Gestion de Lineup).
         async saveLineup() {
             const lineup = this.currentLineup();
             const teamId = this.currentTeamId();
@@ -990,7 +993,7 @@ document.addEventListener('alpine:init', () => {
                 this.toast('El lineup debe tener exactamente 9 jugadores. Actual: ' + lineup.length, 'error');
                 return;
             }
-            const pitcherCount = lineup.filter(a => a.is_pitcher).length;
+            const pitcherCount = lineup.filter(a => !!a.is_pitcher).length;
             if (pitcherCount !== 1) {
                 this.toast('Debe haber exactamente 1 pitcher. Actual: ' + pitcherCount, 'error');
                 return;
@@ -1000,7 +1003,7 @@ document.addEventListener('alpine:init', () => {
                 lineup: lineup.map(a => ({
                     athlete_id: a.id,
                     lineup_order: a.lineup_order,
-                    position: a.position,
+                    position: a.position || 'LF',
                     is_pitcher: !!a.is_pitcher,
                 })),
             };
@@ -1089,69 +1092,12 @@ document.addEventListener('alpine:init', () => {
             arr.forEach((a, i) => { a.lineup_order = i + 1; });
             this.lineupDirty = true;
         },
-        async saveLineup() {
-            const arr = this.currentLineup();
-            const teamId = this.currentTeamId();
-            const order = arr.map((a, i) => ({
-                athlete_id: a.id,
-                lineup_order: i + 1,
-            }));
-            try {
-                const body = new FormData();
-                body.append('_token', this.csrf);
-                body.append('team_id', teamId);
-                order.forEach((o, i) => {
-                    body.append(`order[${i}][athlete_id]`, o.athlete_id);
-                    body.append(`order[${i}][lineup_order]`, o.lineup_order);
-                });
-                // La ruta games.lineup.reorder acepta PATCH. Usamos
-                // X-HTTP-Method-Override para soportar PATCH real (los
-                // formularios HTML solo permiten GET/POST). Como el navegador
-                // sí soporta PATCH en fetch, mandamos PATCH directo.
-                const res = await fetch(this.lineupReorderUrl, {
-                    method: 'PATCH',
-                    body,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.csrf,
-                    },
-                    credentials: 'same-origin',
-                });
-                const data = await res.json();
-                if (data.success) {
-                    this.toast('Lineup guardado', 'success');
-                    this.lineupDirty = false;
-                    // Sincronizar rosterAway/Home con el nuevo orden
-                    if (this.lineupTeam === 'away') {
-                        this.rosterAway = JSON.parse(JSON.stringify(arr));
-                    } else {
-                        this.rosterHome = JSON.parse(JSON.stringify(arr));
-                    }
-                    // DISI-31e: refrescar el scoreboard para que muestre el
-                    // pitcher nuevo (u otra posicion cambiada) inmediatamente.
-                    // Sin esto, el frontend seguia mostrando el pitcher anterior
-                    // hasta el siguiente poll automatico (5s).
-                    //
-                    // Usamos setTimeout + location.reload() en vez de pollNow()
-                    // para que funcione con bundles VIEJOS que no tienen la
-                    // implementacion de pollNow() optimizada (o si pollNow()
-                    // falla por algun side effect). El reload es 500ms despues
-                    // para que el toast 'Lineup guardado' se vea antes de
-                    // recargar la pagina.
-                    if (typeof this.pollNow === 'function') {
-                        this.pollNow();
-                    } else {
-                        // Fallback para bundles viejos: recargar la pagina
-                        setTimeout(() => location.reload(), 500);
-                    }
-                } else {
-                    this.toast(data.error || data.message || 'Error al guardar', 'error');
-                }
-            } catch (e) {
-                this.toast('Error de red al guardar lineup: ' + e.message, 'error');
-            }
-        },
+        // NOTA: la version vieja de saveLineup() que enviaba solo
+        // order[athlete_id] + order[lineup_order] (sin position ni is_pitcher)
+        // fue eliminada en DISI-32. Quedaba duplicada al final de este objeto
+        // y JS tomaba la ultima definicion, anulando el saveLineup() nuevo de
+        // DISI-31 que SI envia position/is_pitcher. La version nueva esta
+        // arriba (lineas ~986-1036).
 
         // MEJ-2: Web Audio API beep de cierre de inning.
         // 2 tonos: uno corto (440Hz) y uno largo (660Hz) con 180ms de gap.
