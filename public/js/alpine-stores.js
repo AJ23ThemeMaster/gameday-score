@@ -1132,7 +1132,19 @@ document.addEventListener('alpine:init', () => {
                     // pitcher nuevo (u otra posicion cambiada) inmediatamente.
                     // Sin esto, el frontend seguia mostrando el pitcher anterior
                     // hasta el siguiente poll automatico (5s).
-                    await this.pollNow();
+                    //
+                    // Usamos setTimeout + location.reload() en vez de pollNow()
+                    // para que funcione con bundles VIEJOS que no tienen la
+                    // implementacion de pollNow() optimizada (o si pollNow()
+                    // falla por algun side effect). El reload es 500ms despues
+                    // para que el toast 'Lineup guardado' se vea antes de
+                    // recargar la pagina.
+                    if (typeof this.pollNow === 'function') {
+                        this.pollNow();
+                    } else {
+                        // Fallback para bundles viejos: recargar la pagina
+                        setTimeout(() => location.reload(), 500);
+                    }
                 } else {
                     this.toast(data.error || data.message || 'Error al guardar', 'error');
                 }
