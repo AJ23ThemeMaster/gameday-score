@@ -558,7 +558,14 @@ class GameplayEngine
     private function forceRunnersOnWalk(array $bases, ?int $batterId): array
     {
         $runs = 0;
-        $new = ['first' => null, 'second' => null, 'third' => null];
+        // Inicializamos preservando los corredores de 2da y 3ra (no se mueven
+        // si no estan forzados). Antes solo se copiaban si 1ra estaba ocupada,
+        // lo que BORRABA a los corredores de 2da/3ra en un walk con 1ra vacia.
+        $new = [
+            'first' => null,
+            'second' => $bases['second'] ?? null,
+            'third' => $bases['third'] ?? null,
+        ];
 
         // Bateador SIEMPRE va a 1B
         $new['first'] = $batterId;
