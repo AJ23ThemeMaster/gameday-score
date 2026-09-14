@@ -351,6 +351,14 @@ class ScoreboardController extends Controller
             'batter_stats' => $batterStats,
             'on_deck' => $onDeck ? $this->athleteToArray($onDeck) : null,
             'runners' => $this->runners($state),
+            // DISI-33: flag derivado de $game->isCompleted() para que Alpine
+            // pueda detectar reactivamente cuando el juego se finaliza durante
+            // la sesion (sin recargar la pagina). state.is_game_over solo es
+            // true cuando la ultima jugada es Play::TYPE_GAME_END, pero el
+            // engine puede finalizar el juego (status='finalized') sin crear
+            // esa jugada, asi que usamos $game->isCompleted() como fuente
+            // de verdad.
+            'is_completed' => $game->isCompleted(),
             'summary' => $summary,
         ]);
     }
