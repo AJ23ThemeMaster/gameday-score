@@ -610,29 +610,51 @@
                             {{ __('Toca los fildeadores en el orden que participaron.') }}
                         </p>
 
-                        {{-- Diamante SVG con los 9 fildeadores + bateador --}}
-                        <div class="relative bg-emerald-700 rounded-xl mx-auto" style="width: 280px; height: 280px;">
-                            {{-- Infield dirt --}}
-                            <div class="absolute inset-6 bg-amber-100/30 rounded-full"></div>
+                        {{-- Diamante con los 9 fildeadores + bateador (DISI-30: layout rediseñado) --}}
+                        <div class="relative bg-emerald-700 rounded-xl mx-auto" style="width: 320px; height: 320px;">
+                            {{-- Infield dirt (circulo central) --}}
+                            <div class="absolute rounded-full bg-amber-100/30" style="top: 90px; left: 40px; right: 40px; bottom: 90px;"></div>
 
-                            {{-- Bases --}}
-                            <div class="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-10 bg-white border-2 border-gray-300 rounded rotate-45"></div>
-                            <div class="absolute top-1/2 right-2 -translate-y-1/2 w-10 h-10 bg-white border-2 border-gray-300 rounded rotate-45"></div>
-                            <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-10 h-10 bg-white border-2 border-gray-300 rounded rotate-45"></div>
-                            <div class="absolute top-1/2 left-2 -translate-y-1/2 w-10 h-10 bg-white border-2 border-gray-300 rounded rotate-45"></div>
+                            {{-- Bases (esquinas del diamante) --}}
+                            <div class="absolute w-9 h-9 bg-white border-2 border-gray-300 rounded rotate-45" style="top: 70px; left: 50%; transform: translateX(-50%) rotate(45deg);" title="2da base"></div>
+                            <div class="absolute w-9 h-9 bg-white border-2 border-gray-300 rounded rotate-45" style="top: 50%; right: 8px; transform: translateY(-50%) rotate(45deg);" title="1ra base"></div>
+                            <div class="absolute w-9 h-9 bg-white border-2 border-gray-300 rounded rotate-45" style="bottom: 8px; left: 50%; transform: translateX(-50%) rotate(45deg);" title="Home"></div>
+                            <div class="absolute w-9 h-9 bg-white border-2 border-gray-300 rounded rotate-45" style="top: 50%; left: 8px; transform: translateY(-50%) rotate(45deg);" title="3ra base"></div>
 
-                            {{-- Pitcher mound --}}
-                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-amber-200/90 rounded-full flex items-center justify-center text-xs font-black text-amber-900">P</div>
+                            {{-- Pitcher mound (centro del diamante) --}}
+                            <div class="absolute flex items-center justify-center text-xs font-black text-amber-900 bg-amber-200/90 rounded-full" style="top: 138px; left: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px;">P</div>
 
-                            {{-- Posiciones clickeables --}}
-                            <button type="button" @click="addFielder('C')"  class="absolute bottom-1 left-1/2 -translate-x-1/2 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">C</button>
-                            <button type="button" @click="addFielder('1B')" class="absolute top-1/2 right-1 -translate-y-1/2 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">1B</button>
-                            <button type="button" @click="addFielder('2B')" class="absolute top-2 right-12 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">2B</button>
-                            <button type="button" @click="addFielder('3B')" class="absolute top-1/2 left-1 -translate-y-1/2 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">3B</button>
-                            <button type="button" @click="addFielder('SS')" class="absolute top-2 left-12 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">SS</button>
-                            <button type="button" @click="addFielder('LF')" class="absolute top-1 left-1/4 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">LF</button>
-                            <button type="button" @click="addFielder('CF')" class="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">CF</button>
-                            <button type="button" @click="addFielder('RF')" class="absolute top-1 right-1/4 w-12 h-8 bg-slate-100 hover:bg-amber-200 rounded text-xs font-bold">RF</button>
+                            {{-- Outfield (fila superior, y=10-44) --}}
+                            <button type="button" @click="addFielder('LF')" style="top: 14px; left: 16px;"
+                                    :class="isFielderSelected('LF') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                    class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">LF</button>
+                            <button type="button" @click="addFielder('CF')" style="top: 10px; left: 50%; transform: translateX(-50%);"
+                                    :class="isFielderSelected('CF') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                    class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">CF</button>
+                            <button type="button" @click="addFielder('RF')" style="top: 14px; right: 16px;"
+                                    :class="isFielderSelected('RF') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                    class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">RF</button>
+
+                            {{-- Infield medio (SS, 2B) - entre outfield y corners --}}
+                            <button type="button" @click="addFielder('SS')" style="top: 102px; left: 50px;"
+                                    :class="isFielderSelected('SS') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                    class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">SS</button>
+                            <button type="button" @click="addFielder('2B')" style="top: 102px; right: 50px;"
+                                    :class="isFielderSelected('2B') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                    class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">2B</button>
+
+                            {{-- Infield corners (3B, 1B) - a la altura del pitcher --}}
+                            <button type="button" @click="addFielder('3B')" style="top: 178px; left: 28px;"
+                                    :class="isFielderSelected('3B') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                    class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">3B</button>
+                            <button type="button" @click="addFielder('1B')" style="top: 178px; right: 28px;"
+                                    :class="isFielderSelected('1B') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                    class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">1B</button>
+
+                            {{-- Catcher (debajo del home plate, abajo del centro) --}}
+                            <button type="button" @click="addFielder('C')" style="bottom: 56px; left: 50%; transform: translateX(-50%);"
+                                    :class="isFielderSelected('C') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                    class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">C</button>
                         </div>
 
                         {{-- Secuencia seleccionada --}}
