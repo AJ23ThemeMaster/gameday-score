@@ -528,8 +528,24 @@ document.addEventListener('alpine:init', () => {
             try {
                 const resp = await fetch(this.endInningUrl, {
                     method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json' },
+                    headers: {
+                        'X-CSRF-TOKEN': this.csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
                 });
+                // DISI-36: si el server aborta con 403/422, leer el JSON de
+                // error para mostrar el mensaje real al usuario en vez de
+                // un toast generico de "Error de red".
+                if (!resp.ok) {
+                    let errMsg = `Error HTTP ${resp.status}`;
+                    try {
+                        const errData = await resp.json();
+                        if (errData.message) errMsg = errData.message;
+                    } catch (_) { /* body no era JSON */ }
+                    this.toast(errMsg, 'error');
+                    return;
+                }
                 const data = await resp.json();
                 if (data.success) {
                     this.closeModal();
@@ -546,7 +562,7 @@ document.addEventListener('alpine:init', () => {
                     // Re-render inmediato del state
                     await this.pollNow();
                 } else {
-                    this.toast('Error al finalizar inning', 'error');
+                    this.toast(data.message || 'Error al finalizar inning', 'error');
                 }
             } catch (e) {
                 console.error('endInning error', e);
@@ -560,15 +576,31 @@ document.addEventListener('alpine:init', () => {
             try {
                 const resp = await fetch(this.endGameUrl, {
                     method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json' },
+                    headers: {
+                        'X-CSRF-TOKEN': this.csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
                 });
+                // DISI-36: si el server aborta con 403/422, leer el JSON de
+                // error para mostrar el mensaje real al usuario en vez de
+                // un toast generico de "Error de red".
+                if (!resp.ok) {
+                    let errMsg = `Error HTTP ${resp.status}`;
+                    try {
+                        const errData = await resp.json();
+                        if (errData.message) errMsg = errData.message;
+                    } catch (_) { /* body no era JSON */ }
+                    this.toast(errMsg, 'error');
+                    return;
+                }
                 const data = await resp.json();
                 if (data.success) {
                     this.closeModal();
                     this.toast('Juego finalizado: ' + data.result.away_score + '-' + data.result.home_score, 'warning');
                     await this.pollNow();
                 } else {
-                    this.toast('Error al finalizar juego', 'error');
+                    this.toast(data.message || 'Error al finalizar juego', 'error');
                 }
             } catch (e) {
                 console.error('endGame error', e);
