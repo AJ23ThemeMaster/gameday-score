@@ -1128,6 +1128,11 @@ document.addEventListener('alpine:init', () => {
                     } else {
                         this.rosterHome = JSON.parse(JSON.stringify(arr));
                     }
+                    // DISI-31e: refrescar el scoreboard para que muestre el
+                    // pitcher nuevo (u otra posicion cambiada) inmediatamente.
+                    // Sin esto, el frontend seguia mostrando el pitcher anterior
+                    // hasta el siguiente poll automatico (5s).
+                    await this.pollNow();
                 } else {
                     this.toast(data.error || data.message || 'Error al guardar', 'error');
                 }
