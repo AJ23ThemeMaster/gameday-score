@@ -426,6 +426,12 @@ document.addEventListener('alpine:init', () => {
         addFielder(pos) { this.defensiveSequence.push(pos); },
         removeFielder(i) { this.defensiveSequence.splice(i, 1); },
 
+        // DISI-30: helper visual para el diamante — devuelve true si la posicion
+        // ya esta en la secuencia (la pintamos de color ambar para feedback).
+        isFielderSelected(pos) {
+            return this.defensiveSequence.includes(pos);
+        },
+
         // Hit modal
         openHitModal(subtype) {
             this.hitSubtype = subtype;
