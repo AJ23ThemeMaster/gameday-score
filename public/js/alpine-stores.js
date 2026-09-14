@@ -649,8 +649,9 @@ document.addEventListener('alpine:init', () => {
         // ============= DISI-20: GESTION DE CORREDORES =============
         // Abre el modal de gestion de corredor sobre la base indicada.
         // DISI-27: permite abrir el modal aunque el ID sea un placeholder
-        // (corredor sin roster identificado) — el modal mostrara mensaje
-        // "Sin corredor identificado" en lugar del card del atleta.
+        // (corredor sin roster identificado) — el modal mostrara el grid
+        // de acciones igual que un corredor registrado (solo sustitucion
+        // queda oculta porque requiere un atleta identificado).
         openRunnerModal(base) {
             if (!base || !['first', 'second', 'third'].includes(base)) return;
             const id = (this.lastBases || {})[base];
@@ -660,6 +661,16 @@ document.addEventListener('alpine:init', () => {
             }
             this.runnerBase = base;
             this.modal = 'runner';
+        },
+
+        // DISI-27: indica si la base seleccionada en el modal es un placeholder
+        // (corredor sin roster identificado). Usado en el modal para mostrar
+        // el grid de acciones pero mantener oculta la sustitucion (PR).
+        runnerModalPlaceholder() {
+            const base = this.runnerBase;
+            if (!base) return false;
+            const id = (this.lastBases || {})[base];
+            return typeof id === 'string' && id !== '';
         },
 
         // Cierra el modal de corredor (la accion closeModal ya limpia

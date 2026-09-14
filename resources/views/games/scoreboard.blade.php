@@ -1150,7 +1150,10 @@
 
                     {{-- Grid de acciones --}}
                     <div class="p-4 overflow-y-auto flex-1">
-                        <div class="grid grid-cols-2 gap-2" x-show="runnerModalRunner()">
+                        {{-- DISI-27: el grid de acciones se muestra tambien cuando el corredor es un
+                             placeholder (string en lugar de athlete_id). Solo la sustitucion (PR)
+                             queda oculta porque requiere un atleta identificado. --}}
+                        <div class="grid grid-cols-2 gap-2" x-show="runnerModalRunner() || runnerModalPlaceholder()">
                             {{-- Avanza a siguiente base --}}
                             <button type="button" @click="sendRunnerAction('advance')"
                                     :disabled="isPitching"
