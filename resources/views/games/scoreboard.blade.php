@@ -261,7 +261,7 @@
                 </div>
 
                 {{-- On-deck (Prevenido) — solo visible mientras el juego esta en curso --}}
-                <div class="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center gap-2" data-card="ondeck">
+                <div class="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center gap-2" data-card="ondeck" x-show="!isFinalized">
                     <div class="w-7 h-7 rounded-full bg-slate-500 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0 overflow-hidden" data-athlete-avatar>
                         @if ($onDeck && $onDeck->photoUrl)
                             <img src="{{ $onDeck->photoUrl }}" class="w-full h-full object-cover" data-athlete-photo>
