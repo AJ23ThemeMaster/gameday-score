@@ -20,7 +20,12 @@ class PlayController extends Controller
      */
     public function index(Request $request, Game $game): View|JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        // DISI-38: admin OR owner pueden ver las jugadas del juego.
+        abort_unless(
+            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
+            403,
+            'No tienes permiso para ver las jugadas de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
+        );
 
         $plays = Play::where('game_id', $game->id)
             ->with(['batter', 'pitcher'])
@@ -57,7 +62,12 @@ class PlayController extends Controller
      */
     public function store(Request $request, Game $game): JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        // DISI-38: admin OR owner pueden crear jugadas manuales.
+        abort_unless(
+            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
+            403,
+            'No tienes permiso para registrar jugadas en este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
+        );
 
         $validated = $request->validate([
             'inning' => ['required', 'integer', 'min:1'],
@@ -115,7 +125,12 @@ class PlayController extends Controller
      */
     public function pitch(Request $request, Game $game, GameplayEngine $engine): JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        // DISI-38: admin OR owner pueden registrar pitches / hits.
+        abort_unless(
+            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
+            403,
+            'No tienes permiso para registrar pitches en este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
+        );
         abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
 
         $validated = $request->validate([
@@ -236,7 +251,12 @@ class PlayController extends Controller
      */
     public function substitute(Request $request, Game $game, GameplayEngine $engine): JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        // DISI-38: admin OR owner pueden hacer sustituciones.
+        abort_unless(
+            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
+            403,
+            'No tienes permiso para sustituir atletas en este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
+        );
         abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
 
         $validated = $request->validate([
@@ -275,7 +295,12 @@ class PlayController extends Controller
      */
     public function runnerAction(Request $request, Game $game, GameplayEngine $engine): JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
+        // DISI-38: admin OR owner pueden ejecutar acciones sobre corredores.
+        abort_unless(
+            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
+            403,
+            'No tienes permiso para acciones de corredor en este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
+        );
         abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
 
         $validated = $request->validate([
