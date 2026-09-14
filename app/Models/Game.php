@@ -175,7 +175,14 @@ class Game extends Model
 
     public function isCompleted(): bool
     {
-        return $this->status === 'completed';
+        // Un juego esta 'completado' tanto cuando el anotador lo finaliza
+        // manualmente (status='completed' via GameController@endInning al
+        // alcanzar innings_count) como cuando el GameplayEngine detecta
+        // automaticamente que el juego se acabo (status='finalized' via
+        // GameplayEngine cuando se cumple el limite de innings en una
+        // jugada). Ambos estados indican "juego terminado, no se pueden
+        // registrar mas jugadas".
+        return in_array($this->status, ['completed', 'finalized'], true);
     }
 
     public function scopePublic(Builder $query): Builder
