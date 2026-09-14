@@ -254,9 +254,14 @@ class Play extends Model
             ->wherePivot('is_pitcher', true)
             ->first();
 
+        // DISI-31d: leer el half del modelo Game en vez de hardcodear 'top'.
+        // Asi si el juego se crea o se resetea con inning_half='bottom' (caso
+        // raro pero valido), el state inicial respeta ese half.
+        $defaultHalf = $game?->inning_half ?: 'top';
+
         return [
             'inning' => 1,
-            'half' => 'top', // visitante batea primero
+            'half' => $defaultHalf,
             'outs' => 0,
             'balls' => 0,
             'strikes' => 0,

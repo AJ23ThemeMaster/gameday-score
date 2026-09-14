@@ -223,6 +223,31 @@ class ScoreboardController extends Controller
             }
         });
 
+        // DISI-31d: sincronizar el pitcher de la ultima jugada at_bat_start del
+        // half actual con el pivot (fuente de verdad). Asi el proximo
+        // currentState() (que lee pitcher_id de la ultima jugada) devuelve el
+        // pitcher nuevo cuando se cambia via modal de lineup (sin pasar por
+        // processPitch). Si no hay jugada at_bat_start todavia (juego nuevo),
+        // no hacemos nada: buildSnapshot ya recalcula desde el pivot en ese caso.
+        $game->refresh();
+        $half = $game->inning_half ?? 'top';
+        $defendingTeamId = $half === 'top' ? $game->home_team_id : $game->away_team_id;
+        $newPitcherId = DB::table('game_athlete')
+            ->where('game_id', $game->id)
+            ->where('team_id', $defendingTeamId)
+            ->where('is_pitcher', true)
+            ->value('athlete_id');
+        if ($newPitcherId) {
+            DB::table('plays')
+                ->where('game_id', $game->id)
+                ->where('inning', $game->current_inning)
+                ->where('half', $half)
+                ->where('subtype', 'at_bat_start')
+                ->orderByDesc('id')
+                ->limit(1)
+                ->update(['pitcher_id' => (int) $newPitcherId]);
+        }
+
         // DISI-31c: devolver el estado REAL del pivot en la BD (no el input del
         // request), con tipos correctos (int/bool). Asi el frontend sabe exactamente
         // lo que quedo guardado, y los atletas quitados aparecen como benched.
