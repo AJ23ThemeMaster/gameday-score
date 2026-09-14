@@ -222,12 +222,15 @@ document.addEventListener('alpine:init', () => {
         // se actualiza automaticamente en applyState() cuando el poll
         // detecta data.is_completed === true. Las secciones del scoreboard
         // usan x-show="!isFinalized" para desaparecer sin recargar la pagina.
-        isFinalized: e.isFinalized ?? false,
+        // FIX DISI-34: el parametro de la factory es `config`, no `e`.
+        // Antes usabamos `e.isFinalized` que es un ReferenceError y rompia
+        // toda la inicializacion de Alpine (tabs vacios, etc).
+        isFinalized: config.isFinalized ?? false,
         // Tab activo del bloque inferior (PITCHEo / BATEo / EXTRAS).
         // DISI-33: cuando el juego finaliza, applyState() cambia este tab a
         // 'extra' automaticamente para que el usuario vea los botones
         // Stats + Box Score sin tener que hacer click.
-        tab: e.tab ?? 'pitch',
+        tab: config.tab ?? 'pitch',
         modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'inning-summary' | 'end-game' | 'substitute' | 'stats' | 'lineup' | 'runner' | null
         outSubtype: null,
         // DISI-20: base seleccionada en el modal "Gestionar corredor"
