@@ -64,13 +64,14 @@ class GameController extends Controller
         abort_unless(Gate::allows('manage games crud'), 403);
 
         $categories = Category::active()->orderBy('name')->get();
+        $tournaments = Tournament::active()->orderBy('name')->get();
         $stadiums = Stadium::active()->orderBy('name')->get();
         $teams = Team::active()->orderBy('name')->get();
         $scorekeepers = Scorekeeper::active()->orderBy('last_name')->get();
         $referees = Referee::active()->orderBy('last_name')->get();
         $game = new Game();
 
-        return view('games.create', compact('categories', 'stadiums', 'teams', 'scorekeepers', 'referees', 'game'));
+        return view('games.create', compact('categories', 'tournaments', 'stadiums', 'teams', 'scorekeepers', 'referees', 'game'));
     }
 
     public function store(StoreGameRequest $request): RedirectResponse
@@ -118,6 +119,7 @@ class GameController extends Controller
         $this->authorize('update', $game);
 
         $categories = Category::active()->orderBy('name')->get();
+        $tournaments = Tournament::active()->orderBy('name')->get();
         $stadiums = Stadium::active()->orderBy('name')->get();
         $teams = Team::active()->orderBy('name')->get();
         $scorekeepers = Scorekeeper::active()->orderBy('last_name')->get();
@@ -125,7 +127,7 @@ class GameController extends Controller
 
         $game->load(['scorekeepers', 'referees']);
 
-        return view('games.edit', compact('game', 'categories', 'stadiums', 'teams', 'scorekeepers', 'referees'));
+        return view('games.edit', compact('game', 'categories', 'tournaments', 'stadiums', 'teams', 'scorekeepers', 'referees'));
     }
 
     public function update(UpdateGameRequest $request, Game $game): RedirectResponse
