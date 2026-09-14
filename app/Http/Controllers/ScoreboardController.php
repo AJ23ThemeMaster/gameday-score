@@ -223,10 +223,28 @@ class ScoreboardController extends Controller
             }
         });
 
+        // DISI-31c: devolver el estado REAL del pivot en la BD (no el input del
+        // request), con tipos correctos (int/bool). Asi el frontend sabe exactamente
+        // lo que quedo guardado, y los atletas quitados aparecen como benched.
+        $pivots = DB::table('game_athlete')
+            ->where('game_id', $game->id)
+            ->where('team_id', $teamId)
+            ->where('is_starter', true)
+            ->orderBy('lineup_order')
+            ->get(['athlete_id', 'lineup_order', 'position', 'is_pitcher'])
+            ->map(fn ($r) => [
+                'athlete_id' => (int) $r->athlete_id,
+                'lineup_order' => (int) $r->lineup_order,
+                'position' => $r->position,
+                'is_pitcher' => (bool) $r->is_pitcher,
+            ])
+            ->values();
+
         return response()->json([
             'success' => true,
             'message' => 'Lineup actualizado',
-            'lineup' => $data['lineup'],
+            'lineup' => $pivots,
+            'mode' => $isLegacyFormat ? 'legacy' : 'full',
         ]);
     }
 
