@@ -591,6 +591,9 @@ document.addEventListener('alpine:init', () => {
             if (this.subKind === 'pr') {
                 if (!this.subBase) return false;
                 if (!this.lastBases || !this.lastBases[this.subBase]) return false;
+                // DISI-27: no permitir pinch runner sobre placeholder (corredor sin roster).
+                const outId = this.lastBases[this.subBase];
+                if (typeof outId !== 'number') return false;
             }
             return true;
         },
@@ -607,6 +610,11 @@ document.addEventListener('alpine:init', () => {
             }
             if (!outId) {
                 this.toast('No se puede identificar el atleta saliente', 'error');
+                return;
+            }
+            // DISI-27: no se puede sustituir un placeholder (corredor sin roster).
+            if (typeof outId !== 'number') {
+                this.toast('Este corredor no tiene atleta identificado en el roster. Asignale un atleta primero o registralo en el roster.', 'error');
                 return;
             }
             try {
@@ -640,12 +648,14 @@ document.addEventListener('alpine:init', () => {
 
         // ============= DISI-20: GESTION DE CORREDORES =============
         // Abre el modal de gestion de corredor sobre la base indicada.
-        // Solo se abre si hay un corredor identificado en la base.
+        // DISI-27: permite abrir el modal aunque el ID sea un placeholder
+        // (corredor sin roster identificado) — el modal mostrara mensaje
+        // "Sin corredor identificado" en lugar del card del atleta.
         openRunnerModal(base) {
             if (!base || !['first', 'second', 'third'].includes(base)) return;
             const id = (this.lastBases || {})[base];
             if (!id) {
-                this.toast('No hay corredor identificado en ' + this.baseLabel(base), 'warning');
+                this.toast('No hay corredor en ' + this.baseLabel(base), 'warning');
                 return;
             }
             this.runnerBase = base;
@@ -1136,7 +1146,14 @@ document.addEventListener('alpine:init', () => {
             while (inner.children.length > 1) {
                 inner.removeChild(inner.lastChild);
             }
-            if (athleteId && runner) {
+
+            // DISI-27: detectar placeholder de bateador sin roster. El motor
+            // guarda el string 'corredor' cuando el bateador no esta identificado
+            // (equipo sin roster, atleta eliminado, etc.). Cualquier string en
+            // la base se trata como placeholder.
+            const isPlaceholder = typeof athleteId === 'string' && athleteId !== '';
+
+            if (athleteId && runner && !isPlaceholder) {
                 baseButton.className = 'w-11 h-11 bg-amber-300 border-2 border-amber-500 shadow-md rounded flex items-center justify-center font-bold text-xs text-amber-900 cursor-pointer hover:scale-110 transition-transform';
                 baseButton.disabled = false;
                 baseButton.innerHTML = `<div class="text-center leading-tight"><div class="text-[9px] font-bold">${base.toUpperCase()}</div><div class="text-[11px] font-black">${runner.number ?? ''}</div></div>`;
@@ -1146,6 +1163,26 @@ document.addEventListener('alpine:init', () => {
                 label.setAttribute('data-runner-label', base);
                 const fullName = (runner.first_name || '') + ' ' + (runner.last_name || '');
                 label.innerHTML = `<div class="font-bold text-gray-900 truncate max-w-[80px]" title="${this.escapeHtml(fullName)}">${this.escapeHtml(fullName)}</div>`;
+                inner.appendChild(label);
+                const opBtn = document.createElement('button');
+                opBtn.type = 'button';
+                opBtn.setAttribute('data-runner-options-btn', base);
+                opBtn.className = 'bg-amber-600 hover:bg-amber-700 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow';
+                opBtn.textContent = 'Opciones';
+                opBtn.addEventListener('click', () => {
+                    window.dispatchEvent(new CustomEvent('open-runner-modal', { detail: { base } }));
+                });
+                inner.appendChild(opBtn);
+            } else if (isPlaceholder) {
+                // DISI-27: placeholder visible — base con corredor pero sin identificador.
+                baseButton.className = 'w-11 h-11 bg-amber-300 border-2 border-amber-500 shadow-md rounded flex items-center justify-center font-bold text-[10px] text-amber-900 cursor-pointer hover:scale-110 transition-transform';
+                baseButton.disabled = false;
+                baseButton.innerHTML = `<div class="text-center leading-tight"><div class="text-[9px] font-bold">${base.toUpperCase()}</div><div class="text-[9px] font-black tracking-wider">CORREDOR</div></div>`;
+                // Label indicando que no hay identificador
+                const label = document.createElement('div');
+                label.className = 'bg-white/95 rounded px-1.5 py-0.5 text-[10px] leading-tight text-center shadow-md';
+                label.setAttribute('data-runner-label', base);
+                label.innerHTML = `<div class="font-bold text-gray-500 italic truncate max-w-[80px]" title="Sin corredor identificado">Sin identificar</div>`;
                 inner.appendChild(label);
                 const opBtn = document.createElement('button');
                 opBtn.type = 'button';

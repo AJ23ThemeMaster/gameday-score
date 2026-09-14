@@ -89,6 +89,22 @@ class Play extends Model
     public const TYPE_INNING_END = 'inning_end';
     public const TYPE_GAME_END = 'game_end';
 
+    // DISI-27: placeholder para corredores cuyo bateador NO esta identificado
+    // (equipo sin roster, atleta eliminado del roster, etc.). El motor usa este
+    // string en lugar de null para que el frontend SIEMPRE muestre un indicador
+    // en la base (no una base vacia). El frontend detecta cualquier string en
+    // una base como "corredor anonimo" y muestra el label "CORREDOR".
+    public const ANON_RUNNER = 'corredor';
+
+    /**
+     * Devuelve el ID del bateador si existe, o el placeholder ANON_RUNNER.
+     * Usar en todas las asignaciones a bases cuando el bateador se embasa.
+     */
+    public static function resolveBase(?int $batterId): int|string
+    {
+        return $batterId ?? self::ANON_RUNNER;
+    }
+
     // Subtipos de strike (pitch type='pitch', subtype)
     public const SUBTYPE_STRIKE_LOOKING = 'looking';
     public const SUBTYPE_STRIKE_SWINGING = 'swinging';
