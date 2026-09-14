@@ -169,8 +169,18 @@ class PlayController extends Controller
      */
     public function endInning(Request $request, Game $game, GameplayEngine $engine): JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
-        abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
+        // DISI-36: mensajes explicitos para que la UI pueda mostrar el
+        // motivo real del error (no abort 403/422 silencioso).
+        abort_unless(
+            Auth::check() && $game->user_id === Auth::id(),
+            403,
+            'No tienes permiso para finalizar el inning de este juego. La sesion activa no es el anotador del juego.'
+        );
+        abort_unless(
+            $game->isInProgress(),
+            422,
+            'El juego ya esta finalizado. Estado actual: "' . $game->status . '".'
+        );
 
         $result = $engine->endInning($game);
         $summary = null;
@@ -190,8 +200,23 @@ class PlayController extends Controller
      */
     public function endGame(Request $request, Game $game, GameplayEngine $engine): JsonResponse
     {
-        abort_unless($game->user_id === Auth::id(), 403);
-        abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
+        // DISI-36: agregar mensajes explicitos a los abort_unless. Antes
+        // lanzaban HttpException sin mensaje (403 vacio o 422 generico) lo
+        // que dificultaba diagnosticar por que no se podia finalizar el
+        // juego (sesion de otro usuario vs juego ya finalizado vs motor
+        // interno). Ahora cada caso tiene un mensaje claro y se devuelve
+        // como JSON cuando el cliente lo solicita (la UI envia fetch con
+        // Accept: application/json).
+        abort_unless(
+            Auth::check() && $game->user_id === Auth::id(),
+            403,
+            'No tienes permiso para finalizar este juego. La sesion activa no es el anotador del juego.'
+        );
+        abort_unless(
+            $game->isInProgress(),
+            422,
+            'El juego ya esta finalizado. Estado actual: "' . $game->status . '".'
+        );
 
         $result = $engine->endGame($game);
 
