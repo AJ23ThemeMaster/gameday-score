@@ -445,8 +445,16 @@
                         </button>
                         <button type="button" @click="openHitModal('inside_park')"
                                 :disabled="isPitching"
-                                class="col-span-4 py-5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-lg font-black rounded-2xl transition">
+                                class="col-span-2 py-5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
                             {{ __('HR de pierna') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-0.5">Inside-the-park</div>
+                        </button>
+                        {{-- DISI-28: Toque de bolas movido de EXTRAS a BATEO --}}
+                        <button type="button" @click="openBuntModal()"
+                                :disabled="isPitching"
+                                class="col-span-2 py-5 bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
+                            {{ __('Toque de bolas') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-0.5">{{ __('Sacrifice o bunt single') }}</div>
                         </button>
                     </div>
 
@@ -463,12 +471,6 @@
                                 class="py-3 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
                             {{ __('Balk') }}
                             <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Corredores avanzan 1 base') }}</div>
-                        </button>
-                        <button type="button" @click="openBuntModal()"
-                                :disabled="isPitching"
-                                class="py-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
-                            {{ __('Toque de bolas') }}
-                            <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Sacrifice o bunt single') }}</div>
                         </button>
                         <button type="button" @click="openLineupModal()"
                                 :disabled="isPitching"
