@@ -552,9 +552,9 @@ class GameplayEngine
         $newBases['third'] = $bases['second'] ?? $newBases['third'];
         // 1B -> 2B
         $newBases['second'] = $bases['first'] ?? null;
-        // Bateador -> 1B (solo si NO es out)
+        // Bateador -> 1B (solo si NO es out). DISI-27: usar placeholder si no hay bateador.
         if (! $buntOut) {
-            $newBases['first'] = $batterId;
+            $newBases['first'] = Play::resolveBase($batterId);
         }
         return [$newBases, $runs];
     }
@@ -594,8 +594,8 @@ class GameplayEngine
             'third' => $bases['third'] ?? null,
         ];
 
-        // Bateador SIEMPRE va a 1B
-        $new['first'] = $batterId;
+        // Bateador SIEMPRE va a 1B. DISI-27: usar placeholder si no hay bateador.
+        $new['first'] = Play::resolveBase($batterId);
 
         // Avance obligatorio de los corredores existentes
         if (! empty($bases['first'])) {
@@ -641,7 +641,8 @@ class GameplayEngine
                 if ($r3) { $runs++; $rbi++; }
                 $newBases['third'] = $r2;
                 $newBases['second'] = $bases['first'];
-                $newBases['first'] = $batterId;
+                // DISI-27: usar placeholder si el bateador no esta identificado.
+                $newBases['first'] = Play::resolveBase($batterId);
                 break;
 
             case Play::SUBTYPE_HIT_DOUBLE:
@@ -649,7 +650,8 @@ class GameplayEngine
                 if ($r3) { $runs++; $rbi++; }
                 if ($r2) { $runs++; $rbi++; }
                 $newBases['third'] = $bases['first'];
-                $newBases['second'] = $batterId;
+                // DISI-27: usar placeholder si el bateador no esta identificado.
+                $newBases['second'] = Play::resolveBase($batterId);
                 // 1B se mantiene vacia (los corredores ya anotaron o se movieron).
                 break;
 
@@ -658,7 +660,8 @@ class GameplayEngine
                 if ($r3) { $runs++; $rbi++; }
                 if ($r2) { $runs++; $rbi++; }
                 if ($bases['first']) { $runs++; $rbi++; }
-                $newBases['third'] = $batterId;
+                // DISI-27: usar placeholder si el bateador no esta identificado.
+                $newBases['third'] = Play::resolveBase($batterId);
                 break;
 
             case Play::SUBTYPE_HIT_HR:
@@ -682,7 +685,8 @@ class GameplayEngine
                 if ($r3) { $runs++; $rbi++; }
                 $newBases['third'] = $r2;
                 $newBases['second'] = $bases['first'];
-                $newBases['first'] = $batterId;
+                // DISI-27: usar placeholder si el bateador no esta identificado.
+                $newBases['first'] = Play::resolveBase($batterId);
                 break;
         }
 
