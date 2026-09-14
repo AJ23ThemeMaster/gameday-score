@@ -18,6 +18,7 @@ class StoreGameRequest extends FormRequest
     {
         return [
             'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'tournament_id' => ['nullable', 'integer', 'exists:tournaments,id'],
             'stadium_id' => ['nullable', 'integer', 'exists:stadiums,id'],
             'home_team_id' => ['required', 'integer', 'exists:teams,id', 'different:away_team_id'],
             'away_team_id' => ['required', 'integer', 'exists:teams,id', 'different:home_team_id'],
@@ -37,6 +38,7 @@ class StoreGameRequest extends FormRequest
         return [
             'category_id.required' => 'Debes seleccionar una categoría.',
             'category_id.exists' => 'La categoría seleccionada no existe.',
+            'tournament_id.exists' => 'El torneo seleccionado no existe.',
             'home_team_id.required' => 'Debes seleccionar el equipo local.',
             'home_team_id.exists' => 'El equipo local seleccionado no existe.',
             'home_team_id.different' => 'El equipo local y visitante deben ser distintos.',
