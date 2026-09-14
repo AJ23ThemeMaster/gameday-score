@@ -169,12 +169,15 @@ class PlayController extends Controller
      */
     public function endInning(Request $request, Game $game, GameplayEngine $engine): JsonResponse
     {
-        // DISI-36: mensajes explicitos para que la UI pueda mostrar el
-        // motivo real del error (no abort 403/422 silencioso).
+        // DISI-36: mensajes explicitos para que la UI muestre el motivo real
+        // del error (403/422 silencioso era inutil para diagnosticar).
+        //
+        // DISI-37: permitir que el rol 'admin' tambien pueda finalizar el
+        // inning (antes solo el anotador/$game->user_id podia).
         abort_unless(
-            Auth::check() && $game->user_id === Auth::id(),
+            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
             403,
-            'No tienes permiso para finalizar el inning de este juego. La sesion activa no es el anotador del juego.'
+            'No tienes permiso para finalizar el inning de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
         );
         abort_unless(
             $game->isInProgress(),
@@ -200,17 +203,19 @@ class PlayController extends Controller
      */
     public function endGame(Request $request, Game $game, GameplayEngine $engine): JsonResponse
     {
-        // DISI-36: agregar mensajes explicitos a los abort_unless. Antes
-        // lanzaban HttpException sin mensaje (403 vacio o 422 generico) lo
-        // que dificultaba diagnosticar por que no se podia finalizar el
-        // juego (sesion de otro usuario vs juego ya finalizado vs motor
-        // interno). Ahora cada caso tiene un mensaje claro y se devuelve
-        // como JSON cuando el cliente lo solicita (la UI envia fetch con
-        // Accept: application/json).
+        // DISI-36: mensajes explicitos para que la UI muestre el motivo real
+        // del error (403/422 silencioso era inutil para diagnosticar).
+        //
+        // DISI-37: permitir que el rol 'admin' tambien pueda finalizar el
+        // juego (antes solo el anotador/$game->user_id podia). El admin es
+        // el dueno de la plataforma y tiene visibilidad sobre todos los
+        // juegos; restringirle la finalizacion manual no tenia sentido
+        // operativo. La regla final es: admin OR anotador del juego
+        // ($game->user_id === Auth::id()).
         abort_unless(
-            Auth::check() && $game->user_id === Auth::id(),
+            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
             403,
-            'No tienes permiso para finalizar este juego. La sesion activa no es el anotador del juego.'
+            'No tienes permiso para finalizar este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
         );
         abort_unless(
             $game->isInProgress(),
