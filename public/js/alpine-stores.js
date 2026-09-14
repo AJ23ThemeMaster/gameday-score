@@ -217,6 +217,17 @@ document.addEventListener('alpine:init', () => {
         pollStatus: 'Conectado',
         isPolling: false,
         isPitching: false,
+        // DISI-33: flag reactivo que indica si el juego esta finalizado.
+        // Se inicializa desde el server via x-data ($game->isCompleted()) y
+        // se actualiza automaticamente en applyState() cuando el poll
+        // detecta data.is_completed === true. Las secciones del scoreboard
+        // usan x-show="!isFinalized" para desaparecer sin recargar la pagina.
+        isFinalized: e.isFinalized ?? false,
+        // Tab activo del bloque inferior (PITCHEo / BATEo / EXTRAS).
+        // DISI-33: cuando el juego finaliza, applyState() cambia este tab a
+        // 'extra' automaticamente para que el usuario vea los botones
+        // Stats + Box Score sin tener que hacer click.
+        tab: e.tab ?? 'pitch',
         modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'inning-summary' | 'end-game' | 'substitute' | 'stats' | 'lineup' | 'runner' | null
         outSubtype: null,
         // DISI-20: base seleccionada en el modal "Gestionar corredor"
@@ -1195,6 +1206,20 @@ document.addEventListener('alpine:init', () => {
             this.stateHalf = s.half;
             this.stateBatterId = s.current_batter_id;
             this.statePitcherId = s.current_pitcher_id;
+
+            // DISI-33: deteccion reactiva de juego finalizado. Si el poll reporta
+            // is_completed=true (derivado de $game->isCompleted() en el
+            // controller), activamos el flag isFinalized y cambiamos
+            // automaticamente al tab Extras para que el usuario vea Stats
+            // + Box Score sin hacer click. Las secciones del scoreboard
+            // usan x-show="!isFinalized" para desaparecer sin recargar la
+            // pagina (Bolas/Strikes/Outs, Pitcheando/Al bate/Prevenido,
+            // Diamante, tabs Pitcheo/Bateo, contenido completo de Extras).
+            // Es one-way: isFinalized solo pasa de false->true.
+            if (data.is_completed === true && !this.isFinalized) {
+                this.isFinalized = true;
+                this.tab = 'extra';
+            }
 
             // Detectar cierre de inning: si el half cambio (o inning incremento
             // de 1 a 2 con el mismo half), el inning se cerro. Cargar el
