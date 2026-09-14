@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 class ScoreboardController extends Controller
@@ -80,36 +81,76 @@ class ScoreboardController extends Controller
      * Espera un body con:
      *   {
      *     team_id: int,
-     *     lineup: [
-     *       { athlete_id: int, lineup_order: 1..9, position: 'P|C|1B|2B|3B|SS|LF|CF|RF', is_pitcher: bool },
+     *     lineup: [                                          (formato nuevo DISI-31)
+     *       { athlete_id, lineup_order, position, is_pitcher },
      *       ...
      *     ]
      *   }
+     *
+     * DISI-31b: retrocompatibilidad con el formato viejo `order` que solo traia
+     * athlete_id y lineup_order (sin position/is_pitcher). Si el frontend envia
+     * `order`, lo transformamos a `lineup` tomando los valores de position/is_pitcher
+     * ya almacenados en el pivot (no los cambiamos). Asi un bundle viejo en el
+     * browser puede seguir guardando el orden de bateo sin romper.
      *
      * Reglas de validacion (DISI-31):
      *  - Exactamente 9 elementos en lineup.
      *  - lineup_order unicos del 1 al 9.
      *  - exactamente 1 is_pitcher=true (solo un pitcher por equipo en el lineup).
-     *  - position valida (incluye 'DH' como designar pero nuestro baseball no usa DH,
-     *    asi que dejamos las 9 posiciones estandar).
+     *  - position valida (P/C/1B/2B/3B/SS/LF/CF/RF).
      *  - Los atletas deben pertenecer al roster del juego y del team_id.
-     *
-     * Actualiza game_athlete.{lineup_order, position, is_pitcher, is_starter} para
-     * los 9 atletas. Los atletas que estaban en el lineup pero se quitaron pasan
-     * a is_starter=0 y lineup_order=null.
      */
     public function reorderLineup(Request $request, Game $game): JsonResponse
     {
         $this->authorize('score', $game);
 
+        // DISI-31b: si llega el formato viejo 'order' (sin position/is_pitcher),
+        // aceptarlo y enriquecerlo con los valores actuales del pivot. Asi el
+        // bundle del frontend en el server puede seguir funcionando hasta que se
+        // regenere con npm run build.
+        $payload = $request->all();
+        $isLegacyFormat = isset($payload['order']) && ! isset($payload['lineup']);
+        if ($isLegacyFormat) {
+            $teamIdLegacy = (int) ($payload['team_id'] ?? 0);
+            if ($teamIdLegacy === $game->home_team_id || $teamIdLegacy === $game->away_team_id) {
+                $existingPivots = DB::table('game_athlete')
+                    ->where('game_id', $game->id)
+                    ->where('team_id', $teamIdLegacy)
+                    ->whereIn('athlete_id', array_column($payload['order'], 'athlete_id'))
+                    ->get()
+                    ->keyBy('athlete_id');
+                $payload['lineup'] = array_map(function ($row) use ($existingPivots) {
+                    $pivot = $existingPivots->get($row['athlete_id']);
+                    return [
+                        'athlete_id' => $row['athlete_id'],
+                        'lineup_order' => $row['lineup_order'],
+                        'position' => $pivot->position ?? 'LF',
+                        'is_pitcher' => (bool) ($pivot->is_pitcher ?? false),
+                    ];
+                }, $payload['order']);
+            }
+        }
+
         $data = $request->validate([
             'team_id' => 'required|integer',
+        ]);
+
+        // Validar 'lineup' contra el payload enriquecido (puede venir de `order` legacy).
+        $validator = Validator::make($payload, [
             'lineup' => 'required|array|size:9',
             'lineup.*.athlete_id' => 'required|integer',
             'lineup.*.lineup_order' => 'required|integer|min:1|max:9',
             'lineup.*.position' => 'required|string|in:P,C,1B,2B,3B,SS,LF,CF,RF',
             'lineup.*.is_pitcher' => 'required|boolean',
         ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validacion fallida',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        $data = array_merge($data, $validator->validated());
 
         $teamId = (int) $data['team_id'];
         if ($teamId !== $game->home_team_id && $teamId !== $game->away_team_id) {
@@ -122,9 +163,17 @@ class ScoreboardController extends Controller
             return response()->json(['success' => false, 'error' => 'lineup_order debe ser unico del 1 al 9'], 422);
         }
 
-        // Validar exactamente 1 pitcher
+        // Validar exactamente 1 pitcher (DISI-31b: en formato legacy sin pitcher
+        // definido, autoasignar al primer bateador como fallback).
         $pitcherCount = count(array_filter($data['lineup'], fn ($r) => $r['is_pitcher']));
-        if ($pitcherCount !== 1) {
+        if ($pitcherCount === 0) {
+            if ($isLegacyFormat) {
+                // Autoasignar pitcher al primer bateador (convención amateur).
+                $data['lineup'][0]['is_pitcher'] = true;
+            } else {
+                return response()->json(['success' => false, 'error' => 'Debe haber exactamente 1 pitcher en el lineup'], 422);
+            }
+        } elseif ($pitcherCount !== 1) {
             return response()->json(['success' => false, 'error' => 'Debe haber exactamente 1 pitcher en el lineup'], 422);
         }
 
