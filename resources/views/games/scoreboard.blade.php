@@ -71,6 +71,16 @@
             'rosterHome' => $game->athletes()->wherePivot('team_id', $game->home_team_id)->orderBy('game_athlete.lineup_order')->get(['athletes.id', 'athletes.first_name', 'athletes.last_name', 'athletes.number', 'game_athlete.lineup_order', 'game_athlete.position'])->map(fn($a) => ['id' => $a->id, 'first_name' => $a->first_name, 'last_name' => $a->last_name, 'number' => $a->number, 'lineup_order' => $a->pivot->lineup_order, 'position' => $a->pivot->position])->values(),
             'statsUrl' => route('games.scoreboard.stats', $game),
             'lineupReorderUrl' => route('games.lineup.reorder', $game),
+            // DISI-33: estado inicial reactivo de la finalizacion del juego.
+            // Si el juego ya esta finalizado al cargar la vista, isFinalized=true
+            // y tab='extra' desde el principio (el render server-side ya puso
+            // las secciones en su estado final). Si el juego se finaliza
+            // durante la sesion, applyState() actualiza estos flags via poll.
+            // Usamos $game->isCompleted() como fuente de verdad (no state.is_game_over)
+            // porque el engine puede cambiar status a 'finalized' sin crear
+            // una jugada Play::TYPE_GAME_END, dejando state.is_game_over=false.
+            'isFinalized' => $game->isCompleted(),
+            'tab' => $game->isCompleted() ? 'extra' : 'pitch',
         ]))"
         x-init="start()"
     >
@@ -164,7 +174,7 @@
 
                 {{-- Count: BOLAS / STRIKES / OUTS — solo visible mientras el juego esta en curso --}}
                 @if (! $game->isCompleted())
-                <div class="grid grid-cols-3 border-b-2 border-gray-100 text-center">
+                <div class="grid grid-cols-3 border-b-2 border-gray-100 text-center" x-show="!isFinalized">
                     <div class="py-3 px-2 border-r border-gray-100">
                         <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">{{ __('Bolas') }}</div>
                         <div class="flex justify-center gap-2" data-balls>
@@ -194,7 +204,7 @@
 
                 {{-- Pitcher + Batter — solo visible mientras el juego esta en curso --}}
                 @if (! $game->isCompleted())
-                <div class="grid grid-cols-2 gap-0 border-b-2 border-gray-100">
+                <div class="grid grid-cols-2 gap-0 border-b-2 border-gray-100" x-show="!isFinalized">
                     {{-- Pitcher --}}
                     <div class="p-3 flex items-center gap-3 border-r border-gray-100" data-card="pitcher">
                         <div class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-[11px] flex-shrink-0 overflow-hidden" data-athlete-avatar>
@@ -274,7 +284,7 @@
 
                 {{-- Diamond: corredores en base — solo visible mientras el juego esta en curso --}}
                 {{-- Contenedor: cuadrado verde con bases, home y pitcher mound posicionados dentro. --}}
-                <div class="bg-emerald-700 px-3 py-4 relative" style="background-image: radial-gradient(ellipse at center, #15803d 0%, #14532d 100%);">
+                <div class="bg-emerald-700 px-3 py-4 relative" style="background-image: radial-gradient(ellipse at center, #15803d 0%, #14532d 100%);" x-show="!isFinalized">
                     <div class="mx-auto relative" style="width: 280px; height: 280px;" data-diamond>
                         {{-- 2B (arriba) --}}
                         <div class="absolute top-2 left-1/2 -translate-x-1/2" data-base="second">
@@ -377,46 +387,43 @@
                 </div>
                 @endif
 
-                {{-- ============ TABS (PITCHEo / BATEo / EXTRAS) ============ --}}
-                {{-- Cuando el juego esta finalizado ($game->isCompleted() === true): --}}
-                {{--   - Solo aparece el tab EXTRAS (sin PITCHEo ni BATEo). --}}
-                {{--   - El contenido de EXTRAS solo tiene 2 botones (1x2): --}}
-                {{--     'Stats del juego' (modal) y 'Box Score' (link a vista). --}}
-                {{-- Cuando esta en curso: 3 tabs (PITCHEo / BATEo / EXTRAS) con todos los botones. --}}
-                <div x-data="{ tab: '{{ $game->isCompleted() ? 'extra' : 'pitch' }}' }">
-                    @if ($game->isCompleted())
-                        {{-- Juego finalizado: solo tab Extras, sin PITCHEo/BATEo --}}
-                        <div class="grid grid-cols-1 border-t-2 border-gray-100">
-                            <button type="button" @click="tab = 'extra'"
-                                    :class="tab === 'extra' ? 'border-b-2 border-amber-500 text-amber-600 font-bold' : 'text-gray-500'"
-                                    class="py-3 text-center text-sm uppercase tracking-wider">
-                                {{ __('Extras') }}
-                            </button>
-                        </div>
-                    @else
-                        {{-- Juego en curso: 3 tabs completos --}}
-                        <div class="grid grid-cols-3 border-t-2 border-gray-100">
-                            <button type="button" @click="tab = 'pitch'"
-                                    :class="tab === 'pitch' ? 'border-b-2 border-amber-500 text-amber-600 font-bold' : 'text-gray-500'"
-                                    class="py-3 text-center text-sm uppercase tracking-wider">
-                                {{ __('Pitcheo') }}
-                            </button>
-                            <button type="button" @click="tab = 'hit'"
-                                    :class="tab === 'hit' ? 'border-b-2 border-amber-500 text-amber-600 font-bold' : 'text-gray-500'"
-                                    class="py-3 text-center text-sm uppercase tracking-wider">
-                                {{ __('Bateo') }}
-                            </button>
-                            <button type="button" @click="tab = 'extra'"
-                                    :class="tab === 'extra' ? 'border-b-2 border-amber-500 text-amber-600 font-bold' : 'text-gray-500'"
-                                    class="py-3 text-center text-sm uppercase tracking-wider">
-                                {{ __('Extras') }}
-                            </button>
-                        </div>
-                    @endif
+                {{-- ============ TABS (PITCHEo / BATEo / EXTRAS) — DISI-33 reactivo ============ --}}
+                {{-- DISI-33: cuando el juego se finaliza durante la sesion, applyState() --}}
+                {{-- activa isFinalized=true y mueve tab='extra'. Las x-show de abajo --}}
+                {{-- hacen desaparecer PITCHEo/BATEo, el diamante, Bolas/Strikes/Outs, --}}
+                {{-- y los 7 botones de Extras, dejando solo Stats + Box Score en 1x2. --}}
+                {{-- En el render inicial, el server pasa isFinalized via x-data segun --}}
+                {{-- el state.is_game_over del momento del GET, asi que la primera --}}
+                {{-- pintada ya refleja la condicion correcta sin parpadeos. --}}
+                <div>
+                    {{-- Tab buttons: 3 botones en juego en curso, 1 solo (Extras) cuando finalizado --}}
+                    <div class="grid grid-cols-3 border-t-2 border-gray-100" x-show="!isFinalized">
+                        <button type="button" @click="tab = 'pitch'"
+                                :class="tab === 'pitch' ? 'border-b-2 border-amber-500 text-amber-600 font-bold' : 'text-gray-500'"
+                                class="py-3 text-center text-sm uppercase tracking-wider">
+                            {{ __('Pitcheo') }}
+                        </button>
+                        <button type="button" @click="tab = 'hit'"
+                                :class="tab === 'hit' ? 'border-b-2 border-amber-500 text-amber-600 font-bold' : 'text-gray-500'"
+                                class="py-3 text-center text-sm uppercase tracking-wider">
+                            {{ __('Bateo') }}
+                        </button>
+                        <button type="button" @click="tab = 'extra'"
+                                :class="tab === 'extra' ? 'border-b-2 border-amber-500 text-amber-600 font-bold' : 'text-gray-500'"
+                                class="py-3 text-center text-sm uppercase tracking-wider">
+                            {{ __('Extras') }}
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 border-t-2 border-gray-100" x-show="isFinalized">
+                        <button type="button" @click="tab = 'extra'"
+                                :class="tab === 'extra' ? 'border-b-2 border-amber-500 text-amber-600 font-bold' : 'text-gray-500'"
+                                class="py-3 text-center text-sm uppercase tracking-wider">
+                            {{ __('Extras') }}
+                        </button>
+                    </div>
 
                     {{-- Tab content: PITCHEo (Fase 2 — funcional) — solo en curso --}}
-                    @if (! $game->isCompleted())
-                    <div x-show="tab === 'pitch'" x-cloak class="grid grid-cols-4 gap-2 p-4">
+                    <div x-show="tab === 'pitch' && !isFinalized" x-cloak class="grid grid-cols-4 gap-2 p-4">
                         <button type="button" @click="sendBall()"
                                 :disabled="isPitching"
                                 class="py-6 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
@@ -438,11 +445,9 @@
                             {{ __('Out') }}
                         </button>
                     </div>
-                    @endif
 
                     {{-- Tab content: BATEo (Fase 3 — hits) — solo en curso --}}
-                    @if (! $game->isCompleted())
-                    <div x-show="tab === 'hit'" x-cloak class="grid grid-cols-4 gap-2 p-4">
+                    <div x-show="tab === 'hit' && !isFinalized" x-cloak class="grid grid-cols-4 gap-2 p-4">
                         <button type="button" @click="openHitModal('single')"
                                 :disabled="isPitching"
                                 class="py-6 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
@@ -481,68 +486,65 @@
                             <div class="text-[10px] font-normal opacity-80 mt-0.5">{{ __('Sacrifice o bunt single') }}</div>
                         </button>
                     </div>
-                    @endif
 
-                    {{-- Tab content: EXTRAS (Fase 4) --}}
+                    {{-- Tab content: EXTRAS (Fase 4) — siempre visible cuando tab=extra --}}
+                    {{-- La grilla interior cambia segun isFinalized: --}}
+                    {{--   - Juego finalizado: 1x2 con SOLO Stats del juego + Box Score --}}
+                    {{--   - Juego en curso: 2x4 con los 7 botones de EXTRAS --}}
                     <div x-show="tab === 'extra'" x-cloak>
-                        @if ($game->isCompleted())
-                            {{-- Juego finalizado: 1x2 grid con SOLO Stats del juego + Box Score --}}
-                            <div class="grid grid-cols-2 gap-3 p-4">
-                                <button type="button" @click="openStatsModal()"
-                                        class="py-4 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold rounded-2xl transition text-center">
-                                    {{ __('Stats del juego') }}
-                                    <div class="text-[10px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo: pitcheo y bateo') }}</div>
-                                </button>
-                                <a href="{{ route('games.box-score', $game) }}"
-                                   class="py-4 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-2xl transition text-center block">
-                                    📋 {{ __('Box Score') }}
-                                    <div class="text-[10px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Carreras, hits, errores por inning') }}</div>
-                                </a>
-                            </div>
-                        @else
-                            {{-- Juego en curso: 2x4 grid con todos los botones de EXTRAS --}}
-                            <div class="grid grid-cols-4 gap-2 p-4">
-                                <button type="button" @click="openSubstituteModal()"
-                                        :disabled="isPitching"
-                                        class="py-3 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
-                                    {{ __('Sustituir') }}
-                                    <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Pitcher, bateador o corredor') }}</div>
-                                </button>
-                                <button type="button" @click="sendBalk()"
-                                        :disabled="isPitching"
-                                        class="py-3 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
-                                    {{ __('Balk') }}
-                                    <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Corredores avanzan 1 base') }}</div>
-                                </button>
-                                <button type="button" @click="openLineupModal()"
-                                        :disabled="isPitching"
-                                        class="py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
-                                    {{ __('Reordenar lineup') }}
-                                    <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Drag & drop para cambiar el orden de bateo') }}</div>
-                                </button>
-                                <button type="button" @click="openStatsModal()"
-                                        :disabled="isPitching"
-                                        class="py-3 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
-                                    {{ __('Stats del juego') }}
-                                    <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo: pitcheo y bateo') }}</div>
-                                </button>
-                                <a href="{{ route('games.box-score', $game) }}"
-                                   class="py-3 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-lg transition text-center block">
-                                    📋 {{ __('Box Score') }}
-                                    <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Carreras, hits, errores por inning') }}</div>
-                                </a>
-                                <button type="button" @click="openEndInningModal()"
-                                        :disabled="isPitching"
-                                        class="py-3 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 text-sm font-bold rounded-lg border border-rose-200 transition">
-                                    {{ __('Finalizar inning') }}
-                                </button>
-                                <button type="button" @click="openEndGameModal()"
-                                        :disabled="isPitching"
-                                        class="py-3 bg-rose-100 hover:bg-rose-200 disabled:opacity-50 text-rose-800 text-sm font-bold rounded-lg border border-rose-300 transition">
-                                    {{ __('Finalizar juego') }}
-                                </button>
-                            </div>
-                        @endif
+                        <div class="grid grid-cols-2 gap-3 p-4" x-show="isFinalized">
+                            <button type="button" @click="openStatsModal()"
+                                    class="py-4 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold rounded-2xl transition text-center">
+                                {{ __('Stats del juego') }}
+                                <div class="text-[10px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo: pitcheo y bateo') }}</div>
+                            </button>
+                            <a href="{{ route('games.box-score', $game) }}"
+                               class="py-4 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-2xl transition text-center block">
+                                📋 {{ __('Box Score') }}
+                                <div class="text-[10px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Carreras, hits, errores por inning') }}</div>
+                            </a>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 p-4" x-show="!isFinalized">
+                            <button type="button" @click="openSubstituteModal()"
+                                    :disabled="isPitching"
+                                    class="py-3 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
+                                {{ __('Sustituir') }}
+                                <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Pitcher, bateador o corredor') }}</div>
+                            </button>
+                            <button type="button" @click="sendBalk()"
+                                    :disabled="isPitching"
+                                    class="py-3 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
+                                {{ __('Balk') }}
+                                <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Corredores avanzan 1 base') }}</div>
+                            </button>
+                            <button type="button" @click="openLineupModal()"
+                                    :disabled="isPitching"
+                                    class="py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
+                                {{ __('Reordenar lineup') }}
+                                <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Drag & drop para cambiar el orden de bateo') }}</div>
+                            </button>
+                            <button type="button" @click="openStatsModal()"
+                                    :disabled="isPitching"
+                                    class="py-3 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
+                                {{ __('Stats del juego') }}
+                                <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo: pitcheo y bateo') }}</div>
+                            </button>
+                            <a href="{{ route('games.box-score', $game) }}"
+                               class="py-3 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-lg transition text-center block">
+                                📋 {{ __('Box Score') }}
+                                <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Carreras, hits, errores por inning') }}</div>
+                            </a>
+                            <button type="button" @click="openEndInningModal()"
+                                    :disabled="isPitching"
+                                    class="py-3 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 text-sm font-bold rounded-lg border border-rose-200 transition">
+                                {{ __('Finalizar inning') }}
+                            </button>
+                            <button type="button" @click="openEndGameModal()"
+                                    :disabled="isPitching"
+                                    class="py-3 bg-rose-100 hover:bg-rose-200 disabled:opacity-50 text-rose-800 text-sm font-bold rounded-lg border border-rose-300 transition">
+                                {{ __('Finalizar juego') }}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
