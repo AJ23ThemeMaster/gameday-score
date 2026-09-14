@@ -829,7 +829,7 @@ document.addEventListener('alpine:init', () => {
             return '.' + Math.round(num * 1000).toString().padStart(3, '0');
         },
 
-        // ============= MEJ-4: MODAL DE LINEUP CON DRAG&DROP =============
+        // ============= MEJ-4 + DISI-31: MODAL DE LINEUP =============
         async openLineupModal() {
             this.modal = 'lineup';
             this.lineupTeam = 'away';
@@ -844,9 +844,9 @@ document.addEventListener('alpine:init', () => {
                     credentials: 'same-origin',
                 });
                 const data = await res.json();
-                // Construir lineups a partir de rosterAway/Home + lineupOrder.
-                // Como statsUrl no devuelve roster, hacemos una copia profunda
-                // de rosterAway/Home y la mantenemos en el estado del modal.
+                // Inicializar lineups desde roster si estan vacios.
+                // rosterAway/rosterHome contienen TODOS los atletas del equipo (titulares + bench).
+                // El modal los separa: starters (lineup_order 1-9) arriba, resto abajo.
                 if (!this.lineupAway.length) {
                     this.lineupAway = JSON.parse(JSON.stringify(this.rosterAway));
                 }
@@ -859,11 +859,180 @@ document.addEventListener('alpine:init', () => {
                 this.lineupLoading = false;
             }
         },
+
+        // DISI-31: separa el roster del equipo en titulares (lineup 1-9) y disponibles.
+        // Si hay mas/menos de 9 titulares, retorna los que tengan lineup_order 1-9.
         currentLineup() {
-            return this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            return all
+                .filter(a => a.lineup_order !== null && a.lineup_order !== undefined)
+                .sort((a, b) => (a.lineup_order || 0) - (b.lineup_order || 0));
+        },
+        availableRoster() {
+            const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            return all
+                .filter(a => a.lineup_order === null || a.lineup_order === undefined)
+                .sort((a, b) => (a.number || 0) - (b.number || 0));
         },
         currentTeamId() {
             return this.lineupTeam === 'away' ? this.awayTeamId : this.homeTeamId;
+        },
+
+        // DISI-31: gestion del lineup
+        addToLineup(athleteId) {
+            const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            const lineup = this.currentLineup();
+            if (lineup.length >= 9) {
+                this.toast('El lineup ya tiene 9 jugadores. Quita uno antes de agregar otro.', 'warning');
+                return;
+            }
+            const athlete = all.find(a => a.id === athleteId);
+            if (!athlete) return;
+            // Asignar al final con defaults sensatos
+            athlete.lineup_order = lineup.length + 1;
+            athlete.position = athlete.position || this.suggestPosition(lineup.length);
+            athlete.is_pitcher = false;
+            this.lineupDirty = true;
+            // Reordenar todos por lineup_order
+            this.reindexLineup();
+        },
+        removeFromLineup(athleteId) {
+            const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            const athlete = all.find(a => a.id === athleteId);
+            if (!athlete) return;
+            athlete.lineup_order = null;
+            athlete.position = null;
+            athlete.is_pitcher = false;
+            this.lineupDirty = true;
+            this.reindexLineup();
+        },
+        setLineupPosition(athleteId, position) {
+            const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            const athlete = all.find(a => a.id === athleteId);
+            if (!athlete) return;
+            athlete.position = position;
+            this.lineupDirty = true;
+        },
+        setLineupPitcher(athleteId) {
+            const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            // Solo puede haber 1 pitcher. Limpiar el resto.
+            all.forEach(a => { a.is_pitcher = (a.id === athleteId); });
+            this.lineupDirty = true;
+        },
+        reindexLineup() {
+            const lineup = this.currentLineup();
+            lineup.forEach((a, i) => { a.lineup_order = i + 1; });
+        },
+        suggestPosition(idx) {
+            // Sugerir posicion por defecto segun el orden (1=P, 2=C, 3=1B, 4=2B, 5=3B, 6=SS, 7=LF, 8=CF, 9=RF)
+            return ['P','C','1B','2B','3B','SS','LF','CF','RF'][idx] || '';
+        },
+
+        // Drag & drop heredado (sin cambios en firma)
+        onDragStart(event, id) {
+            this.lineupDragId = id;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', String(id));
+            event.currentTarget.classList.add('opacity-40');
+        },
+        onDragEnd(event) {
+            event.currentTarget.classList.remove('opacity-40');
+            this.lineupDragId = null;
+            document.querySelectorAll('[data-lineup-drop]').forEach(el => {
+                el.classList.remove('border-emerald-500', 'bg-emerald-50');
+            });
+        },
+        onDragOver(event, overId) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            const dropEl = event.currentTarget;
+            dropEl.classList.add('border-emerald-500', 'bg-emerald-50');
+        },
+        onDragLeave(event) {
+            event.currentTarget.classList.remove('border-emerald-500', 'bg-emerald-50');
+        },
+        onDrop(event, overId) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('border-emerald-500', 'bg-emerald-50');
+            const fromId = this.lineupDragId ?? Number(event.dataTransfer.getData('text/plain'));
+            if (!fromId || fromId === overId) return;
+            const arr = this.currentLineup();
+            const fromIdx = arr.findIndex(a => a.id === fromId);
+            const toIdx = arr.findIndex(a => a.id === overId);
+            if (fromIdx < 0 || toIdx < 0) return;
+            const [moved] = arr.splice(fromIdx, 1);
+            arr.splice(toIdx, 0, moved);
+            arr.forEach((a, i) => { a.lineup_order = i + 1; });
+            this.lineupDirty = true;
+        },
+        moveUp(id) {
+            const arr = this.currentLineup();
+            const idx = arr.findIndex(a => a.id === id);
+            if (idx <= 0) return;
+            [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+            arr.forEach((a, i) => { a.lineup_order = i + 1; });
+            this.lineupDirty = true;
+        },
+        moveDown(id) {
+            const arr = this.currentLineup();
+            const idx = arr.findIndex(a => a.id === id);
+            if (idx < 0 || idx >= arr.length - 1) return;
+            [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+            arr.forEach((a, i) => { a.lineup_order = i + 1; });
+            this.lineupDirty = true;
+        },
+
+        // DISI-31: enviar payload completo (9 atletas con orden, posicion, pitcher)
+        async saveLineup() {
+            const lineup = this.currentLineup();
+            const teamId = this.currentTeamId();
+            if (lineup.length !== 9) {
+                this.toast('El lineup debe tener exactamente 9 jugadores. Actual: ' + lineup.length, 'error');
+                return;
+            }
+            const pitcherCount = lineup.filter(a => a.is_pitcher).length;
+            if (pitcherCount !== 1) {
+                this.toast('Debe haber exactamente 1 pitcher. Actual: ' + pitcherCount, 'error');
+                return;
+            }
+            const payload = {
+                team_id: teamId,
+                lineup: lineup.map(a => ({
+                    athlete_id: a.id,
+                    lineup_order: a.lineup_order,
+                    position: a.position,
+                    is_pitcher: !!a.is_pitcher,
+                })),
+            };
+            try {
+                const res = await fetch(this.lineupReorderUrl, {
+                    method: 'PATCH',
+                    headers: {
+                        'X-CSRF-TOKEN': this.csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.toast('Lineup guardado', 'success');
+                    this.lineupDirty = false;
+                    // Re-sincronizar caches rosterAway/Home desde los arrays del modal
+                    if (this.lineupTeam === 'away') {
+                        this.rosterAway = JSON.parse(JSON.stringify(this.lineupAway));
+                    } else {
+                        this.rosterHome = JSON.parse(JSON.stringify(this.lineupHome));
+                    }
+                    this.pollNow();
+                } else {
+                    this.toast(data.error || 'Error al guardar', 'error');
+                }
+            } catch (e) {
+                this.toast('Error: ' + e.message, 'error');
+            }
         },
         onDragStart(event, id) {
             this.lineupDragId = id;

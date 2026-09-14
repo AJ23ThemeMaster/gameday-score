@@ -76,10 +76,27 @@ class ScoreboardController extends Controller
     }
 
     /**
-     * Endpoint para reordenar el lineup de un equipo (MEJ-4).
+     * Endpoint para reordenar + editar el lineup de un equipo (MEJ-4 + DISI-31).
      * Espera un body con:
-     *   { team_id: int, order: [{athlete_id, lineup_order}, ...] }
-     * Actualiza game_athlete.lineup_order segun la posicion en el array.
+     *   {
+     *     team_id: int,
+     *     lineup: [
+     *       { athlete_id: int, lineup_order: 1..9, position: 'P|C|1B|2B|3B|SS|LF|CF|RF', is_pitcher: bool },
+     *       ...
+     *     ]
+     *   }
+     *
+     * Reglas de validacion (DISI-31):
+     *  - Exactamente 9 elementos en lineup.
+     *  - lineup_order unicos del 1 al 9.
+     *  - exactamente 1 is_pitcher=true (solo un pitcher por equipo en el lineup).
+     *  - position valida (incluye 'DH' como designar pero nuestro baseball no usa DH,
+     *    asi que dejamos las 9 posiciones estandar).
+     *  - Los atletas deben pertenecer al roster del juego y del team_id.
+     *
+     * Actualiza game_athlete.{lineup_order, position, is_pitcher, is_starter} para
+     * los 9 atletas. Los atletas que estaban en el lineup pero se quitaron pasan
+     * a is_starter=0 y lineup_order=null.
      */
     public function reorderLineup(Request $request, Game $game): JsonResponse
     {
@@ -87,9 +104,11 @@ class ScoreboardController extends Controller
 
         $data = $request->validate([
             'team_id' => 'required|integer',
-            'order' => 'required|array|min:1',
-            'order.*.athlete_id' => 'required|integer',
-            'order.*.lineup_order' => 'required|integer|min:1|max:9',
+            'lineup' => 'required|array|size:9',
+            'lineup.*.athlete_id' => 'required|integer',
+            'lineup.*.lineup_order' => 'required|integer|min:1|max:9',
+            'lineup.*.position' => 'required|string|in:P,C,1B,2B,3B,SS,LF,CF,RF',
+            'lineup.*.is_pitcher' => 'required|boolean',
         ]);
 
         $teamId = (int) $data['team_id'];
@@ -97,21 +116,68 @@ class ScoreboardController extends Controller
             return response()->json(['success' => false, 'error' => 'Equipo no pertenece al juego'], 422);
         }
 
+        // Validar lineup_order unicos 1..9
+        $orders = array_column($data['lineup'], 'lineup_order');
+        if (count(array_unique($orders)) !== 9) {
+            return response()->json(['success' => false, 'error' => 'lineup_order debe ser unico del 1 al 9'], 422);
+        }
+
+        // Validar exactamente 1 pitcher
+        $pitcherCount = count(array_filter($data['lineup'], fn ($r) => $r['is_pitcher']));
+        if ($pitcherCount !== 1) {
+            return response()->json(['success' => false, 'error' => 'Debe haber exactamente 1 pitcher en el lineup'], 422);
+        }
+
+        // Validar athlete_ids pertenecen al roster del equipo
+        $athleteIds = array_column($data['lineup'], 'athlete_id');
+        $validIds = DB::table('game_athlete')
+            ->where('game_id', $game->id)
+            ->where('team_id', $teamId)
+            ->whereIn('athlete_id', $athleteIds)
+            ->pluck('athlete_id')
+            ->all();
+        if (count($validIds) !== 9) {
+            return response()->json(['success' => false, 'error' => 'Uno o mas atletas no pertenecen al roster del equipo'], 422);
+        }
+
         DB::transaction(function () use ($game, $teamId, $data) {
-            foreach ($data['order'] as $row) {
-                // Pivot update via wherePivot
+            foreach ($data['lineup'] as $row) {
                 $game->athletes()
                     ->wherePivot('team_id', $teamId)
                     ->updateExistingPivot($row['athlete_id'], [
                         'lineup_order' => (int) $row['lineup_order'],
+                        'position' => $row['position'],
+                        'is_pitcher' => (bool) $row['is_pitcher'],
+                        'is_starter' => 1,
+                    ]);
+            }
+
+            // Los atletas que estaban en el lineup pero fueron quitados pasan a bench
+            // (is_starter=0, lineup_order=null, position=null, is_pitcher=false).
+            $currentLineupIds = array_column($data['lineup'], 'athlete_id');
+            $benchedIds = DB::table('game_athlete')
+                ->where('game_id', $game->id)
+                ->where('team_id', $teamId)
+                ->where('is_starter', true)
+                ->whereNotIn('athlete_id', $currentLineupIds)
+                ->pluck('athlete_id')
+                ->all();
+            foreach ($benchedIds as $athleteId) {
+                $game->athletes()
+                    ->wherePivot('team_id', $teamId)
+                    ->updateExistingPivot($athleteId, [
+                        'lineup_order' => null,
+                        'position' => null,
+                        'is_pitcher' => false,
+                        'is_starter' => false,
                     ]);
             }
         });
 
         return response()->json([
             'success' => true,
-            'message' => 'Lineup reordenado',
-            'order' => $data['order'],
+            'message' => 'Lineup actualizado',
+            'lineup' => $data['lineup'],
         ]);
     }
 

@@ -977,12 +977,15 @@
                 </div>
             </div>
 
-            {{-- Modal: reordenar lineup con drag&drop (MEJ-4) --}}
+            {{-- Modal: gestion de lineup (MEJ-4 + DISI-31) --}}
             <div x-show="modal === 'lineup'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
                  @keydown.escape.window="closeModal()">
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeModal()">
                     <div class="bg-emerald-600 text-white px-5 py-3 flex items-center justify-between flex-shrink-0">
-                        <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Reordenar lineup') }}</h3>
+                        <div>
+                            <div class="text-[10px] uppercase tracking-widest opacity-90 font-semibold">{{ __('DISI-31') }}</div>
+                            <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Gestion de lineup') }}</h3>
+                        </div>
                         <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
                     </div>
 
@@ -994,47 +997,108 @@
                         <button type="button" @click="lineupTeam = 'home'; lineupDirty = false"
                                 :class="lineupTeam === 'home' ? 'border-b-2 border-emerald-600 text-emerald-700 font-bold' : 'text-gray-500'"
                                 class="px-3 py-2 text-sm" x-text="homeShort"></button>
+                        <div class="ml-auto text-xs text-gray-500 px-2">
+                            <span x-text="currentLineup().length"></span> / 9 titulares
+                        </div>
                     </div>
 
-                    <div class="flex-1 overflow-y-auto p-3">
-                        <p class="text-xs text-gray-500 mb-2 px-1">
-                            {{ __('Arrastra los atletas para reordenar el lineup. Tambien puedes usar los botones de flecha.') }}
-                        </p>
-                        <div class="space-y-1.5">
-                            <template x-for="(a, i) in currentLineup()" :key="a.id">
-                                <div draggable="true"
-                                     data-lineup-drop
-                                     @dragstart="onDragStart($event, a.id)"
-                                     @dragend="onDragEnd($event)"
-                                     @dragover="onDragOver($event, a.id)"
-                                     @dragleave="onDragLeave($event)"
-                                     @drop="onDrop($event, a.id)"
-                                     class="flex items-center gap-2 px-3 py-2 bg-white border-2 border-gray-200 rounded-lg cursor-move hover:border-emerald-300 transition">
-                                    <span class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm flex-shrink-0" x-text="i + 1"></span>
-                                    <span class="text-sm font-bold text-emerald-700 w-8 flex-shrink-0" x-text="'#' + (a.number ?? '-')"></span>
-                                    <span class="text-sm font-medium text-gray-800 flex-1 truncate" x-text="a.first_name + ' ' + a.last_name"></span>
-                                    <div class="flex gap-1 flex-shrink-0">
-                                        <button type="button" @click="moveUp(a.id)" :disabled="i === 0"
-                                                class="w-7 h-7 bg-gray-100 hover:bg-gray-200 disabled:opacity-30 rounded text-xs font-bold">&uarr;</button>
-                                        <button type="button" @click="moveDown(a.id)" :disabled="i === currentLineup().length - 1"
-                                                class="w-7 h-7 bg-gray-100 hover:bg-gray-200 disabled:opacity-30 rounded text-xs font-bold">&darr;</button>
+                    <div class="flex-1 overflow-y-auto p-3 space-y-4">
+                        {{-- ============== SECCION TITULARES (9) ============== --}}
+                        <div>
+                            <div class="flex items-center justify-between mb-2 px-1">
+                                <h4 class="text-xs uppercase tracking-wider text-gray-500 font-bold">{{ __('Titulares (lineup)') }}</h4>
+                                <span class="text-[10px] text-gray-400">{{ __('Arrastra para reordenar bateo') }}</span>
+                            </div>
+                            <div class="space-y-1.5">
+                                <template x-for="(a, i) in currentLineup()" :key="a.id">
+                                    <div draggable="true"
+                                         data-lineup-drop
+                                         @dragstart="onDragStart($event, a.id)"
+                                         @dragend="onDragEnd($event)"
+                                         @dragover="onDragOver($event, a.id)"
+                                         @dragleave="onDragLeave($event)"
+                                         @drop="onDrop($event, a.id)"
+                                         class="flex items-center gap-2 px-2 py-1.5 bg-white border border-gray-200 rounded-lg cursor-grab hover:border-emerald-400">
+                                        <span class="w-7 h-7 flex items-center justify-center bg-emerald-600 text-white rounded-full text-xs font-black flex-shrink-0" x-text="a.lineup_order"></span>
+                                        <span class="text-sm font-bold text-emerald-700 w-7 flex-shrink-0 text-center" x-text="'#' + (a.number ?? '-')"></span>
+                                        <span class="text-sm font-medium text-gray-800 flex-1 truncate" x-text="a.first_name + ' ' + a.last_name"></span>
+                                        {{-- Selector de posicion defensiva --}}
+                                        <select @change="setLineupPosition(a.id, $event.target.value)"
+                                                :value="a.position || ''"
+                                                class="w-16 text-xs border border-gray-300 rounded px-1 py-0.5 flex-shrink-0">
+                                            <option value="P">P</option>
+                                            <option value="C">C</option>
+                                            <option value="1B">1B</option>
+                                            <option value="2B">2B</option>
+                                            <option value="3B">3B</option>
+                                            <option value="SS">SS</option>
+                                            <option value="LF">LF</option>
+                                            <option value="CF">CF</option>
+                                            <option value="RF">RF</option>
+                                        </select>
+                                        {{-- Radio pitcher (solo 1 por equipo) --}}
+                                        <label class="flex items-center gap-1 text-xs flex-shrink-0 cursor-pointer" title="Marcar como pitcher">
+                                            <input type="radio"
+                                                   :name="`pitcher-${lineupTeam}`"
+                                                   :checked="a.is_pitcher === true"
+                                                   @change="setLineupPitcher(a.id)"
+                                                   class="rounded-full text-emerald-600 focus:ring-emerald-500">
+                                            <span class="text-[10px] font-bold text-emerald-700">P</span>
+                                        </label>
+                                        {{-- Boton quitar --}}
+                                        <button type="button" @click="removeFromLineup(a.id)"
+                                                title="Quitar del lineup"
+                                                class="w-7 h-7 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs font-black flex-shrink-0">&times;</button>
+                                        <div class="flex flex-col gap-0.5 flex-shrink-0">
+                                            <button type="button" @click="moveUp(a.id)" :disabled="i === 0"
+                                                    class="w-6 h-4 bg-gray-100 hover:bg-gray-200 disabled:opacity-30 rounded text-[10px] font-bold leading-none">&uarr;</button>
+                                            <button type="button" @click="moveDown(a.id)" :disabled="i === currentLineup().length - 1"
+                                                    class="w-6 h-4 bg-gray-100 hover:bg-gray-200 disabled:opacity-30 rounded text-[10px] font-bold leading-none">&darr;</button>
+                                        </div>
                                     </div>
+                                </template>
+                                <div x-show="currentLineup().length === 0" class="text-center text-gray-400 italic py-3 text-sm">
+                                    {{ __('Este equipo no tiene titulares. Agrega jugadores desde la lista de disponibles.') }}
                                 </div>
-                            </template>
-                            <div x-show="currentLineup().length === 0" class="text-center text-gray-400 italic py-4">
-                                {{ __('Este equipo no tiene atletas asignados al lineup') }}
+                            </div>
+                        </div>
+
+                        {{-- ============== SECCION DISPONIBLES (roster no en lineup) ============== --}}
+                        <div class="border-t border-gray-200 pt-3">
+                            <div class="flex items-center justify-between mb-2 px-1">
+                                <h4 class="text-xs uppercase tracking-wider text-gray-500 font-bold">{{ __('Disponibles (roster)') }}</h4>
+                                <span class="text-[10px] text-gray-400" x-text="availableRoster().length + ' jugadores'"></span>
+                            </div>
+                            <div class="space-y-1">
+                                <template x-for="a in availableRoster()" :key="a.id">
+                                    <div class="flex items-center gap-2 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg hover:border-emerald-300">
+                                        <span class="text-sm font-bold text-gray-500 w-7 flex-shrink-0 text-center" x-text="'#' + (a.number ?? '-')"></span>
+                                        <span class="text-sm font-medium text-gray-700 flex-1 truncate" x-text="a.first_name + ' ' + a.last_name"></span>
+                                        <span class="text-[10px] text-gray-400 flex-shrink-0" x-text="a.position || ''"></span>
+                                        <button type="button" @click="addToLineup(a.id)" :disabled="currentLineup().length >= 9"
+                                                title="Agregar al lineup"
+                                                class="px-2 py-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded flex-shrink-0">
+                                            + {{ __('Agregar') }}
+                                        </button>
+                                    </div>
+                                </template>
+                                <div x-show="availableRoster().length === 0" class="text-center text-gray-400 italic py-3 text-sm">
+                                    {{ __('Todos los atletas del roster ya estan en el lineup.') }}
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="border-t border-gray-200 p-3 flex gap-2 flex-shrink-0">
                         <button type="button" @click="closeModal()"
-                                class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-bold rounded-lg">
+                                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-bold rounded-lg">
                             {{ __('Cancelar') }}
                         </button>
-                        <button type="button" @click="saveLineup()" :disabled="!lineupDirty"
+                        <button type="button" @click="saveLineup()"
+                                :disabled="!lineupDirty || currentLineup().length !== 9"
                                 class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg">
-                            {{ __('Guardar orden') }}
+                            <span x-show="currentLineup().length === 9">{{ __('Guardar lineup') }}</span>
+                            <span x-show="currentLineup().length !== 9" x-text="'Faltan ' + (9 - currentLineup().length) + ' titulares'"></span>
                         </button>
                     </div>
                 </div>
