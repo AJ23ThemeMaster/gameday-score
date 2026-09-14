@@ -283,6 +283,24 @@ class GameplayEngine
                     'balls' => 0, 'strikes' => 0,
                     'bases_before' => $bases, 'bases_after' => ['first' => null, 'second' => null, 'third' => null],
                 ]);
+
+                // DISI-25: actualizar el modelo Game con el inning/half nuevo.
+                // Antes esto no se hacia en processPitch (solo endInning lo hacia),
+                // lo que dejaba Game.current_inning / inning_half apuntando al
+                // medio inning VIEJO. currentState() consulta Game cuando la ultima
+                // jugada es inning_end/game_end, asi que sin esta actualizacion
+                // el scoreboard mostraba el inning anterior y el nuevo bateador
+                // nunca aparecia (currentState devuelve batter_id=null si Game
+                // no esta alineado).
+                $isGameOver = $this->isGameOver($game, $inning, $half);
+                if ($isGameOver) {
+                    $game->update(['status' => 'finalized']);
+                } else {
+                    $game->update([
+                        'current_inning' => $inning,
+                        'inning_half' => $half,
+                    ]);
+                }
             }
 
             // IMPORTANTE: cuando hubo cambio de bateador (walk, strikeout, out)
@@ -292,8 +310,12 @@ class GameplayEngine
             // quien esta al bate. Sin esto, currentState() leeria la jugada
             // walk/strikeout/out (cuyo batter_id es el bateador que SALIO) y
             // devolveria el bateador equivocado.
+            //
+            // DISI-25: tambien se graba cuando hubo endHalf (cambio de inning),
+            // para que el nuevo bateador del siguiente medio inning quede
+            // persistido. Antes se excluia con `&& ! $endHalf`, lo que dejaba
+            // current_batter_id = null justo despues del cambio de inning.
             $hadBatterChange = in_array($event['type'], ['ball', 'strike', 'out', 'hit'], true)
-                && ! $endHalf
                 && $batterId !== null
                 && (($event['type'] === 'ball' && $isWalk)
                     || ($event['type'] === 'strike' && $isStrikeout)
@@ -304,7 +326,7 @@ class GameplayEngine
                     'inning' => $inning, 'half' => $half,
                     'type' => Play::TYPE_PITCH,
                     'subtype' => 'at_bat_start',
-                    'result' => 'Nuevo bateador al bate',
+                    'result' => $endHalf ? 'Nuevo inning - bateador al bate' : 'Nuevo bateador al bate',
                     'batter_id' => $batterId,
                     'pitcher_id' => $pitcherId,
                     'outs_before' => $outs, 'outs_after' => $outs,
@@ -365,7 +387,10 @@ class GameplayEngine
 
         if ($half === 'top') {
             $newHalf = 'bottom';
-            $newPitcher = $this->pitcherFor($game, $game->home_team_id);
+            // Cuando termina el top, el HOME batea en el bottom. Por tanto el
+            // pitcher del nuevo medio inning es del AWAY (equipo que pichea
+            // cuando el HOME esta al bate).
+            $newPitcher = $this->pitcherFor($game, $game->away_team_id);
             // Si es el inning 1, el home batea por primera vez: arranca desde #1.
             // En innings 2+, el home continua su lineup desde donde se quedo
             // en el bottom del inning anterior.
@@ -403,7 +428,9 @@ class GameplayEngine
         // ultimo bateador del away, caemos al #1 como fallback.
         $lastAwayBatter = $this->lastBatterForTeamInInning($game, $game->away_team_id, $inning, 'top');
         $newBatter = $this->nextBatterByTeam($game, $game->away_team_id, $lastAwayBatter, 'top');
-        $newPitcher = $this->pitcherFor($game, $game->away_team_id);
+        // DISI-25: en el nuevo top el AWAY batea, asi que el HOME pichea.
+        // Antes usaba away_team_id (bug), dejando al pitcher equivocado.
+        $newPitcher = $this->pitcherFor($game, $game->home_team_id);
         return [$newBatter, $newBases, 'top', $newInning, $newOuts, true, $newPitcher];
     }
 
@@ -754,7 +781,8 @@ class GameplayEngine
         if ($half === 'top') {
             $newHalf = 'bottom';
             $newInning = $inning;
-            $newPitcher = $this->pitcherFor($game, $game->home_team_id);
+            // Mismo fix que en advanceBatter: el pitcher del bottom es del AWAY.
+            $newPitcher = $this->pitcherFor($game, $game->away_team_id);
             if ($inning === 1) {
                 $newBatter = $this->firstBatter($game, 'bottom');
             } else {
@@ -764,7 +792,8 @@ class GameplayEngine
         } else {
             $newHalf = 'top';
             $newInning = $inning + 1;
-            $newPitcher = $this->pitcherFor($game, $game->away_team_id);
+            // DISI-25: en el nuevo top el AWAY batea, asi que el HOME pichea.
+            $newPitcher = $this->pitcherFor($game, $game->home_team_id);
             $lastAwayBatter = $this->lastBatterForTeamInInning($game, $game->away_team_id, $inning, 'top');
             $newBatter = $this->nextBatterByTeam($game, $game->away_team_id, $lastAwayBatter, 'top');
         }
