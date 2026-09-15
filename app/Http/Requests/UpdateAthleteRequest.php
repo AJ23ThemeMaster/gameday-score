@@ -23,6 +23,7 @@ class UpdateAthleteRequest extends FormRequest
             'document_id' => ['nullable', 'string', 'max:30', 'unique:athletes,document_id,'.$athleteId],
             'birth_date' => ['nullable', 'date'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'document_file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
             'team_id' => ['nullable', 'integer', 'exists:teams,id'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'number' => ['nullable', 'integer', 'between:0,99'],
@@ -31,6 +32,7 @@ class UpdateAthleteRequest extends FormRequest
             'throws' => ['nullable', 'in:L,R'],
             'active' => ['boolean'],
             'remove_photo' => ['boolean'],
+            'remove_document' => ['boolean'],
         ];
     }
 }
