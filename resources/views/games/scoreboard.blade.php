@@ -91,34 +91,6 @@
 
                 {{-- Breadcrumb Liga / Torneo / Categoria (DISI-13) --}}
                 <div class="px-4 py-2 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center gap-2 text-xs">
-                    {{-- DISI-39: botones de accion rapida (esquina superior derecha) --}}
-                    {{-- Ojito: detalle del juego (/games/{id}) --}}
-                    {{-- Lista: roster del juego (/games/{id}/roster) --}}
-                    {{-- Casita: listado de juegos (/games) --}}
-                    <div class="ml-auto flex items-center gap-1.5">
-                        <a href="{{ route('games.show', $game) }}"
-                           class="inline-flex items-center justify-center h-7 w-7 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-indigo-600 hover:border-indigo-400 transition"
-                           title="{{ __('Ver detalle del juego') }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                                <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
-                                <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                        <a href="{{ route('games.roster.index', $game) }}"
-                           class="inline-flex items-center justify-center h-7 w-7 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-indigo-600 hover:border-indigo-400 transition"
-                           title="{{ __('Ver roster del juego') }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                                <path fill-rule="evenodd" d="M2 3.75A.75.75 0 0 1 2.75 3h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 3.75Zm0 4.167a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Zm0 4.166a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Zm0 4.167a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                        <a href="{{ route('games.index') }}"
-                           class="inline-flex items-center justify-center h-7 w-7 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-indigo-600 hover:border-indigo-400 transition"
-                           title="{{ __('Ir al listado de juegos') }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                                <path fill-rule="evenodd" d="M9.293 2.293a1 1 0 0 1 1.414 0l7 7a1 1 0 0 1 0 1.414l-7 7a1 1 0 0 1-1.414-1.414L14.586 11H3a1 1 0 1 1 0-2h11.586l-5.293-5.293a1 1 0 0 1 0-1.414Z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                    </div>
                     @if ($game->tournament?->league)
                         <a href="{{ route('leagues.show', $game->tournament->league) }}"
                            class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded-md hover:border-indigo-400 transition"
@@ -153,6 +125,38 @@
                             {{ __('Sin categoría') }}
                         </span>
                     @endif
+                    {{-- DISI-39: botones de accion rapida (esquina superior derecha) --}}
+                    {{-- Ojito: detalle del juego (/games/{id}) --}}
+                    {{-- Lista: roster del juego (/games/{id}/roster) --}}
+                    {{-- Casita: listado de juegos (/games) --}}
+                    {{-- FIX: los tags @if van PRIMERO en el DOM (fluyen desde la izquierda) --}}
+                    {{-- y los botones DESPUES con ml-auto (empujan a la derecha). Antes el --}}
+                    {{-- orden estaba invertido y ml-auto en el primer hijo de flex no --}}
+                    {{-- funciona (no hay hermano anterior que empuje). --}}
+                    <div class="ml-auto flex items-center gap-1.5">
+                        <a href="{{ route('games.show', $game) }}"
+                           class="inline-flex items-center justify-center h-7 w-7 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-indigo-600 hover:border-indigo-400 transition"
+                           title="{{ __('Ver detalle del juego') }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                                <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        <a href="{{ route('games.roster.index', $game) }}"
+                           class="inline-flex items-center justify-center h-7 w-7 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-indigo-600 hover:border-indigo-400 transition"
+                           title="{{ __('Ver roster del juego') }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                <path fill-rule="evenodd" d="M2 3.75A.75.75 0 0 1 2.75 3h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 3.75Zm0 4.167a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Zm0 4.166a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Zm0 4.167a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        <a href="{{ route('games.index') }}"
+                           class="inline-flex items-center justify-center h-7 w-7 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-indigo-600 hover:border-indigo-400 transition"
+                           title="{{ __('Ir al listado de juegos') }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                <path fill-rule="evenodd" d="M9.293 2.293a1 1 0 0 1 1.414 0l7 7a1 1 0 0 1 0 1.414l-7 7a1 1 0 0 1-1.414-1.414L14.586 11H3a1 1 0 1 1 0-2h11.586l-5.293-5.293a1 1 0 0 1 0-1.414Z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                    </div>
                 </div>
 
                 {{-- Header: Local | Score centrado | Visitante (estructura del adjunto) --}}
@@ -191,9 +195,6 @@
                             <div class="mt-1 inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 border border-emerald-300 rounded-full text-emerald-800 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm"
                                  x-show="isFinalized"
                                  data-game-status="finalized">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
-                                </svg>
                                 <span>{{ __('Juego finalizado') }}</span>
                             </div>
                         @endif
