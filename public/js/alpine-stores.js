@@ -283,7 +283,44 @@ document.addEventListener('alpine:init', () => {
         },
 
         async pollNow() {
-            await this.poll();
+            // DISI-43: pollNow() fuerza un refresh inmediato sin esperar al
+            // intervalo. Antes compartia el guard `isPolling` con el poll
+            // automatico de 5s, lo que causaba una race condition: si el
+            // usuario hacia clic en "Finalizar inning" justo cuando el poll
+            // automatico estaba corriendo, el refresh manual se saltaba
+            // (`if (this.isPolling) return;`) y los cards de Pitcher/Batter/
+            // On-deck quedaban con datos viejos hasta el siguiente intervalo.
+            // Solucion: pollNow() salta el guard y reusa la logica de fetch
+            // del poll regular.
+            if (this.isPolling) {
+                // Esperar a que el poll automatico termine para no duplicar
+                // requests. Poll regular dura ~50-200ms tipicamente.
+                await new Promise(resolve => {
+                    const check = () => {
+                        if (!this.isPolling) resolve();
+                        else setTimeout(check, 20);
+                    };
+                    check();
+                });
+            }
+            this.isPolling = true;
+            try {
+                const res = await fetch(this.pollUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                this.applyState(data);
+                this.pollStatus = 'Última actualización: ' + new Date().toLocaleTimeString();
+            } catch (e) {
+                this.pollStatus = 'Sin conexión. Reintentando...';
+            } finally {
+                this.isPolling = false;
+            }
         },
 
         stop() {
