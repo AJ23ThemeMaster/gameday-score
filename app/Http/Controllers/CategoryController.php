@@ -52,7 +52,18 @@ class CategoryController extends Controller
 
     public function show(Category $category): View
     {
-        $category->load('team');
+        // DISI-61: el show ahora lista atletas (ordenados por apellido+nombre)
+        // y juegos (ordenados por scheduled_at desc) ademas del team.
+        $category->load([
+            'team',
+            'team.league',
+            'athletes' => function ($q) {
+                $q->orderBy('last_name')->orderBy('first_name');
+            },
+            'games' => function ($q) {
+                $q->latest('scheduled_at')->limit(30);
+            },
+        ]);
         $category->loadCount(['games', 'athletes']);
 
         return view('categories.show', compact('category'));

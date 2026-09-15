@@ -33,7 +33,7 @@
         <select id="team_id" name="team_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
             <option value="">— {{ __('Sin equipo') }} —</option>
             @foreach ($teams as $team)
-                <option value="{{ $team->id }}" {{ (string) old('team_id', $athlete->team_id ?? '') === (string) $team->id ? 'selected' : '' }}>
+                <option value="{{ $team->id }}" {{ (string) old('team_id', $athlete->team_id ?? request('team_id', '')) === (string) $team->id ? 'selected' : '' }}>
                     {{ $team->name }}@if ($team->league) ({{ $team->league->short_name ?? $team->league->name }})@endif
                 </option>
             @endforeach
@@ -46,7 +46,7 @@
         <select id="category_id" name="category_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
             <option value="">— {{ __('Sin categoría') }} —</option>
             @foreach ($categories as $cat)
-                <option value="{{ $cat->id }}" {{ (string) old('category_id', $athlete->category_id ?? '') === (string) $cat->id ? 'selected' : '' }}>
+                <option value="{{ $cat->id }}" {{ (string) old('category_id', $athlete->category_id ?? request('category_id', '')) === (string) $cat->id ? 'selected' : '' }}>
                     {{ $cat->name }}@if ($cat->team) ({{ $cat->team->short_name ?? $cat->team->name }})@endif
                 </option>
             @endforeach
