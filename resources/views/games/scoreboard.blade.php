@@ -125,11 +125,12 @@
                             {{ __('Sin categoría') }}
                         </span>
                     @endif
-                    {{-- DISI-39: botones de accion rapida (esquina superior derecha) --}}
+                    {{-- DISI-39 + DISI-41: botones de accion rapida (esquina superior derecha) --}}
                     {{-- Ojito: detalle del juego (/games/{id}) --}}
+                    {{-- Play: vista en vivo del juego (/games/{id}/live) — solo si is_public --}}
                     {{-- Lista: roster del juego (/games/{id}/roster) --}}
                     {{-- Casita: listado de juegos (/games) --}}
-                    {{-- FIX: los tags @if van PRIMERO en el DOM (fluyen desde la izquierda) --}}
+                    {{-- FIX DISI-40: los tags @if van PRIMERO en el DOM (fluyen desde la izquierda) --}}
                     {{-- y los botones DESPUES con ml-auto (empujan a la derecha). Antes el --}}
                     {{-- orden estaba invertido y ml-auto en el primer hijo de flex no --}}
                     {{-- funciona (no hay hermano anterior que empuje). --}}
@@ -142,6 +143,20 @@
                                 <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
                             </svg>
                         </a>
+                        {{-- DISI-41: boton Live (▶ play) — solo si el juego fue creado --}}
+                        {{-- con la opcion 'is_public' habilitada (mismo flag que la vista --}}
+                        {{-- publica; el live view es para proyeccion/compartir marcador --}}
+                        {{-- cuando el juego es publico). --}}
+                        @if ($game->is_public)
+                            <a href="{{ route('games.live', $game) }}"
+                               target="_blank"
+                               class="inline-flex items-center justify-center h-7 w-7 bg-white border border-emerald-300 rounded-md text-emerald-600 hover:text-emerald-700 hover:border-emerald-500 transition"
+                               title="{{ __('Abrir vista en vivo (requiere juego público)') }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                    <path d="M6.3 2.84A1 1 0 0 0 5 3.75v12.5a1 1 0 0 0 1.55.83l10-6.25a1 1 0 0 0 0-1.66l-10-6.25a1 1 0 0 0-.25-.08Z" />
+                                </svg>
+                            </a>
+                        @endif
                         <a href="{{ route('games.roster.index', $game) }}"
                            class="inline-flex items-center justify-center h-7 w-7 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-indigo-600 hover:border-indigo-400 transition"
                            title="{{ __('Ver roster del juego') }}">
