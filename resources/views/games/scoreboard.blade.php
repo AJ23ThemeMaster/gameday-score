@@ -81,6 +81,12 @@
             // una jugada Play::TYPE_GAME_END, dejando state.is_game_over=false.
             'isFinalized' => $game->isCompleted(),
             'tab' => $game->isCompleted() ? 'extra' : 'pitch',
+            // DISI-42: URL publica del juego (/juego/publico/{token}) para
+            // el boton Live del header. Si el juego no es publico, esta URL
+            // viene vacia y el boton play no se renderiza (gateado por is_public).
+            'publicUrl' => $game->is_public && $game->public_token
+                ? url("/juego/publico/{$game->public_token}")
+                : '',
         ]))"
         x-init="start()"
     >
@@ -143,19 +149,22 @@
                                 <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
                             </svg>
                         </a>
-                        {{-- DISI-41: boton Live (▶ play) — solo si el juego fue creado --}}
-                        {{-- con la opcion 'is_public' habilitada (mismo flag que la vista --}}
-                        {{-- publica; el live view es para proyeccion/compartir marcador --}}
-                        {{-- cuando el juego es publico). --}}
-                        @if ($game->is_public)
-                            <a href="{{ route('games.live', $game) }}"
-                               target="_blank"
-                               class="inline-flex items-center justify-center h-7 w-7 bg-white border border-emerald-300 rounded-md text-emerald-600 hover:text-emerald-700 hover:border-emerald-500 transition"
-                               title="{{ __('Abrir vista en vivo (requiere juego público)') }}">
+                        {{-- DISI-41+42: boton Live (▶ play) — solo si el juego fue creado --}}
+                        {{-- con la opcion 'is_public' habilitada. Al hacer clic --}}
+                        {{-- ABRE UN MODAL (openLiveShareModal) con 2 opciones: --}}
+                        {{-- 'Abrir vista en vivo' (en nueva pestana) o 'Compartir --}}
+                        {{-- URL' (abre el menu nativo del navegador con navigator.share --}}
+                        {{-- o fallback a clipboard.copy). El modal vive abajo en --}}
+                        {{-- la seccion de modales de este mismo archivo. --}}
+                        @if ($game->is_public && $game->public_token)
+                            <button type="button"
+                                    @click="openLiveShareModal()"
+                                    class="inline-flex items-center justify-center h-7 w-7 bg-white border border-emerald-300 rounded-md text-emerald-600 hover:text-emerald-700 hover:border-emerald-500 transition"
+                                    title="{{ __('Compartir / abrir vista en vivo (requiere juego público)') }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
                                     <path d="M6.3 2.84A1 1 0 0 0 5 3.75v12.5a1 1 0 0 0 1.55.83l10-6.25a1 1 0 0 0 0-1.66l-10-6.25a1 1 0 0 0-.25-.08Z" />
                                 </svg>
-                            </a>
+                            </button>
                         @endif
                         <a href="{{ route('games.roster.index', $game) }}"
                            class="inline-flex items-center justify-center h-7 w-7 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-indigo-600 hover:border-indigo-400 transition"
@@ -1077,6 +1086,54 @@
                                 class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg">
                             {{ __('Cerrar') }}
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal: compartir / abrir vista en vivo (DISI-42) --}}
+            {{-- Aparece al hacer clic en el boton play del breadcrumb. --}}
+            {{-- Ofrece 2 opciones: abrir la URL publica en nueva pestana o --}}
+            {{-- compartirla usando la Web Share API del navegador (con fallback --}}
+            {{-- a clipboard.copy). Solo se abre si el juego es publico y tiene --}}
+            {{-- public_token; el boton del header ya esta gateado por eso. --}}
+            <div x-show="modal === 'live-share'" x-cloak
+                 class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+                 @keydown.escape.window="closeModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+                     @click.outside="closeModal()">
+                    <div class="bg-emerald-600 text-white px-5 py-3 flex items-center justify-between">
+                        <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Vista en vivo') }}</h3>
+                        <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <p class="text-sm text-gray-600">
+                            {{ __('Comparte la URL publica del juego con espectadores, o abre la vista en vivo en una nueva pestana.') }}
+                        </p>
+
+                        {{-- Preview de la URL (readonly, monospace) --}}
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                            <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1">{{ __('URL publica') }}</div>
+                            <div class="font-mono text-xs text-gray-700 break-all select-all" x-text="publicUrl"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button type="button"
+                                    @click="openLiveView()"
+                                    class="flex flex-col items-center gap-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                                    <path d="M3.75 3A1.75 1.75 0 0 0 2 4.75v10.5C2 16.216 2.784 17 3.75 17h12.5A1.75 1.75 0 0 0 18 15.25V4.75A1.75 1.75 0 0 0 16.25 3H3.75ZM12.78 10.5a.75.75 0 0 0-1.06 0L8 14.06 6.78 12.78a.75.75 0 1 0-1.06 1.06l1.75 1.75a1.75 1.75 0 0 0 2.47 0l4.25-4.25a.75.75 0 0 0 0-1.06Z" />
+                                </svg>
+                                {{ __('Abrir en vivo') }}
+                            </button>
+                            <button type="button"
+                                    @click="sharePublicUrl()"
+                                    class="flex flex-col items-center gap-1 py-4 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold rounded-xl transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                                    <path d="M13.5 2.5a.75.75 0 0 1 .75-.75 5.5 5.5 0 0 1 5.5 5.5.75.75 0 0 1-1.5 0 4 4 0 0 0-4-4 .75.75 0 0 1-.75-.75ZM13.5 17.5a.75.75 0 0 1 .75.75 5.5 5.5 0 0 1-5.5 5.5.75.75 0 0 1 0-1.5 4 4 0 0 0 4-4 .75.75 0 0 1 .75-.75ZM2.5 13.5a.75.75 0 0 1 .75.75 4 4 0 0 0 4 4 .75.75 0 0 1 0 1.5 5.5 5.5 0 0 1-5.5-5.5.75.75 0 0 1 .75-.75ZM9.97 5.97a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L11.5 8.56V14a.75.75 0 0 1-1.5 0V8.56L8.53 10.03a.75.75 0 0 1-1.06-1.06l3-3Z" />
+                                </svg>
+                                {{ __('Compartir') }}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
