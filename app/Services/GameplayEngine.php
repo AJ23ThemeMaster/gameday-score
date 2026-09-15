@@ -351,6 +351,11 @@ class GameplayEngine
                 'is_game_over' => $this->isGameOver($game, $inning, $half),
             ];
 
+            // DISI-50: persistir el state actualizado a las columnas snapshot
+            // del Game para que la vista publica (`/game/live/{token}`) muestre
+            // los valores en tiempo real, no solo el scoreboard Alpine.
+            $this->syncGameSnapshot($game);
+
             return [
                 'state' => $newState,
                 'plays' => $createdPlays,
@@ -818,6 +823,8 @@ class GameplayEngine
                 'bases_after' => ['first' => null, 'second' => null, 'third' => null],
             ]);
             $game->update(['status' => 'finalized']);
+            // DISI-50: sincronizar score (carreras) y demas columnas snapshot.
+            $this->syncGameSnapshot($game);
             return [
                 'status' => 'game_over',
                 'inning' => $inning,
@@ -827,10 +834,10 @@ class GameplayEngine
             ];
         }
 
-        $game->update([
-            'current_inning' => $newInning,
-            'inning_half' => $newHalf,
-        ]);
+        // DISI-50: en vez de solo actualizar inning/half, sincronizar TODAS
+        // las columnas snapshot del Game con el state real (que despues de
+        // inning_end tiene balls=0, strikes=0, outs=0, bases vacias).
+        $this->syncGameSnapshot($game);
 
         return [
             'status' => 'inning_closed',
@@ -866,6 +873,9 @@ class GameplayEngine
             'bases_before' => $bases, 'bases_after' => $bases,
         ]);
         $game->update(['status' => 'finalized']);
+        // DISI-50: sincronizar score + state para que la vista publica muestre
+        // las carreras finales y el inning/half donde cerro el juego.
+        $this->syncGameSnapshot($game);
 
         $g = $game->fresh();
         return [
@@ -1082,6 +1092,11 @@ class GameplayEngine
                 }
             }
 
+            // DISI-50: sincronizar el snapshot del Game (bases, outs, score,
+            // inning/half) para que la vista publica vea el cambio de
+            // corredores, outs y carreras anotadas en tiempo real.
+            $this->syncGameSnapshot($game);
+
             return [
                 'success' => true,
                 'action' => $action,
@@ -1153,6 +1168,41 @@ class GameplayEngine
             'score_no_rbi' => "{$runnerName} anota (sin RBI) desde {$from}",
             default => "{$runnerName} desde {$from}{$tail}",
         };
+    }
+
+    /**
+     * Sincroniza las columnas snapshot del Game (inning, half, outs, balls,
+     * strikes, bases, home_score, away_score) con el estado real derivado
+     * de la tabla `plays`. La tabla `plays` es la fuente unica de verdad;
+     * las columnas en `games` son denormalizaciones que la vista publica
+     * (`/game/live/{token}`) lee directo sin pasar por Play::currentState.
+     *
+     * Antes de este helper, processPitch y runnerAction dejaban Game.{balls,
+     * strikes, outs, bases, home_score, away_score} en sus valores iniciales
+     * porque solo escribian en `plays`. Resultado: el scoreboard Alpine se veia
+     * "vivo" pero la vista publica mostraba 0-0 siempre. endInning SI
+     * actualizaba current_inning/inning_half pero NO reseteaba balls/strikes/
+     * outs/bases.
+     *
+     * Llamar DESPUES de crear/actualizar jugadas dentro de la misma
+     * transaccion. Lee `Play::currentState` (que ya ve los plays nuevos
+     * porque estan en la misma TX) y `Play::scoreboard` para las carreras.
+     */
+    private function syncGameSnapshot(Game $game): void
+    {
+        $state = Play::currentState($game->id);
+        $score = Play::scoreboard($game->id);
+
+        $game->update([
+            'current_inning' => (int) $state['inning'],
+            'inning_half' => $state['half'],
+            'outs' => (int) $state['outs'],
+            'balls' => (int) $state['balls'],
+            'strikes' => (int) $state['strikes'],
+            'bases' => $state['bases'] ?? null,
+            'home_score' => (int) ($score['home'] ?? 0),
+            'away_score' => (int) ($score['away'] ?? 0),
+        ]);
     }
 
     /**
@@ -1283,6 +1333,9 @@ class GameplayEngine
             default:
                 throw new \InvalidArgumentException("Tipo de sustitucion no soportado: {$kind}");
         }
+
+        // DISI-50: sincronizar snapshot (especialmente bases despues de un PR).
+        $this->syncGameSnapshot($game);
 
         return [
             'success' => true,
