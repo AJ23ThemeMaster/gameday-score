@@ -73,8 +73,18 @@ class League extends Model
         return $this->hasMany(Tournament::class);
     }
 
+    public function teams(): HasMany
+    {
+        // DISI-58: una liga tiene N equipos (relacion directa via teams.league_id).
+        // Los atletas se acceden via teams -> athletes, no como relacion
+        // directa en league (mantiene la regla de que el atleta pertenece
+        // a 1 equipo, no a 1 league).
+        return $this->hasMany(Team::class);
+    }
+
     public function games(): HasManyThrough
     {
+        // Liga -> tournaments -> games
         return $this->hasManyThrough(Game::class, Tournament::class);
     }
 
