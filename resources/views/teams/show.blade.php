@@ -96,6 +96,59 @@
                     </div>
                 @endif
 
+                {{-- DISI-60: categorias del equipo --}}
+                @if ($team->categories->count())
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-3 flex justify-between items-center">
+                            <span>{{ __('Categorias del equipo') }} ({{ $team->categories->count() }})</span>
+                            <a href="{{ route('categories.create', ['team_id' => $team->id]) }}"
+                               class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold normal-case">
+                                + {{ __('Nueva categoria') }}
+                            </a>
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            @foreach ($team->categories as $c)
+                                <a href="{{ route('categories.show', $c) }}"
+                                   class="block bg-gray-50 hover:bg-gray-100 rounded-lg p-3 border border-gray-200 transition">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-semibold text-gray-900">{{ $c->name }}</span>
+                                        @if ($c->active)
+                                            <span class="inline-flex px-2 text-[10px] leading-4 font-semibold rounded-full bg-green-100 text-green-800">{{ __('Activa') }}</span>
+                                        @endif
+                                    </div>
+                                    <div class="mt-1 text-xs text-gray-500">
+                                        {{ $categoryStats[$c->id]['athletes'] ?? 0 }} {{ \Illuminate\Support\Str::plural('atleta', $categoryStats[$c->id]['athletes'] ?? 0) }}
+                                        · {{ $categoryStats[$c->id]['games'] ?? 0 }} {{ \Illuminate\Support\Str::plural('juego', $categoryStats[$c->id]['games'] ?? 0) }}
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                {{-- DISI-60: torneos en los que participa el equipo --}}
+                @if ($team->tournaments->count())
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-3">
+                            {{ __('Torneos en los que participa') }} ({{ $team->tournaments->count() }})
+                        </h4>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach ($team->tournaments as $t)
+                                <a href="{{ route('tournaments.show', $t) }}"
+                                   class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full border border-gray-200 text-sm">
+                                    @if ($t->logo_url)
+                                        <img src="{{ $t->logo_url }}" alt="" class="h-4 w-4 object-contain bg-white rounded p-0.5">
+                                    @endif
+                                    <span class="font-semibold text-gray-900">{{ $t->name }}</span>
+                                    @if ($t->category)
+                                        <span class="text-xs text-gray-500">({{ $t->category }})</span>
+                                    @endif
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 <div class="mt-6 pt-6 border-t border-gray-200 text-xs text-gray-500">
                     {{ __('Creado') }}: {{ $team->created_at->format('d/m/Y H:i') }} ·
                     {{ __('Actualizado') }}: {{ $team->updated_at->format('d/m/Y H:i') }}
