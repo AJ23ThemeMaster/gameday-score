@@ -10,6 +10,7 @@ use App\Models\Athlete;
 use App\Models\Category;
 use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -20,14 +21,68 @@ class AthleteController extends Controller
         $this->middleware('admin');
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
-        $athletes = Athlete::with(['team', 'category'])
+        // DISI-65: index filtrable (Nombre | Doc | N° | Pos. | Estado | Equipo | Categoria).
+        $filters = [
+            'name' => trim((string) $request->query('name', '')),
+            'document_id' => trim((string) $request->query('document_id', '')),
+            'number' => trim((string) $request->query('number', '')),
+            'position' => trim((string) $request->query('position', '')),
+            'status' => (string) $request->query('status', 'all'),
+            'team_id' => $request->query('team_id'),
+            'category_id' => $request->query('category_id'),
+        ];
+        $filters['status'] = in_array($filters['status'], ['active', 'inactive'], true) ? $filters['status'] : 'all';
+        $filters['team_id'] = is_numeric($filters['team_id']) ? (int) $filters['team_id'] : null;
+        $filters['category_id'] = is_numeric($filters['category_id']) ? (int) $filters['category_id'] : null;
+
+        $q = Athlete::with(['team', 'category']);
+
+        if ($filters['name'] !== '') {
+            $like = '%'.$filters['name'].'%';
+            $q->where(function ($w) use ($like) {
+                $w->where('first_name', 'like', $like)->orWhere('last_name', 'like', $like);
+            });
+        }
+        if ($filters['document_id'] !== '') {
+            $q->where('document_id', 'like', '%'.$filters['document_id'].'%');
+        }
+        if ($filters['number'] !== '' && is_numeric($filters['number'])) {
+            $q->where('number', (int) $filters['number']);
+        }
+        if ($filters['position'] !== '') {
+            $q->where('position', $filters['position']);
+        }
+        if ($filters['status'] === 'active') {
+            $q->where('active', true);
+        } elseif ($filters['status'] === 'inactive') {
+            $q->where('active', false);
+        }
+        if ($filters['team_id'] !== null) {
+            $q->where('team_id', $filters['team_id']);
+        }
+        if ($filters['category_id'] !== null) {
+            $q->where('category_id', $filters['category_id']);
+        }
+
+        $athletes = $q
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
-        return view('athletes.index', compact('athletes'));
+        $totalAthletes = Athlete::count();
+        $filteredCount = $athletes->total();
+
+        $positions = Athlete::whereNotNull('position')->distinct()->orderBy('position')->pluck('position');
+        $teams = Team::orderBy('name')->get();
+        $categories = Category::orderBy('name')->get();
+
+        return view('athletes.index', compact(
+            'athletes', 'totalAthletes', 'filteredCount',
+            'filters', 'positions', 'teams', 'categories'
+        ));
     }
 
     public function create(): View
