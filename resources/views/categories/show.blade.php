@@ -63,6 +63,101 @@
                     </div>
                 </dl>
 
+                {{-- DISI-61: breadcrumb de equipo (para llegar desde el equipo) --}}
+                @if ($category->team)
+                    <div class="mt-6 pt-6 border-t border-gray-200 text-sm">
+                        <p class="text-gray-500 text-xs uppercase mb-1">{{ __('Equipo') }}</p>
+                        <a href="{{ route('teams.show', $category->team) }}"
+                           class="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800">
+                            @if ($category->team->logo_url)
+                                <img src="{{ $category->team->logo_url }}" alt="" class="h-6 w-6 object-contain bg-white rounded p-0.5">
+                            @endif
+                            <span class="font-semibold">{{ $category->team->name }}</span>
+                        </a>
+                        @if ($category->team->league)
+                            <span class="text-gray-400 mx-1">·</span>
+                            <a href="{{ route('leagues.show', $category->team->league) }}"
+                               class="text-sm text-gray-600 hover:text-indigo-600">
+                                {{ $category->team->league->name }}
+                            </a>
+                        @endif
+                    </div>
+                @endif
+
+                {{-- DISI-61: atletas de la categoria --}}
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-3 flex justify-between items-center">
+                        <span>{{ __('Atletas de la categoria') }} ({{ $category->athletes->count() }})</span>
+                        <a href="{{ route('athletes.create', ['team_id' => $category->team_id, 'category_id' => $category->id]) }}"
+                           class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold normal-case">
+                            + {{ __('Nuevo atleta') }}
+                        </a>
+                    </h4>
+                    @if ($category->athletes->isEmpty())
+                        <p class="text-sm text-gray-500 italic">{{ __('Esta categoria aun no tiene atletas asignados.') }}</p>
+                    @else
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            @foreach ($category->athletes as $a)
+                                <a href="{{ route('athletes.show', $a) }}"
+                                   class="text-sm text-gray-700 bg-gray-50 hover:bg-gray-100 rounded px-3 py-2 flex items-center gap-2 transition">
+                                    <span class="text-xs font-mono text-gray-500 w-6 text-right">{{ $a->number ?? '-' }}</span>
+                                    <span class="flex-1 truncate">{{ $a->full_name }}</span>
+                                    @if ($a->position)
+                                        <span class="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded">{{ $a->position }}</span>
+                                    @endif
+                                </a>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                {{-- DISI-61: juegos de la categoria --}}
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-3">
+                        {{ __('Juegos de la categoria') }} ({{ $category->games_count }})
+                    </h4>
+                    @if ($category->games->isEmpty())
+                        <p class="text-sm text-gray-500 italic">{{ __('Esta categoria aun no tiene juegos registrados.') }}</p>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Fecha') }}</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Local') }}</th>
+                                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Score') }}</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Visitante') }}</th>
+                                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Estado') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach ($category->games as $g)
+                                        <tr>
+                                            <td class="px-3 py-2 whitespace-nowrap text-gray-700">
+                                                {{ $g->scheduled_at?->format('d/m/Y H:i') ?? '—' }}
+                                            </td>
+                                            <td class="px-3 py-2 whitespace-nowrap font-medium text-gray-900">
+                                                {{ $g->homeTeam->short_name ?? $g->homeTeam->name }}
+                                            </td>
+                                            <td class="px-3 py-2 whitespace-nowrap text-center font-bold">
+                                                <a href="{{ route('games.scoreboard', $g) }}" class="text-indigo-600 hover:text-indigo-800">
+                                                    {{ $g->home_score ?? 0 }} - {{ $g->away_score ?? 0 }}
+                                                </a>
+                                            </td>
+                                            <td class="px-3 py-2 whitespace-nowrap font-medium text-gray-900">
+                                                {{ $g->awayTeam->short_name ?? $g->awayTeam->name }}
+                                            </td>
+                                            <td class="px-3 py-2 whitespace-nowrap text-center">
+                                                <span class="text-xs font-mono">{{ $g->status }}</span>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+
                 <div class="mt-6 pt-6 border-t border-gray-200 text-xs text-gray-500">
                     {{ __('Creada') }}: {{ $category->created_at->format('d/m/Y H:i') }} ·
                     {{ __('Actualizada') }}: {{ $category->updated_at->format('d/m/Y H:i') }}
