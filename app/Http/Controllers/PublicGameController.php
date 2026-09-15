@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Athlete;
 use App\Models\Game;
 use App\Models\Play;
 use Illuminate\Http\JsonResponse;
@@ -44,7 +45,17 @@ class PublicGameController extends Controller
 
         $playByPlay = $this->groupPlaysByInning($plays);
 
-        return view('public.games.show', compact('game', 'playByPlay'));
+        // DISI-53: snapshot del pitcher/bateador actual + sus estadisticas en
+        // vivo del juego, para las tarjetas que mostramos arriba de B-S-O.
+        // Solo se computa cuando el juego esta en curso (scheduled, paused,
+        // completed, suspended, cancelled no tienen pitcher/batter "actual").
+        [$currentPitcher, $currentBatter, $pitcherStats, $batterStats] = $game->isInProgress()
+            ? $this->buildLiveSnapshot($game)
+            : [null, null, $this->emptyPitcherStats(), $this->emptyBatterStats()];
+
+        return view('public.games.show', compact(
+            'game', 'playByPlay', 'currentPitcher', 'currentBatter', 'pitcherStats', 'batterStats'
+        ));
     }
 
     /**
@@ -114,6 +125,72 @@ class PublicGameController extends Controller
         }
 
         return $result;
+    }
+
+    /**
+     * DISI-53: snapshot en vivo del pitcher/bateador actuales y sus estadisticas
+     * del juego. Es un subconjunto del `ScoreboardController::buildSnapshot()`
+     * (solo los campos que necesita la vista publica — sin on-deck, sin
+     * runners, sin summary). Mantiene la misma logica de prioridad:
+     *
+     *  1. ultima jugada cerro medio inning/game_end: primer bateador del nuevo half + su pitcher.
+     *  2. ultima jugada cambio de bateador (walk, out, hit, etc): avanzar al siguiente.
+     *  3. sin plays: primer bateador + pitcher del lineup.
+     *
+     * @return array{0: ?Athlete, 1: ?Athlete, 2: array, 3: array}
+     */
+    private function buildLiveSnapshot(Game $game): array
+    {
+        $state = Play::currentState($game->id);
+
+        $lastType = $state['last_play_type'] ?? null;
+        $halfChanged = in_array($lastType, [Play::TYPE_INNING_END, Play::TYPE_GAME_END], true);
+        $batterChanged = in_array($lastType, [
+            Play::TYPE_WALK,
+            Play::TYPE_OUT,
+            Play::TYPE_HIT,
+            Play::TYPE_HBP,
+            Play::TYPE_ERROR,
+            Play::TYPE_BUNT,
+        ], true);
+
+        $engine = app(\App\Services\GameplayEngine::class);
+
+        if ($halfChanged) {
+            $state['current_batter_id'] = $engine->firstBatter($game, $state['half']);
+            $defendingTeamId = $state['half'] === 'top' ? $game->home_team_id : $game->away_team_id;
+            $state['current_pitcher_id'] = $engine->pitcherFor($game, $defendingTeamId);
+        } elseif ($batterChanged && $state['current_batter_id']) {
+            $state['current_batter_id'] = $engine->nextBatter(
+                $game, $state['half'], $state['current_batter_id']
+            );
+        } elseif (! $state['last_play_id']) {
+            $state['current_batter_id'] = $engine->firstBatter($game, $state['half']);
+            $defendingTeamId = $state['half'] === 'top' ? $game->home_team_id : $game->away_team_id;
+            $state['current_pitcher_id'] = $engine->pitcherFor($game, $defendingTeamId);
+        }
+
+        $pitcher = $state['current_pitcher_id'] ? Athlete::find($state['current_pitcher_id']) : null;
+        $batter = $state['current_batter_id'] ? Athlete::find($state['current_batter_id']) : null;
+
+        $pitcherStats = $pitcher
+            ? Play::statsForPitcher($game->id, $pitcher->id)
+            : $this->emptyPitcherStats();
+        $batterStats = $batter
+            ? Play::statsForBatter($game->id, $batter->id)
+            : $this->emptyBatterStats();
+
+        return [$pitcher, $batter, $pitcherStats, $batterStats];
+    }
+
+    private function emptyPitcherStats(): array
+    {
+        return ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0];
+    }
+
+    private function emptyBatterStats(): array
+    {
+        return ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0, 'avg' => 0.0];
     }
 
     public function stateJson(Request $request, string $token): JsonResponse
