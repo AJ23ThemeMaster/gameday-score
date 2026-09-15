@@ -12,6 +12,7 @@ use App\Models\Game;
 use App\Models\Scorekeeper;
 use App\Models\Stadium;
 use App\Models\Team;
+use App\Models\Tournament;
 use App\Models\Referee;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
