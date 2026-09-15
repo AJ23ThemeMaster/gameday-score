@@ -52,12 +52,28 @@ class LeagueController extends Controller
     public function show(League $league): View
     {
         $league->loadCount(['tournaments', 'games']);
+
+        // DISI-58: el show de la liga ahora muestra torneos, equipos y atletas
+        // (los atletas son los de los equipos de la liga, sin duplicar).
         $tournaments = $league->tournaments()
             ->orderBy('name')
             ->withCount('games')
             ->get();
 
-        return view('leagues.show', compact('league', 'tournaments'));
+        $teams = $league->teams()
+            ->orderBy('name')
+            ->withCount(['athletes', 'categories'])
+            ->get();
+
+        $athletes = \App\Models\Athlete::whereHas('team', function ($q) use ($league) {
+                $q->where('league_id', $league->id);
+            })
+            ->with('team')
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+
+        return view('leagues.show', compact('league', 'tournaments', 'teams', 'athletes'));
     }
 
     public function edit(League $league): View
