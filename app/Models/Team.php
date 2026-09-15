@@ -59,6 +59,16 @@ class Team extends Model
         return $this->hasMany(Game::class, 'away_team_id');
     }
 
+    /**
+     * DISI-57: inversa del belongsToMany Tournament->teams. Un equipo
+     * puede estar en N torneos de su league.
+     */
+    public function tournaments(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Tournament::class, 'tournament_team')
+            ->withTimestamps();
+    }
+
     public function getLogoUrlAttribute(): ?string
     {
         if (! $this->logo_path || ! Storage::disk('public')->exists($this->logo_path)) {
