@@ -231,7 +231,7 @@ document.addEventListener('alpine:init', () => {
         // 'extra' automaticamente para que el usuario vea los botones
         // Stats + Box Score sin tener que hacer click.
         tab: config.tab ?? 'pitch',
-        modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'inning-summary' | 'end-game' | 'substitute' | 'stats' | 'lineup' | 'runner' | null
+        modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'inning-summary' | 'end-game' | 'substitute' | 'stats' | 'lineup' | 'runner' | 'live-share' | null
         outSubtype: null,
         // DISI-20: base seleccionada en el modal "Gestionar corredor"
         runnerBase: null, // 'first' | 'second' | 'third' | null
@@ -521,6 +521,65 @@ document.addEventListener('alpine:init', () => {
         // Bunt: abre modal con opciones sacrifice vs bunt_single
         openBuntModal() { this.modal = 'bunt'; },
         sendBunt(subtype) { this.sendPitch({ type: 'bunt', subtype }); this.closeModal(); this.toast('Toque registrado', 'info'); },
+
+        // ============= DISI-42: Modal Live / Compartir URL publica =============
+        // DISI-42: al dar clic en el boton play del header (gated por is_public)
+        // se abre este modal con 2 opciones: 'Abrir vista en vivo' (en nueva pestana)
+        // o 'Compartir URL' (abre el menu nativo del navegador con navigator.share()
+        // o fallback a clipboard.copy si el navegador no soporta la Web Share API).
+        openLiveShareModal() {
+            this.modal = 'live-share';
+        },
+        openLiveView() {
+            // El link publico se pasa como prop (config.publicUrl) desde x-data.
+            const url = this.publicUrl;
+            if (! url) {
+                this.toast('Este juego aun no tiene URL publica.', 'error');
+                return;
+            }
+            window.open(url, '_blank', 'noopener,noreferrer');
+            this.closeModal();
+            this.toast('Vista en vivo abierta en nueva pestana', 'success');
+        },
+        async sharePublicUrl() {
+            const url = this.publicUrl;
+            if (! url) {
+                this.toast('Este juego aun no tiene URL publica.', 'error');
+                return;
+            }
+            const title = 'Sigue el juego en vivo';
+            const text = `Sigue el marcador en vivo: ${this.homeShort || 'Local'} vs ${this.awayShort || 'Visitante'}`;
+            // Camino 1: Web Share API (moviles y navegadores modernos)
+            if (navigator.share) {
+                try {
+                    await navigator.share({ title, text, url });
+                    this.toast('Compartido correctamente', 'success');
+                    this.closeModal();
+                    return;
+                } catch (e) {
+                    // El usuario cancelo o fallo. Caemos al fallback.
+                    if (e?.name === 'AbortError') {
+                        this.closeModal();
+                        return;
+                    }
+                }
+            }
+            // Camino 2: Clipboard API (fallback para desktop / navegadores sin share)
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(url);
+                    this.toast('URL copiada al portapapeles', 'success');
+                } else {
+                    // Fallback final: prompt con el texto seleccionado
+                    window.prompt('Copia este enlace para compartir:', url);
+                    this.toast('Enlace mostrado para copiar manualmente', 'info');
+                }
+                this.closeModal();
+            } catch (e) {
+                console.error('sharePublicUrl error', e);
+                this.toast('No se pudo compartir: ' + e.message, 'error');
+            }
+        },
 
         // Finalizar inning
         openEndInningModal() { this.modal = 'end-inning'; },
