@@ -58,12 +58,32 @@ class TeamController extends Controller
 
     public function show(Team $team): View
     {
-        $team->load(['league', 'athletes' => function ($q) {
-            $q->orderBy('number')->limit(15);
-        }]);
-        $team->loadCount(['athletes', 'homeGames', 'awayGames', 'categories']);
+        // DISI-60: cargamos categorias (con conteo de atletas y juegos cada una)
+        // y los torneos en los que el equipo participa (via pivot tournament_team).
+        $team->load([
+            'league',
+            'athletes' => function ($q) {
+                $q->orderBy('number')->limit(15);
+            },
+            'categories' => function ($q) {
+                $q->orderBy('name');
+            },
+            'tournaments' => function ($q) {
+                $q->orderBy('name');
+            },
+        ]);
+        $team->loadCount(['athletes', 'homeGames', 'awayGames', 'categories', 'tournaments']);
 
-        return view('teams.show', compact('team'));
+        // Conteos por categoria (atletas + juegos)
+        $categoryStats = [];
+        foreach ($team->categories as $c) {
+            $categoryStats[$c->id] = [
+                'athletes' => $c->athletes()->count(),
+                'games' => $c->games()->count(),
+            ];
+        }
+
+        return view('teams.show', compact('team', 'categoryStats'));
     }
 
     public function edit(Team $team): View

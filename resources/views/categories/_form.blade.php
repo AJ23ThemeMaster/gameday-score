@@ -14,7 +14,7 @@
                 class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
             <option value="">-- {{ __('Sin equipo (categoría global)') }} --</option>
             @foreach ($teams ?? [] as $t)
-                <option value="{{ $t->id }}" {{ (string) old('team_id', $category->team_id ?? '') === (string) $t->id ? 'selected' : '' }}>
+                <option value="{{ $t->id }}" {{ (string) old('team_id', $category->team_id ?? request('team_id', '')) === (string) $t->id ? 'selected' : '' }}>
                     {{ $t->name }}@if ($t->short_name) ({{ $t->short_name }})@endif
                 </option>
             @endforeach
