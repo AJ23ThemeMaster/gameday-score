@@ -176,6 +176,158 @@ class Play extends Model
     }
 
     /**
+     * Devuelve una descripcion legible en espanol de la jugada (corta, 1-3 palabras).
+     * Usado por la vista publica play-by-play y por el modal de resumen de inning.
+     *
+     * Ejemplos:
+     *  - pitch/ball          -> "Bola"
+     *  - pitch/swinging      -> "Strike swinging"
+     *  - out/strikeout       -> "Ponche swinging"
+     *  - out/ground          -> "Roletazo"  (el detail() agrega la secuencia "SS-1B")
+     *  - hit/single          -> "Sencillo"
+     *  - hit/hr              -> "Home Run"
+     *  - walk                -> "Base por bolas"
+     *  - balk                -> "Balk"
+     *  - inning_end          -> "Fin del inning"
+     */
+    public function summary(): string
+    {
+        $t = $this->type;
+        $s = $this->subtype;
+
+        return match (true) {
+            // Pitches
+            $t === self::TYPE_PITCH && $s === 'ball'         => 'Bola',
+            $t === self::TYPE_PITCH && $s === 'looking'      => 'Strike mirando',
+            $t === self::TYPE_PITCH && $s === 'swinging'     => 'Strike swinging',
+            $t === self::TYPE_PITCH && $s === 'foul_tip'     => 'Foul tip',
+            $t === self::TYPE_PITCH && $s === 'foul'         => 'Foul',
+            $t === self::TYPE_PITCH && $s === 'at_bat_start' => 'Al bate',
+
+            // Outs
+            $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_STRIKEOUT => 'Ponche',
+            $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_GROUND    => 'Roletazo',
+            $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_FLY       => 'Fly',
+            $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_LINE      => 'Line drive',
+            $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_POPUP     => 'Popup',
+            $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_FORCE     => 'Forzado',
+            $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_TAG       => 'Out por toque',
+            $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_CAUGHT_STEALING => 'Atrapado robando',
+            $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_PICKOFF   => 'Pickoff',
+            $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_AT_2B     => 'Out en 2B',
+            $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_AT_3B     => 'Out en 3B',
+            $t === self::TYPE_OUT                                        => 'Out',
+
+            // Hits
+            $t === self::TYPE_HIT && $s === self::SUBTYPE_HIT_SINGLE       => 'Sencillo',
+            $t === self::TYPE_HIT && $s === self::SUBTYPE_HIT_DOUBLE       => 'Doble',
+            $t === self::TYPE_HIT && $s === self::SUBTYPE_HIT_TRIPLE       => 'Triple',
+            $t === self::TYPE_HIT && $s === self::SUBTYPE_HIT_HR          => 'Home Run',
+            $t === self::TYPE_HIT && $s === self::SUBTYPE_HIT_INSIDE_PARK => 'Home Run de pierna',
+            $t === self::TYPE_HIT                                          => 'Hit',
+
+            // Walk / HBP / Error
+            $t === self::TYPE_WALK => 'Base por bolas',
+            $t === self::TYPE_HBP  => 'Golpeado por el lanzador',
+            $t === self::TYPE_ERROR => 'Error',
+
+            // Bunt
+            $t === self::TYPE_BUNT && $s === self::SUBTYPE_BUNT_SACRIFICE => 'Toque de sacrificio',
+            $t === self::TYPE_BUNT && $s === self::SUBTYPE_BUNT_SINGLE    => 'Toque y llega a 1B',
+            $t === self::TYPE_BUNT && $s === self::SUBTYPE_BUNT_OUT       => 'Toque y out',
+            $t === self::TYPE_BUNT                                          => 'Toque de bola',
+
+            // Balk
+            $t === self::TYPE_BALK => 'Balk',
+
+            // Runner movement
+            $t === self::TYPE_RUNNER_MOVEMENT && $s === self::SUBTYPE_RUNNER_STOLEN_BASE   => 'Robo de base',
+            $t === self::TYPE_RUNNER_MOVEMENT && $s === self::SUBTYPE_RUNNER_WILD_PITCH   => 'Wild pitch',
+            $t === self::TYPE_RUNNER_MOVEMENT && $s === self::SUBTYPE_RUNNER_PASSED_BALL  => 'Passed ball',
+            $t === self::TYPE_RUNNER_MOVEMENT && $s === self::SUBTYPE_RUNNER_ERROR_ADVANCE => 'Avanza por error',
+            $t === self::TYPE_RUNNER_MOVEMENT && $s === self::SUBTYPE_RUNNER_OBSTRUCTION => 'Obstruccion',
+            $t === self::TYPE_RUNNER_MOVEMENT && $s === self::SUBTYPE_RUNNER_SCORE       => 'Anota con RBI',
+            $t === self::TYPE_RUNNER_MOVEMENT && $s === self::SUBTYPE_RUNNER_SCORE_NO_RBI => 'Anota sin RBI',
+            $t === self::TYPE_RUNNER_MOVEMENT && $s === self::SUBTYPE_RUNNER_ADVANCE     => 'Corredor avanza',
+            $t === self::TYPE_RUNNER_MOVEMENT                                            => 'Movimiento de corredor',
+
+            // Sustituciones
+            $t === self::TYPE_SUBSTITUTION && $s === self::SUBTYPE_SUB_PITCHER => 'Cambio de lanzador',
+            $t === self::TYPE_SUBSTITUTION && $s === self::SUBTYPE_SUB_BATTER  => 'Cambio de bateador',
+            $t === self::TYPE_SUBSTITUTION && $s === self::SUBTYPE_SUB_RUNNER  => 'Cambio de corredor',
+            $t === self::TYPE_SUBSTITUTION && $s === self::SUBTYPE_SUB_PR      => 'Pinch runner',
+            $t === self::TYPE_SUBSTITUTION                                       => 'Sustitucion',
+
+            // Cierres
+            $t === self::TYPE_INNING_END => 'Fin del inning',
+            $t === self::TYPE_GAME_END   => 'Fin del juego',
+
+            default => ucfirst(str_replace('_', ' ', $t ?: 'jugada')),
+        };
+    }
+
+    /**
+     * Devuelve un detalle adicional para complementar summary().
+     * Devuelve string vacio si no hay detalle relevante.
+     *
+     *  - out/ground + defensive_sequence=["SS","1B"]  -> "SS-1B"
+     *  - out/strikeout + pitch_type="swinging"       -> "swinging"
+     *  - out/out_at_2b + runner_name                  -> "Corredor #1"
+     *  - hit/single con bases_after                   -> "1B" (donde quedo el bateador)
+     */
+    public function detail(): string
+    {
+        $t = $this->type;
+        $s = $this->subtype;
+        $meta = $this->meta ?? [];
+
+        // Outs con secuencia defensiva: "SS-1B", "2B-1B", etc.
+        if ($t === self::TYPE_OUT && ! empty($meta['defensive_sequence']) && is_array($meta['defensive_sequence'])) {
+            return implode('-', $meta['defensive_sequence']);
+        }
+
+        // Strikeout con tipo de ponche
+        if ($t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_STRIKEOUT && ! empty($meta['pitch_type'])) {
+            return $meta['pitch_type']; // "swinging" o "looking"
+        }
+
+        // Out a una base con corredor nombrado
+        if ($t === self::TYPE_OUT && in_array($s, [self::SUBTYPE_OUT_AT_2B, self::SUBTYPE_OUT_AT_3B], true)) {
+            $runnerName = $meta['runner_name'] ?? null;
+            if ($runnerName) {
+                return $runnerName;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Clases Tailwind para colorear la insignia/badge de la jugada.
+     * Devuelve [bg, text, border] segun el tipo.
+     *
+     * @return array{0:string, 1:string, 2:string}
+     */
+    public function badgeClasses(): array
+    {
+        return match ($this->type) {
+            self::TYPE_PITCH           => ['bg-slate-700/60', 'text-slate-200',  'border-slate-600'],
+            self::TYPE_OUT             => ['bg-rose-700/40',   'text-rose-100',   'border-rose-600'],
+            self::TYPE_HIT             => ['bg-emerald-700/40','text-emerald-100','border-emerald-600'],
+            self::TYPE_WALK            => ['bg-amber-700/40',  'text-amber-100',  'border-amber-600'],
+            self::TYPE_HBP             => ['bg-amber-700/40',  'text-amber-100',  'border-amber-600'],
+            self::TYPE_ERROR           => ['bg-orange-700/40', 'text-orange-100', 'border-orange-600'],
+            self::TYPE_BUNT            => ['bg-yellow-700/40', 'text-yellow-100', 'border-yellow-600'],
+            self::TYPE_BALK            => ['bg-yellow-700/40', 'text-yellow-100', 'border-yellow-600'],
+            self::TYPE_RUNNER_MOVEMENT => ['bg-cyan-700/40',   'text-cyan-100',   'border-cyan-600'],
+            self::TYPE_SUBSTITUTION    => ['bg-violet-700/40', 'text-violet-100', 'border-violet-600'],
+            self::TYPE_INNING_END      => ['bg-slate-600/60',  'text-white',      'border-slate-400'],
+            self::TYPE_GAME_END        => ['bg-red-700/50',    'text-red-50',     'border-red-500'],
+            default                    => ['bg-slate-700/60',  'text-slate-200',  'border-slate-600'],
+        };
+    }
+
+    /**
      * Devuelve el estado actual del juego basado en la ultima jugada.
      * Reconstruye: inning, half, outs, bases, current_batter, current_pitcher, count.
      *

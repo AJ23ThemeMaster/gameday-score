@@ -133,6 +133,48 @@
             </dl>
         </div>
 
+        {{-- Play by play (DISI-48) --}}
+        @if (! empty($playByPlay))
+            <div class="bg-slate-800/60 backdrop-blur rounded-2xl shadow-2xl border border-slate-700 p-4 sm:p-6 mb-6">
+                <h2 class="text-base sm:text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="text-xl">📋</span>
+                    {{ __('Jugada por jugada') }}
+                </h2>
+
+                @foreach ($playByPlay as $inningBlock)
+                    <div class="mb-5 last:mb-0">
+                        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-300 mb-2 border-b border-slate-700 pb-1">
+                            {{ __('Inning') }} {{ $inningBlock['inning'] }}
+                        </h3>
+
+                        @if (count($inningBlock['top']))
+                            <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 mt-2">
+                                ▲ {{ $game->awayTeam->short_name ?? $game->awayTeam->name }}
+                                <span class="text-slate-500 font-normal normal-case tracking-normal">({{ __('Visitante') }})</span>
+                            </h4>
+                            <div class="space-y-0.5">
+                                @foreach ($inningBlock['top'] as $play)
+                                    @include('public.games._play-line', ['play' => $play])
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if (count($inningBlock['bottom']))
+                            <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 mt-3">
+                                ▼ {{ $game->homeTeam->short_name ?? $game->homeTeam->name }}
+                                <span class="text-slate-500 font-normal normal-case tracking-normal">({{ __('Local') }})</span>
+                            </h4>
+                            <div class="space-y-0.5">
+                                @foreach ($inningBlock['bottom'] as $play)
+                                    @include('public.games._play-line', ['play' => $play])
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
         {{-- Rules reminder --}}
         <div class="bg-slate-800/40 backdrop-blur rounded-xl border border-slate-700 p-4 mb-6 text-xs text-slate-400">
             <p class="font-semibold text-slate-300 mb-1">{{ __('Reglas del juego') }}</p>
