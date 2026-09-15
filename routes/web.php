@@ -28,9 +28,20 @@ Route::get('/', function () {
 Route::get('/juego/publico/{token}', [PublicGameController::class, 'show'])
     ->name('public.games.show');
 
+// DISI-44: ruta alternativa para el "live view" del juego (mismo handler que la
+// publica, solo cambia el path). La usa el boton Live del header del scoreboard
+// (modal de compartir/abrir en vivo) para que sea mas corto y legible
+// (/game/live/{token} vs /juego/publico/{token}).
+Route::get('/game/live/{token}', [PublicGameController::class, 'show'])
+    ->name('games.live.public');
+
 // DISI-9: Endpoint JSON para polling de la vista pública (sin auth)
 Route::get('/juego/publico/{token}/state', [PublicGameController::class, 'stateJson'])
     ->name('public.games.state');
+
+// DISI-44: state JSON para la ruta /game/live/{token} (alias del de la publica)
+Route::get('/game/live/{token}/state', [PublicGameController::class, 'stateJson'])
+    ->name('games.live.public.state');
 
 // DISI-16b: rutas de challenge 2FA (solo auth, NO protegidas por 2fa.challenge)
 Route::middleware('auth')->group(function () {
