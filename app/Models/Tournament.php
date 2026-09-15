@@ -97,6 +97,18 @@ class Tournament extends Model
         return $this->hasMany(Game::class);
     }
 
+    /**
+     * DISI-57: pivot M:N con Team. Un torneo incluye N equipos (los que
+     * participan); un equipo puede estar en N torneos de su league.
+     * La validacion de "solo equipos de la misma liga" se hace en el
+     * controller/formulario; la tabla pivot solo enforce unicidad.
+     */
+    public function teams(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Team::class, 'tournament_team')
+            ->withTimestamps();
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('active', true);

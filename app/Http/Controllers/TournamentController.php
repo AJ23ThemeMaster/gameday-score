@@ -33,8 +33,11 @@ class TournamentController extends Controller
     {
         $leagues = League::orderBy('name')->where('active', true)->get();
         $tournament = new Tournament();
+        // DISI-57: teams se pasan vacios al create; el form los lista via AJAX
+        // cuando el usuario selecciona la liga.
+        $availableTeams = collect();
 
-        return view('tournaments.create', compact('leagues', 'tournament'));
+        return view('tournaments.create', compact('leagues', 'tournament', 'availableTeams'));
     }
 
     public function store(StoreTournamentRequest $request): RedirectResponse
@@ -51,6 +54,11 @@ class TournamentController extends Controller
 
         $tournament = Tournament::create($data);
 
+        // DISI-57: sincronizar equipos del torneo. Solo aceptamos ids que
+        // pertenezcan a la misma liga (regla de Frank: 1 liga = 1 ambito).
+        $teamIds = $this->validTeamIdsForLeague($request, $tournament);
+        $tournament->teams()->sync($teamIds);
+
         return redirect()
             ->route('tournaments.show', $tournament)
             ->with('status', "Torneo «{$tournament->name}» creado correctamente.");
@@ -58,10 +66,14 @@ class TournamentController extends Controller
 
     public function show(Tournament $tournament): View
     {
-        $tournament->load(['league', 'games' => function ($q) {
-            $q->latest('scheduled_at')->limit(10);
-        }]);
-        $tournament->loadCount('games');
+        $tournament->load([
+            'league',
+            'teams' => function ($q) { $q->orderBy('name'); },
+            'games' => function ($q) {
+                $q->latest('scheduled_at')->limit(10);
+            },
+        ]);
+        $tournament->loadCount(['games', 'teams']);
 
         return view('tournaments.show', compact('tournament'));
     }
@@ -69,8 +81,13 @@ class TournamentController extends Controller
     public function edit(Tournament $tournament): View
     {
         $leagues = League::orderBy('name')->where('active', true)->get();
+        // DISI-57: pasamos los equipos disponibles del mismo league que el torneo,
+        // ya marcados los que actualmente estan asociados al torneo.
+        $availableTeams = \App\Models\Team::where('league_id', $tournament->league_id)
+            ->orderBy('name')
+            ->get();
 
-        return view('tournaments.edit', compact('tournament', 'leagues'));
+        return view('tournaments.edit', compact('tournament', 'leagues', 'availableTeams'));
     }
 
     public function update(UpdateTournamentRequest $request, Tournament $tournament): RedirectResponse
@@ -95,9 +112,35 @@ class TournamentController extends Controller
 
         $tournament->update($data);
 
+        // DISI-57: sincronizar la lista de equipos del torneo. Si la liga
+        // cambio, los teams viejos se quitan automaticamente (porque ya no
+        // estan en el listado de teams disponibles).
+        $teamIds = $this->validTeamIdsForLeague($request, $tournament);
+        $tournament->teams()->sync($teamIds);
+
         return redirect()
             ->route('tournaments.show', $tournament)
             ->with('status', "Torneo «{$tournament->name}» actualizado correctamente.");
+    }
+
+    /**
+     * DISI-57: filtra los ids de equipos recibidos del form contra los que
+     * pertenecen al league del torneo. Si llega un id de un team de otra
+     * liga, lo descartamos silenciosamente (defensa contra tampering del
+     * form). Devuelve array de ints.
+     */
+    private function validTeamIdsForLeague(\Illuminate\Http\Request $request, Tournament $tournament): array
+    {
+        $raw = $request->input('team_ids', []);
+        if (! is_array($raw)) {
+            return [];
+        }
+        $ints = array_map('intval', $raw);
+
+        return \App\Models\Team::whereIn('id', $ints)
+            ->where('league_id', $tournament->league_id)
+            ->pluck('id')
+            ->all();
     }
 
     public function destroy(Tournament $tournament): RedirectResponse
