@@ -140,66 +140,64 @@
                 </div>
             </div>
 
-            {{-- DISI-54: Pitcher + Bases(diamond) + Batter cards (3 columnas) --}}
+            {{-- DISI-55: Pitcher + Bases(diamond) + Batter cards (3 columnas, avatar centrado) --}}
             @if ($game->isInProgress())
                 <div class="mt-5 pt-5 border-t border-slate-700 grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
                     {{-- Pitcher card --}}
-                    <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
-                        <div class="w-11 h-11 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-[12px] flex-shrink-0 overflow-hidden">
+                    <div class="flex flex-col items-center text-center p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
+                        <div class="text-[10px] uppercase tracking-wider text-indigo-300 font-bold mb-2">{{ __('Pitcheando') }}</div>
+                        <div class="w-14 h-14 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0 overflow-hidden">
                             @if ($currentPitcher && ($currentPitcher->photo_path ?? null))
                                 <img src="{{ $currentPitcher->photoUrl }}" class="w-full h-full object-cover" alt="{{ $currentPitcher->full_name }}">
+                            @elseif ($currentPitcher && ! empty($currentPitcher->number))
+                                <span class="text-base">#{{ $currentPitcher->number }}</span>
                             @elseif ($currentPitcher)
-                                <span>{{ mb_strtoupper(mb_substr($currentPitcher->first_name ?? '', 0, 1)) }}{{ mb_strtoupper(mb_substr($currentPitcher->last_name ?? '', 0, 1)) }}</span>
+                                <span>?</span>
                             @else
                                 <span>?</span>
                             @endif
                         </div>
-                        <div class="min-w-0 flex-1">
-                            <div class="text-[10px] uppercase tracking-wider text-indigo-300 font-bold">{{ __('Pitcheando') }}</div>
-                            @if ($currentPitcher)
-                                <div class="text-sm font-bold text-white truncate">
-                                    <span class="text-indigo-400">#{{ $currentPitcher->number ?? '?' }}</span>
-                                    {{ $currentPitcher->full_name }}
-                                </div>
-                                <div class="text-[11px] text-slate-400 mt-0.5">
-                                    {{ $pitcherStats['pitches'] }} {{ __('lanz.') }} ({{ $pitcherStats['strikes'] }}S / {{ $pitcherStats['balls'] }}B) · K: {{ $pitcherStats['strikeouts'] }} · H: {{ $pitcherStats['hits'] }}
-                                </div>
-                            @else
-                                <div class="text-sm text-slate-500 italic">{{ __('Sin lanzador') }}</div>
-                            @endif
-                        </div>
+                        @if ($currentPitcher)
+                            <div class="text-sm font-bold text-white mt-2 truncate max-w-full">
+                                {{ $currentPitcher->full_name }}
+                            </div>
+                            <div class="text-[11px] text-slate-400 mt-0.5">
+                                {{ $pitcherStats['pitches'] }} {{ __('lanz.') }} ({{ $pitcherStats['strikes'] }}S / {{ $pitcherStats['balls'] }}B) · K: {{ $pitcherStats['strikeouts'] }} · H: {{ $pitcherStats['hits'] }}
+                            </div>
+                        @else
+                            <div class="text-sm text-slate-500 italic mt-2">{{ __('Sin lanzador') }}</div>
+                        @endif
                     </div>
 
-                    {{-- Bases diamond (DISI-54: movido del row B-S-O al row de tarjetas) --}}
+                    {{-- Bases diamond (DISI-54) --}}
                     <div class="flex items-center justify-center p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
                         @include('public.games._bases-diamond', ['bases' => $game->bases ?? []])
                     </div>
 
                     {{-- Batter card --}}
-                    <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
-                        <div class="w-11 h-11 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-[12px] flex-shrink-0 overflow-hidden">
+                    <div class="flex flex-col items-center text-center p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
+                        <div class="text-[10px] uppercase tracking-wider text-amber-300 font-bold mb-2">{{ __('Al bate') }}</div>
+                        <div class="w-14 h-14 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0 overflow-hidden">
                             @if ($currentBatter && ($currentBatter->photo_path ?? null))
                                 <img src="{{ $currentBatter->photoUrl }}" class="w-full h-full object-cover" alt="{{ $currentBatter->full_name }}">
+                            @elseif ($currentBatter && ! empty($currentBatter->number))
+                                <span class="text-base">#{{ $currentBatter->number }}</span>
                             @elseif ($currentBatter)
-                                <span>{{ mb_strtoupper(mb_substr($currentBatter->first_name ?? '', 0, 1)) }}{{ mb_strtoupper(mb_substr($currentBatter->last_name ?? '', 0, 1)) }}</span>
+                                <span>?</span>
                             @else
                                 <span>?</span>
                             @endif
                         </div>
-                        <div class="min-w-0 flex-1">
-                            <div class="text-[10px] uppercase tracking-wider text-amber-300 font-bold">{{ __('Al bate') }}</div>
-                            @if ($currentBatter)
-                                <div class="text-sm font-bold text-white truncate">
-                                    <span class="text-amber-400">#{{ $currentBatter->number ?? '?' }}</span>
-                                    {{ $currentBatter->full_name }}
-                                </div>
-                                <div class="text-[11px] text-slate-400 mt-0.5">
-                                    AB: {{ $batterStats['at_bats'] }} · H: {{ $batterStats['hits'] }} · AVG: {{ number_format($batterStats['avg'], 3, '.', '') }} · BB: {{ $batterStats['walks'] }} · K: {{ $batterStats['strikeouts'] }}
-                                </div>
-                            @else
-                                <div class="text-sm text-slate-500 italic">{{ __('Sin bateador') }}</div>
-                            @endif
-                        </div>
+                        @if ($currentBatter)
+                            <div class="text-sm font-bold text-white mt-2 truncate max-w-full">
+                                {{ $currentBatter->full_name }}
+                            </div>
+                            <div class="text-[11px] text-slate-400 mt-0.5">
+                                AB: {{ $batterStats['at_bats'] }} · H: {{ $batterStats['hits'] }} · AVG: {{ number_format($batterStats['avg'], 3, '.', '') }} · BB: {{ $batterStats['walks'] }} · K: {{ $batterStats['strikeouts'] }}
+                            </div>
+                        @else
+                            <div class="text-sm text-slate-500 italic mt-2">{{ __('Sin bateador') }}</div>
+                        @endif
                     </div>
                 </div>
             @endif
