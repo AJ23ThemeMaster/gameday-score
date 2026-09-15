@@ -231,6 +231,13 @@ document.addEventListener('alpine:init', () => {
         // 'extra' automaticamente para que el usuario vea los botones
         // Stats + Box Score sin tener que hacer click.
         tab: config.tab ?? 'pitch',
+        // DISI-45: URL publica del juego (/game/live/{token}) para el modal
+        // Live/Share. La URL se calcula server-side en x-data y se pasa
+        // como prop al factory de Alpine. Sin esta linea, this.publicUrl es
+        // undefined en el navegador y los metodos openLiveView/sharePublicUrl
+        // lanzan ReferenceError (FIX ANTERIOR era ReferenceError, no "no
+        // tiene URL publica").
+        publicUrl: config.publicUrl ?? '',
         modal: null, // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'inning-summary' | 'end-game' | 'substitute' | 'stats' | 'lineup' | 'runner' | 'live-share' | null
         outSubtype: null,
         // DISI-20: base seleccionada en el modal "Gestionar corredor"
