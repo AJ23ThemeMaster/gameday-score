@@ -78,6 +78,10 @@
                         <p class="text-xs uppercase tracking-wider text-gray-500">{{ __('Equipos asociados') }}</p>
                         <p class="font-medium">{{ $tournament->teams_count }}</p>
                     </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-wider text-gray-500">{{ __('Categorías representadas') }}</p>
+                        <p class="font-medium">{{ $representedCategories->count() }}</p>
+                    </div>
                 </div>
             </div>
 
@@ -110,6 +114,28 @@
                                         <div class="text-xs text-gray-500">({{ $t->short_name }})</div>
                                     @endif
                                 </div>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
+            {{-- DISI-59: categorias representadas en el torneo --}}
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-4">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-lg font-bold">{{ __('Categorias representadas') }}</h3>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {{ __('Unicas, derivadas de las categorias de los equipos del torneo.') }}
+                    </p>
+                </div>
+                @if ($representedCategories->isEmpty())
+                    <p class="p-6 text-gray-500 text-sm">{{ __('Los equipos del torneo aun no tienen categorias registradas.') }}</p>
+                @else
+                    <div class="p-6 flex flex-wrap gap-2">
+                        @foreach ($representedCategories as $c)
+                            <a href="{{ route('categories.show', $c) }}"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full border border-gray-200 text-sm">
+                                <span class="font-semibold text-gray-900">{{ $c->name }}</span>
                             </a>
                         @endforeach
                     </div>
