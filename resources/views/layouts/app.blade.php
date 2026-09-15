@@ -22,15 +22,22 @@
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">
-            @include('layouts.navigation')
+            {{-- DISI-46: ocultar nav y header global en el scoreboard. El scoreboard --}}
+            {{-- ya tiene su propio header (con breadcrumb y botones de accion en --}}
+            {{-- DISI-39/41) y el nav global distrae del anotador en foco. --}}
+            @if (! request()->routeIs('games.scoreboard'))
+                @include('layouts.navigation')
+            @endif
 
             <!-- Page Heading -->
             @isset($header)
-                <header class="bg-white shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
+                @if (! request()->routeIs('games.scoreboard'))
+                    <header class="bg-white shadow">
+                        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                            {{ $header }}
+                        </div>
+                    </header>
+                @endif
             @endisset
 
             <!-- Page Content -->
