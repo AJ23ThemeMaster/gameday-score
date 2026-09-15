@@ -14,7 +14,7 @@
                 class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
             <option value="">-- {{ __('Sin liga asignada') }} --</option>
             @foreach ($leagues ?? [] as $l)
-                <option value="{{ $l->id }}" {{ (string) old('league_id', $team->league_id ?? '') === (string) $l->id ? 'selected' : '' }}>
+                <option value="{{ $l->id }}" {{ (string) old('league_id', $team->league_id ?? request('league_id', '')) === (string) $l->id ? 'selected' : '' }}>
                     {{ $l->name }}@if ($l->short_name) ({{ $l->short_name }})@endif
                 </option>
             @endforeach
