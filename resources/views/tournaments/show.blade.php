@@ -74,7 +74,46 @@
                         <p class="text-xs uppercase tracking-wider text-gray-500">{{ __('Juegos asociados') }}</p>
                         <p class="font-medium">{{ $tournament->games_count }}</p>
                     </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-wider text-gray-500">{{ __('Equipos asociados') }}</p>
+                        <p class="font-medium">{{ $tournament->teams_count }}</p>
+                    </div>
                 </div>
+            </div>
+
+            {{-- DISI-57: listado de equipos del torneo --}}
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-4">
+                <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-bold">{{ __('Equipos del torneo') }}</h3>
+                    <a href="{{ route('tournaments.edit', $tournament) }}"
+                       class="text-sm text-indigo-600 hover:text-indigo-800 font-semibold">
+                        {{ __('Asignar equipos') }}
+                    </a>
+                </div>
+                @if ($tournament->teams->isEmpty())
+                    <p class="p-6 text-gray-500 text-sm">{{ __('Este torneo aún no tiene equipos asignados.') }}</p>
+                @else
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-6">
+                        @foreach ($tournament->teams as $t)
+                            <a href="{{ route('teams.show', $t) }}"
+                               class="flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition">
+                                @if ($t->logo_url)
+                                    <img src="{{ $t->logo_url }}" alt="" class="h-10 w-10 object-contain bg-white rounded p-0.5">
+                                @else
+                                    <div class="h-10 w-10 bg-gray-200 rounded flex items-center justify-center text-gray-500 font-bold text-sm">
+                                        {{ mb_strtoupper(mb_substr($t->short_name ?? $t->name, 0, 2)) }}
+                                    </div>
+                                @endif
+                                <div class="min-w-0">
+                                    <div class="font-semibold text-gray-900 truncate">{{ $t->name }}</div>
+                                    @if ($t->short_name)
+                                        <div class="text-xs text-gray-500">({{ $t->short_name }})</div>
+                                    @endif
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">

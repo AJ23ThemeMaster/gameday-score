@@ -15,6 +15,44 @@
         <x-input-error :messages="$errors->get('league_id')" class="mt-2" />
     </div>
 
+    {{-- DISI-57: equipos del torneo (multi-select). En el form de edicion
+         listamos solo los teams del league del torneo; en el create los
+         cargamos via AJAX despues de seleccionar la liga. --}}
+    @isset($tournament)
+        @if ($tournament->exists)
+            <div class="md:col-span-2">
+                <x-input-label :value="__('Equipos del torneo')" />
+                @if ($availableTeams->isEmpty())
+                    <p class="mt-1 text-sm text-gray-500 italic">
+                        {{ __('La liga seleccionada no tiene equipos registrados aún.') }}
+                    </p>
+                @else
+                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-48 overflow-y-auto p-3 bg-gray-50 rounded-md border border-gray-200">
+                        @php
+                            $selectedTeamIds = old('team_ids', $tournament->teams->pluck('id')->toArray());
+                        @endphp
+                        @foreach ($availableTeams as $t)
+                            <label class="flex items-center gap-2 text-sm hover:bg-white px-2 py-1 rounded cursor-pointer">
+                                <input type="checkbox" name="team_ids[]" value="{{ $t->id }}"
+                                       {{ in_array($t->id, $selectedTeamIds, true) ? 'checked' : '' }}
+                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                @if ($t->logo_url)
+                                    <img src="{{ $t->logo_url }}" alt="" class="h-4 w-4 object-contain">
+                                @endif
+                                <span>{{ $t->name }}@if ($t->short_name) <span class="text-gray-500 text-xs">({{ $t->short_name }})</span>@endif</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500">
+                        {{ __('Selecciona los equipos que participan en este torneo. Solo aparecen equipos del mismo league (regla: 1 liga por equipo).') }}
+                    </p>
+                @endif
+                <x-input-error :messages="$errors->get('team_ids')" class="mt-2" />
+                <x-input-error :messages="$errors->get('team_ids.*')" class="mt-2" />
+            </div>
+        @endif
+    @endisset
+
     <div class="md:col-span-2">
         <x-input-label for="name" :value="__('Nombre del torneo')" />
         <x-text-input id="name" name="name" type="text" class="block mt-1 w-full"
