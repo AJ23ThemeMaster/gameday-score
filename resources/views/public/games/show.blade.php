@@ -140,9 +140,68 @@
                 </div>
             </div>
 
+            {{-- DISI-53: Pitcher + Batter cards (solo mientras el juego esta en curso) --}}
+            @if ($game->isInProgress())
+                <div class="mt-5 pt-5 border-t border-slate-700 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {{-- Pitcher card --}}
+                    <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
+                        <div class="w-11 h-11 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-[12px] flex-shrink-0 overflow-hidden">
+                            @if ($currentPitcher && ($currentPitcher->photo_path ?? null))
+                                <img src="{{ $currentPitcher->photoUrl }}" class="w-full h-full object-cover" alt="{{ $currentPitcher->full_name }}">
+                            @elseif ($currentPitcher)
+                                <span>{{ mb_strtoupper(mb_substr($currentPitcher->first_name ?? '', 0, 1)) }}{{ mb_strtoupper(mb_substr($currentPitcher->last_name ?? '', 0, 1)) }}</span>
+                            @else
+                                <span>?</span>
+                            @endif
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[10px] uppercase tracking-wider text-indigo-300 font-bold">{{ __('Pitcheando') }}</div>
+                            @if ($currentPitcher)
+                                <div class="text-sm font-bold text-white truncate">
+                                    <span class="text-indigo-400">#{{ $currentPitcher->number ?? '?' }}</span>
+                                    {{ $currentPitcher->full_name }}
+                                </div>
+                                <div class="text-[11px] text-slate-400 mt-0.5">
+                                    {{ $pitcherStats['pitches'] }} {{ __('lanz.') }} ({{ $pitcherStats['strikes'] }}S / {{ $pitcherStats['balls'] }}B) · K: {{ $pitcherStats['strikeouts'] }} · H: {{ $pitcherStats['hits'] }}
+                                </div>
+                            @else
+                                <div class="text-sm text-slate-500 italic">{{ __('Sin lanzador') }}</div>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Batter card --}}
+                    <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
+                        <div class="w-11 h-11 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-[12px] flex-shrink-0 overflow-hidden">
+                            @if ($currentBatter && ($currentBatter->photo_path ?? null))
+                                <img src="{{ $currentBatter->photoUrl }}" class="w-full h-full object-cover" alt="{{ $currentBatter->full_name }}">
+                            @elseif ($currentBatter)
+                                <span>{{ mb_strtoupper(mb_substr($currentBatter->first_name ?? '', 0, 1)) }}{{ mb_strtoupper(mb_substr($currentBatter->last_name ?? '', 0, 1)) }}</span>
+                            @else
+                                <span>?</span>
+                            @endif
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[10px] uppercase tracking-wider text-amber-300 font-bold">{{ __('Al bate') }}</div>
+                            @if ($currentBatter)
+                                <div class="text-sm font-bold text-white truncate">
+                                    <span class="text-amber-400">#{{ $currentBatter->number ?? '?' }}</span>
+                                    {{ $currentBatter->full_name }}
+                                </div>
+                                <div class="text-[11px] text-slate-400 mt-0.5">
+                                    AB: {{ $batterStats['at_bats'] }} · H: {{ $batterStats['hits'] }} · AVG: {{ number_format($batterStats['avg'], 3, '.', '') }} · BB: {{ $batterStats['walks'] }} · K: {{ $batterStats['strikeouts'] }}
+                                </div>
+                            @else
+                                <div class="text-sm text-slate-500 italic">{{ __('Sin bateador') }}</div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             {{-- B-S-O --}}
             @if ($game->isInProgress())
-                <div class="mt-6 pt-6 border-t border-slate-700">
+                <div class="mt-5 pt-5 border-t border-slate-700">
                     <div class="grid grid-cols-3 gap-4 text-center">
                         <div>
                             <div class="text-2xl font-bold">{{ $game->balls }}-{{ $game->strikes }}</div>
@@ -196,21 +255,31 @@
             </dl>
         </div>
 
-        {{-- Play by play (DISI-48 + DISI-49 + DISI-50) --}}
+        {{-- Play by play (DISI-48 + DISI-49 + DISI-50 + DISI-52) --}}
         @if (! empty($playByPlay))
             @php
-                $firstInning = $playByPlay[0]['inning'];
                 $inningNumbers = array_column($playByPlay, 'inning');
-                // DISI-50: solo mostrar tabs para innings con jugadas registradas.
-                // Antes generabamos hasta `innings_count` tabs (default 6) aunque
-                // la mayoria estuvieran vacios; el usuario pidio no mostrar
-                // innings "no jugados". Si no hay jugadas aun, caemos al
-                // current_inning del Game para tener al menos una pestana.
+                // DISI-50: solo mostrar tabs para innings con jugadas registradas
+                // o el current_inning (para que el usuario pueda ver "Este inning
+                // aun no se ha jugado" en vivo).
                 $maxInningPlayed = ! empty($inningNumbers) ? max($inningNumbers) : 0;
                 $tabInnings = range(1, max($maxInningPlayed, (int) $game->current_inning ?: 1));
+
+                // DISI-52: tab activo por defecto = el inning que se esta jugando
+                // actualmente (current_inning del Game). Si por algun motivo no
+                // existe en la lista de tabs (caso edge: current_inning=0 o
+                // mayor al maximo), caemos al primer tab disponible.
+                $maxTab = max($tabInnings);
+                $defaultInning = (int) $game->current_inning ?: $maxTab;
+                if ($defaultInning > $maxTab) {
+                    $defaultInning = $maxTab;
+                }
+                if ($defaultInning < 1) {
+                    $defaultInning = $maxTab;
+                }
             @endphp
 
-            <div x-data="{ activeInning: {{ $firstInning }} }"
+            <div x-data="{ activeInning: {{ $defaultInning }} }"
                  class="bg-slate-800/60 backdrop-blur rounded-2xl shadow-2xl border border-slate-700 p-4 sm:p-6 mb-6">
 
                 <h2 class="text-base sm:text-lg font-bold mb-4 flex items-center gap-2">
@@ -223,7 +292,7 @@
                     @foreach ($tabInnings as $inningN)
                         @php
                             $hasPlays = collect($playByPlay)->firstWhere('inning', $inningN);
-                            $isActive = $inningN === $firstInning;
+                            $isActive = $inningN === $defaultInning;
                         @endphp
                         <button type="button"
                                 @click="activeInning = {{ $inningN }}"
