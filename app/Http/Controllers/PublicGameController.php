@@ -47,25 +47,52 @@ class PublicGameController extends Controller
      *   ...
      * ]
      *
+     * Cada jugada recibe el atributo dinamico `display_bat_order` (int) con el
+     * contador de bateadores en esa mitad dentro del inning actual. Sirve para
+     * que la vista muestre "Bateador {nro_orden} al bate" cuando el bateador
+     * no esta identificado (placeholder Corredor o batter_id null). El contador
+     * se incrementa cada vez que aparece un at_bat_start y se resetea al
+     * cambiar de inning o de half.
+     *
      * Filtra jugadas tipo `inning_end` y `game_end` (son marcadores internos
      * que el motor graba con el inning/half NUEVO, no el que acaba de cerrar,
      * asi que aparecerian en el bucket incorrecto). Los headers de inning/half
      * ya dan la estructura visual sin necesidad de estos marcadores.
-     *
-     * Solo se incluyen innings que tienen al menos una jugada en top o bottom.
      */
     private function groupPlaysByInning(\Illuminate\Database\Eloquent\Collection $plays): array
     {
         $grouped = [];
+        $counter = ['top' => 0, 'bottom' => 0];
+        $currentInning = null;
+        $currentHalf = null;
+
         foreach ($plays as $p) {
             // Saltar marcadores de cierre: el cambio de inning/half ya es
             // visible en los headers y en la transicion top->bottom.
             if (in_array($p->type, [Play::TYPE_INNING_END, Play::TYPE_GAME_END], true)) {
                 continue;
             }
-            $inning = (int) $p->inning;
+
             $half = $p->half === 'top' ? 'top' : 'bottom';
-            $grouped[$inning][$half][] = $p;
+
+            // Resetear el contador cuando cambia inning o half (ej. al pasar de
+            // top a bottom dentro del mismo inning, o al ir al inning siguiente).
+            if ($currentInning !== (int) $p->inning || $currentHalf !== $half) {
+                $counter[$half] = 0;
+                $currentInning = (int) $p->inning;
+                $currentHalf = $half;
+            }
+
+            // Incrementar el contador de bateadores al inicio de cada turno.
+            if ($p->type === Play::TYPE_PITCH && $p->subtype === 'at_bat_start') {
+                $counter[$half]++;
+            }
+
+            // Asignar el contador a la jugada para que la vista pueda usarlo
+            // como fallback cuando el bateador no esta identificado.
+            $p->setAttribute('display_bat_order', $counter[$half]);
+
+            $grouped[$currentInning][$half][] = $p;
         }
 
         ksort($grouped);

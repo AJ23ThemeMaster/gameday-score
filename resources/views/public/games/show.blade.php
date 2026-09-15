@@ -9,6 +9,12 @@
     <meta property="og:description" content="{{ $game->category->name ?? '' }} · {{ $game->scheduled_at->format('d/m/Y H:i') }}">
     <meta property="og:type" content="website">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        /* DISI-49: ocultar paneles inactivos del play-by-play hasta que
+           Alpine.js haya procesado x-show (evita flash de todos los innings
+           apilados al cargar la pagina). */
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 <body class="font-sans antialiased bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white min-h-screen">
 
@@ -133,45 +139,102 @@
             </dl>
         </div>
 
-        {{-- Play by play (DISI-48) --}}
+        {{-- Play by play (DISI-48 + DISI-49) --}}
         @if (! empty($playByPlay))
-            <div class="bg-slate-800/60 backdrop-blur rounded-2xl shadow-2xl border border-slate-700 p-4 sm:p-6 mb-6">
+            @php
+                $firstInning = $playByPlay[0]['inning'];
+                $inningNumbers = array_column($playByPlay, 'inning');
+                // Construir siempre 6 tabs visuales (la cantidad de innings del juego),
+                // aunque algunos esten vacios — para que la UI sea estable y predecible.
+                $tabInnings = range(1, max($game->innings_count ?: 6, max($inningNumbers)));
+            @endphp
+
+            <div x-data="{ activeInning: {{ $firstInning }} }"
+                 class="bg-slate-800/60 backdrop-blur rounded-2xl shadow-2xl border border-slate-700 p-4 sm:p-6 mb-6">
+
                 <h2 class="text-base sm:text-lg font-bold mb-4 flex items-center gap-2">
                     <span class="text-xl">📋</span>
                     {{ __('Jugada por jugada') }}
                 </h2>
 
-                @foreach ($playByPlay as $inningBlock)
-                    <div class="mb-5 last:mb-0">
-                        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-300 mb-2 border-b border-slate-700 pb-1">
-                            {{ __('Inning') }} {{ $inningBlock['inning'] }}
-                        </h3>
+                {{-- Tab strip: una pestana por inning --}}
+                <div class="flex flex-wrap gap-1 mb-4 border-b border-slate-700 overflow-x-auto">
+                    @foreach ($tabInnings as $inningN)
+                        @php
+                            $hasPlays = collect($playByPlay)->firstWhere('inning', $inningN);
+                            $isActive = $inningN === $firstInning;
+                        @endphp
+                        <button type="button"
+                                @click="activeInning = {{ $inningN }}"
+                                :class="activeInning === {{ $inningN }}
+                                    ? 'bg-slate-700 text-white border-b-2 border-emerald-400'
+                                    : 'bg-slate-800/40 text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'"
+                                class="px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider rounded-t-lg transition-colors cursor-pointer whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+                            {{ __('Inning') }} {{ $inningN }}
+                        </button>
+                    @endforeach
+                </div>
 
-                        @if (count($inningBlock['top']))
-                            <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 mt-2">
-                                ▲ {{ $game->awayTeam->short_name ?? $game->awayTeam->name }}
-                                <span class="text-slate-500 font-normal normal-case tracking-normal">({{ __('Visitante') }})</span>
-                            </h4>
-                            <div class="space-y-0.5">
-                                @foreach ($inningBlock['top'] as $play)
-                                    @include('public.games._play-line', ['play' => $play])
-                                @endforeach
-                            </div>
-                        @endif
+                {{-- Panels: uno por inning (x-show) --}}
+                @foreach ($tabInnings as $inningN)
+                    @php
+                        $inningBlock = collect($playByPlay)->firstWhere('inning', $inningN);
+                        $topPlays = $inningBlock['top'] ?? [];
+                        $bottomPlays = $inningBlock['bottom'] ?? [];
+                    @endphp
 
-                        @if (count($inningBlock['bottom']))
-                            <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 mt-3">
-                                ▼ {{ $game->homeTeam->short_name ?? $game->homeTeam->name }}
+                    <div x-show="activeInning === {{ $inningN }}"
+                         x-cloak
+                         x-transition.opacity.duration.150ms
+                         class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+
+                        {{-- Columna izquierda: LOCAL (home, bottom half) --}}
+                        <div class="bg-slate-900/40 rounded-lg border border-slate-700/50 p-3">
+                            <h4 class="text-[11px] sm:text-xs font-bold text-emerald-300 uppercase tracking-wider mb-2 pb-1 border-b border-slate-700/50 flex items-center gap-1">
+                                <span>▼</span>
+                                <span>{{ $game->homeTeam->short_name ?? $game->homeTeam->name }}</span>
                                 <span class="text-slate-500 font-normal normal-case tracking-normal">({{ __('Local') }})</span>
                             </h4>
                             <div class="space-y-0.5">
-                                @foreach ($inningBlock['bottom'] as $play)
+                                @forelse ($bottomPlays as $play)
                                     @include('public.games._play-line', ['play' => $play])
-                                @endforeach
+                                @empty
+                                    <p class="text-xs text-slate-500 italic py-2">
+                                        @if ($inningBlock)
+                                            {{ __('Aun no hay jugadas del local en este inning.') }}
+                                        @else
+                                            {{ __('Este inning aun no se ha jugado.') }}
+                                        @endif
+                                    </p>
+                                @endforelse
                             </div>
-                        @endif
+                        </div>
+
+                        {{-- Columna derecha: VISITANTE (away, top half) --}}
+                        <div class="bg-slate-900/40 rounded-lg border border-slate-700/50 p-3">
+                            <h4 class="text-[11px] sm:text-xs font-bold text-sky-300 uppercase tracking-wider mb-2 pb-1 border-b border-slate-700/50 flex items-center gap-1">
+                                <span>▲</span>
+                                <span>{{ $game->awayTeam->short_name ?? $game->awayTeam->name }}</span>
+                                <span class="text-slate-500 font-normal normal-case tracking-normal">({{ __('Visitante') }})</span>
+                            </h4>
+                            <div class="space-y-0.5">
+                                @forelse ($topPlays as $play)
+                                    @include('public.games._play-line', ['play' => $play])
+                                @empty
+                                    <p class="text-xs text-slate-500 italic py-2">
+                                        @if ($inningBlock)
+                                            {{ __('Aun no hay jugadas del visitante en este inning.') }}
+                                        @else
+                                            {{ __('Este inning aun no se ha jugado.') }}
+                                        @endif
+                                    </p>
+                                @endforelse
+                            </div>
+                        </div>
+
                     </div>
                 @endforeach
+
             </div>
         @endif
 
