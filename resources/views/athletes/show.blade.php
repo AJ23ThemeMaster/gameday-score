@@ -59,6 +59,60 @@
                 </div>
             </div>
 
+            {{-- DISI-63: documento de identidad (cédula o acta de nacimiento) --}}
+            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-bold text-gray-700 flex items-center gap-2">
+                        <span class="inline-block w-2 h-2 bg-emerald-500 rounded-full"></span>
+                        {{ __('Documento de identidad') }}
+                    </h3>
+                    <a href="{{ route('athletes.edit', $athlete) }}" class="text-xs text-indigo-600 hover:text-indigo-800 underline">
+                        {{ __('Reemplazar') }}
+                    </a>
+                </div>
+                @if (!empty($athlete->document_file_path) && Storage::disk('public')->exists($athlete->document_file_path))
+                    <div class="flex items-start gap-4">
+                        @if ($athlete->documentIsImage)
+                            <a href="{{ $athlete->documentUrl }}" target="_blank" class="block">
+                                <img src="{{ $athlete->documentUrl }}" alt="Documento de identidad"
+                                     class="h-32 w-44 object-cover bg-gray-50 rounded border border-gray-200 p-1 hover:opacity-80">
+                            </a>
+                        @else
+                            <a href="{{ $athlete->documentUrl }}" target="_blank"
+                               class="flex flex-col items-center justify-center h-32 w-44 bg-red-50 rounded border border-red-200 text-red-700 hover:bg-red-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                <span class="mt-1 text-xs font-semibold">PDF</span>
+                            </a>
+                        @endif
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-700">
+                                @if ($athlete->documentIsImage)
+                                    {{ __('Imagen del documento cargada correctamente.') }}
+                                @else
+                                    {{ __('PDF del documento cargado correctamente.') }}
+                                @endif
+                            </p>
+                            <p class="text-xs text-gray-500 mt-1 font-mono break-all">{{ basename($athlete->document_file_path) }}</p>
+                            <div class="mt-3 flex gap-3">
+                                <a href="{{ $athlete->documentUrl }}" target="_blank"
+                                   class="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-md">
+                                    {{ $athlete->documentIsImage ? __('Ver imagen') : __('Ver PDF') }}
+                                </a>
+                                <a href="{{ $athlete->documentUrl }}" download
+                                   class="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-md">
+                                    {{ __('Descargar') }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    <div class="flex items-center gap-3 text-sm text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <span>{{ __('No hay documento cargado. Puedes subir la cédula o acta de nacimiento al editar el atleta.') }}</span>
+                    </div>
+                @endif
+            </div>
+
             {{-- DISI-62: stats carrera (totales acumulados) --}}
             <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-5">
