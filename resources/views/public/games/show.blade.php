@@ -139,14 +139,18 @@
             </dl>
         </div>
 
-        {{-- Play by play (DISI-48 + DISI-49) --}}
+        {{-- Play by play (DISI-48 + DISI-49 + DISI-50) --}}
         @if (! empty($playByPlay))
             @php
                 $firstInning = $playByPlay[0]['inning'];
                 $inningNumbers = array_column($playByPlay, 'inning');
-                // Construir siempre 6 tabs visuales (la cantidad de innings del juego),
-                // aunque algunos esten vacios — para que la UI sea estable y predecible.
-                $tabInnings = range(1, max($game->innings_count ?: 6, max($inningNumbers)));
+                // DISI-50: solo mostrar tabs para innings con jugadas registradas.
+                // Antes generabamos hasta `innings_count` tabs (default 6) aunque
+                // la mayoria estuvieran vacios; el usuario pidio no mostrar
+                // innings "no jugados". Si no hay jugadas aun, caemos al
+                // current_inning del Game para tener al menos una pestana.
+                $maxInningPlayed = ! empty($inningNumbers) ? max($inningNumbers) : 0;
+                $tabInnings = range(1, max($maxInningPlayed, (int) $game->current_inning ?: 1));
             @endphp
 
             <div x-data="{ activeInning: {{ $firstInning }} }"
