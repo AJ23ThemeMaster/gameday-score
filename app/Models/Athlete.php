@@ -18,6 +18,7 @@ class Athlete extends Model
         'first_name',
         'last_name',
         'document_id',
+        'document_file_path',
         'birth_date',
         'photo_path',
         'team_id',
@@ -69,6 +70,35 @@ class Athlete extends Model
         }
 
         return Storage::disk('public')->url($this->photo_path);
+    }
+
+    public function getDocumentUrlAttribute(): ?string
+    {
+        if (! $this->document_file_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->document_file_path);
+    }
+
+    public function getDocumentIsImageAttribute(): bool
+    {
+        if (! $this->document_file_path) {
+            return false;
+        }
+
+        $ext = strtolower(pathinfo($this->document_file_path, PATHINFO_EXTENSION));
+
+        return in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true);
+    }
+
+    public function getDocumentIsPdfAttribute(): bool
+    {
+        if (! $this->document_file_path) {
+            return false;
+        }
+
+        return strtolower(pathinfo($this->document_file_path, PATHINFO_EXTENSION)) === 'pdf';
     }
 
     public function scopeActive($query)
