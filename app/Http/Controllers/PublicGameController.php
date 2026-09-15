@@ -27,6 +27,14 @@ class PublicGameController extends Controller
         // walks, bunts, balks, robos y cierres de inning. La vista Blade
         // se encarga del render. El grouping se hace aqui para que la vista
         // no tenga logica de negocio.
+        //
+        // DISI-52: el orden de la query es ASC por (inning, half, sequence)
+        // = orden cronologico (de la mas vieja a la mas nueva). El `sequence`
+        // se reinicia por (inning, half) cada vez que arranca un medio inning,
+        // asi que dentro de cada columna (top o bottom) el orden refleja
+        // exactamente el avance real del juego. NO invertir el orden en este
+        // controller ni en la vista; el usuario espera ver "lo primero que
+        // paso arriba, lo ultimo que paso abajo" dentro de cada columna.
         $plays = Play::where('game_id', $game->id)
             ->with(['batter', 'pitcher'])
             ->orderBy('inning')
