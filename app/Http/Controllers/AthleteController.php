@@ -43,11 +43,15 @@ class AthleteController extends Controller
         $data = $request->validated();
         $data['active'] = $request->boolean('active', true);
         // Cast defensivo para PHP 8.4 strict types
-        $data['team_id'] = $data['team_id'] !== null ? (int) $data['team_id'] : null;
-        $data['category_id'] = $data['category_id'] !== null ? (int) $data['category_id'] : null;
+        $data['team_id'] = isset($data['team_id']) && $data['team_id'] !== null ? (int) $data['team_id'] : null;
+        $data['category_id'] = isset($data['category_id']) && $data['category_id'] !== null ? (int) $data['category_id'] : null;
 
         if ($request->hasFile('photo')) {
             $data['photo_path'] = $request->file('photo')->store('athletes/photos', 'public');
+        }
+
+        if ($request->hasFile('document_file')) {
+            $data['document_file_path'] = $request->file('document_file')->store('athletes/documents', 'public');
         }
 
         $athlete = Athlete::create($data);
@@ -190,8 +194,8 @@ class AthleteController extends Controller
     {
         $data = $request->validated();
         $data['active'] = $request->boolean('active', $athlete->active);
-        $data['team_id'] = $data['team_id'] !== null ? (int) $data['team_id'] : null;
-        $data['category_id'] = $data['category_id'] !== null ? (int) $data['category_id'] : null;
+        $data['team_id'] = isset($data['team_id']) && $data['team_id'] !== null ? (int) $data['team_id'] : null;
+        $data['category_id'] = isset($data['category_id']) && $data['category_id'] !== null ? (int) $data['category_id'] : null;
 
         if ($request->hasFile('photo')) {
             $this->deletePhoto($athlete);
@@ -199,6 +203,14 @@ class AthleteController extends Controller
         } elseif ($request->boolean('remove_photo')) {
             $this->deletePhoto($athlete);
             $data['photo_path'] = null;
+        }
+
+        if ($request->hasFile('document_file')) {
+            $this->deleteDocument($athlete);
+            $data['document_file_path'] = $request->file('document_file')->store('athletes/documents', 'public');
+        } elseif ($request->boolean('remove_document')) {
+            $this->deleteDocument($athlete);
+            $data['document_file_path'] = null;
         }
 
         $athlete->update($data);
@@ -212,6 +224,7 @@ class AthleteController extends Controller
     {
         $name = $athlete->full_name;
         $this->deletePhoto($athlete);
+        $this->deleteDocument($athlete);
         $athlete->delete();
 
         return redirect()
@@ -223,6 +236,13 @@ class AthleteController extends Controller
     {
         if ($athlete->photo_path && Storage::disk('public')->exists($athlete->photo_path)) {
             Storage::disk('public')->delete($athlete->photo_path);
+        }
+    }
+
+    private function deleteDocument(Athlete $athlete): void
+    {
+        if ($athlete->document_file_path && Storage::disk('public')->exists($athlete->document_file_path)) {
+            Storage::disk('public')->delete($athlete->document_file_path);
         }
     }
 }

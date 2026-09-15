@@ -109,6 +109,31 @@
         <p class="mt-1 text-xs text-gray-500">{{ __('Formatos: JPG, PNG o WEBP. Tamaño máximo: 2 MB.') }}</p>
     </div>
 
+    <div class="md:col-span-2">
+        <x-input-label for="document_file" :value="__('Documento de identidad (cédula o acta de nacimiento)')" />
+        @if (! empty($athlete?->document_file_path) && Storage::disk('public')->exists($athlete->document_file_path))
+            <div class="mt-2 flex items-center gap-4">
+                @if ($athlete->documentIsImage)
+                    <img src="{{ $athlete->documentUrl }}" alt="Documento actual"
+                         class="h-20 w-28 object-cover bg-gray-50 rounded border border-gray-200 p-1">
+                @else
+                    <a href="{{ $athlete->documentUrl }}" target="_blank" class="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 underline">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                        {{ __('Ver documento actual') }}
+                    </a>
+                @endif
+                <label class="flex items-center text-sm text-red-600">
+                    <input type="checkbox" name="remove_document" value="1" class="rounded border-gray-300 text-red-600">
+                    <span class="ms-2">{{ __('Eliminar documento actual') }}</span>
+                </label>
+            </div>
+        @endif
+        <input id="document_file" name="document_file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"
+               class="mt-2 block w-full text-sm text-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+        <x-input-error :messages="$errors->get('document_file')" class="mt-2" />
+        <p class="mt-1 text-xs text-gray-500">{{ __('Formatos: JPG, PNG, WEBP o PDF. Tamaño máximo: 5 MB.') }}</p>
+    </div>
+
     <div class="md:col-span-2 flex items-center">
         <input id="active" name="active" type="checkbox" value="1"
                {{ old('active', $athlete->active ?? true) ? 'checked' : '' }}
