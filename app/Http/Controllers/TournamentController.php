@@ -69,13 +69,25 @@ class TournamentController extends Controller
         $tournament->load([
             'league',
             'teams' => function ($q) { $q->orderBy('name'); },
+            'teams.categories' => function ($q) { $q->orderBy('name'); },
             'games' => function ($q) {
-                $q->latest('scheduled_at')->limit(10);
+                $q->latest('scheduled_at')->limit(20);
             },
         ]);
         $tournament->loadCount(['games', 'teams']);
 
-        return view('tournaments.show', compact('tournament'));
+        // DISI-59: categorias representadas en el torneo (unique, derivado
+        // de las categorias de los equipos del torneo). Usamos collection
+        // unique() porque la relacion teams->categories es hasMany y varios
+        // equipos pueden compartir la misma categoria.
+        $representedCategories = $tournament->teams
+            ->pluck('categories')
+            ->flatten()
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
+
+        return view('tournaments.show', compact('tournament', 'representedCategories'));
     }
 
     public function edit(Tournament $tournament): View
