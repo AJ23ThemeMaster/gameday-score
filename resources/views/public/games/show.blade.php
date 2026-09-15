@@ -20,31 +20,88 @@
 
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-        {{-- Header --}}
+        @php
+            // DISI-51: configuracion del badge de estado (esquina superior derecha).
+            // Cada entrada: [bg, text, border, label, animatePulse].
+            // - in_progress: verde (badge sustituye al banner rojo grande)
+            // - scheduled: indigo "Programado"
+            // - paused: ambar "Juego Pausado"
+            // - completed: verde "Finalizado"
+            // - suspended: rojo "Suspendido"
+            // - cancelled: rojo "Cancelado"
+            $badgeConfig = [
+                'in_progress' => ['bg-emerald-600', 'text-white',           'border-emerald-500', 'En vivo',        true],
+                'scheduled'   => ['bg-indigo-600',   'text-white',           'border-indigo-500',   'Programado',     false],
+                'paused'      => ['bg-amber-600',    'text-white',           'border-amber-500',    'Juego Pausado',  false],
+                'completed'   => ['bg-green-600',    'text-white',           'border-green-500',    'Finalizado',     false],
+                'suspended'   => ['bg-red-600',      'text-white',           'border-red-500',      'Suspendido',     false],
+                'cancelled'   => ['bg-red-600',      'text-white',           'border-red-500',      'Cancelado',      false],
+            ];
+            [$badgeBg, $badgeText, $badgeBorder, $badgeLabel, $badgePulse] =
+                // DISI-51: trim() porque en algunos juegos historicos el status
+                // se guardo con un trailing space (ej. 'scheduled ' en vez de
+                // 'scheduled'), lo que rompe el lookup del array.
+                $badgeConfig[trim($game->status)] ?? ['bg-slate-600', 'text-white', 'border-slate-500', ucfirst(trim($game->status)), false];
+
+            // DISI-51: clases del banner grande (mostrado solo para estados NO en vivo,
+            // porque el badge de la esquina ya hace ese trabajo cuando in_progress).
+            $statusLabels = [
+                'scheduled'   => 'Programado',
+                'in_progress' => 'En vivo',
+                'paused'      => 'Pausado',
+                'completed'   => 'Finalizado',
+                'suspended'   => 'Suspendido',
+                'cancelled'   => 'Cancelado',
+            ];
+            $statusClasses = [
+                'scheduled' => 'bg-indigo-500/20 text-indigo-200 border border-indigo-400/40',
+                'paused'    => 'bg-amber-500/20 text-amber-200 border border-amber-400/40',
+                'completed' => 'bg-green-500/20 text-green-200 border border-green-400/40',
+                'suspended' => 'bg-red-500/20 text-red-200 border border-red-400/40',
+                'cancelled' => 'bg-red-700/20 text-red-200 border border-red-400/40',
+            ];
+        @endphp
+
+        {{-- Header: logo a la izquierda, badge de estado + boton refresh a la derecha --}}
         <div class="flex items-center justify-between mb-4">
             <a href="/" class="flex items-center gap-2 text-white hover:text-indigo-300 transition">
                 <span class="text-2xl">⚾</span>
                 <span class="font-bold">Gameday Score</span>
             </a>
-            <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-indigo-600/30 text-indigo-200 border border-indigo-500/50">
-                <span class="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-pulse"></span>
-                {{ __('En vivo') }}
-            </span>
+            <div class="flex items-center gap-2">
+                {{-- DISI-51: boton de refresh manual a la izquierda del badge --}}
+                <button type="button"
+                        onclick="location.reload()"
+                        title="{{ __('Refrescar') }}"
+                        aria-label="{{ __('Refrescar') }}"
+                        class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-700/50 hover:bg-slate-600 text-slate-300 hover:text-white transition border border-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+
+                {{-- DISI-51: badge con color + texto segun status del juego --}}
+                <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full {{ $badgeBg }} {{ $badgeText }} border {{ $badgeBorder }}">
+                    @if ($badgePulse)
+                        <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                    @endif
+                    {{ __($badgeLabel) }}
+                </span>
+            </div>
         </div>
 
-        {{-- Status banner --}}
-        @php
-            $statusLabels = ['scheduled' => 'Programado', 'in_progress' => 'En vivo', 'paused' => 'Pausado', 'completed' => 'Finalizado', 'suspended' => 'Suspendido', 'cancelled' => 'Cancelado'];
-            $statusClasses = ['scheduled' => 'bg-blue-500/20 text-blue-200', 'in_progress' => 'bg-red-500/30 text-red-100 border border-red-400/50', 'paused' => 'bg-yellow-500/20 text-yellow-200', 'completed' => 'bg-green-500/20 text-green-200', 'suspended' => 'bg-gray-500/20 text-gray-300', 'cancelled' => 'bg-gray-700/30 text-gray-400'];
-        @endphp
-        <div class="rounded-lg p-3 mb-6 text-center {{ $statusClasses[$game->status] ?? 'bg-slate-700/50' }}">
-            <span class="text-sm font-semibold uppercase tracking-wider">
-                {{ __($statusLabels[$game->status] ?? $game->status) }}
-            </span>
-            @if ($game->started_at)
-                <span class="text-xs opacity-75 ml-2">{{ __('desde') }} {{ $game->started_at->format('H:i') }}</span>
-            @endif
-        </div>
+        {{-- Status banner: solo se muestra cuando NO esta en vivo (en ese caso
+             el badge de la esquina ya indica "En vivo" en verde). --}}
+        @if (trim($game->status) !== 'in_progress')
+            <div class="rounded-lg p-3 mb-6 text-center {{ $statusClasses[trim($game->status)] ?? 'bg-slate-700/50' }}">
+                <span class="text-sm font-semibold uppercase tracking-wider">
+                    {{ __($statusLabels[trim($game->status)] ?? $game->status) }}
+                </span>
+                @if ($game->started_at)
+                    <span class="text-xs opacity-75 ml-2">{{ __('desde') }} {{ $game->started_at->format('H:i') }}</span>
+                @endif
+            </div>
+        @endif
 
         {{-- Scoreboard --}}
         <div class="bg-slate-800/60 backdrop-blur rounded-2xl shadow-2xl border border-slate-700 p-6 mb-6">
@@ -266,10 +323,13 @@
     </div>
 
     <script>
-        // Auto-refresh de la pagina cada 10 segundos para mantener el marcador actualizado.
-        // (Usamos location.reload en vez de fetch+textContent para evitar conflictos con
-        //  Alpine.js que carga el bundle de Breeze app.js.)
-        setTimeout(() => location.reload(), 10000);
+        // DISI-51: auto-refresh cada 30 segundos para mantener el marcador
+        // y las jugadas actualizadas. Antes era cada 10s; subido a 30s porque
+        // la vista publica suele ser informativa y los usuarios no necesitan
+        // una frecuencia tan alta (ademas reduce carga al server). El usuario
+        // puede forzar una actualizacion inmediata con el boton refresh del
+        // header (esquina superior derecha).
+        setTimeout(() => location.reload(), 30000);
     </script>
 
 </body>
