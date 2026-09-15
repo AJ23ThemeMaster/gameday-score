@@ -81,11 +81,15 @@
             // una jugada Play::TYPE_GAME_END, dejando state.is_game_over=false.
             'isFinalized' => $game->isCompleted(),
             'tab' => $game->isCompleted() ? 'extra' : 'pitch',
-            // DISI-42: URL publica del juego (/juego/publico/{token}) para
-            // el boton Live del header. Si el juego no es publico, esta URL
-            // viene vacia y el boton play no se renderiza (gateado por is_public).
-            'publicUrl' => $game->is_public && $game->public_token
-                ? url("/juego/publico/{$game->public_token}")
+            // DISI-44: URL publica del juego (/game/live/{token}) para el boton Live
+            // del header. Se genera solo si hay public_token (la visibilidad
+            // del boton en si se gatea aparte con @if $game->is_public).
+            // Antes requeria tambien is_public, lo que hacia que el toast
+            // dijera 'Este juego aun no tiene URL publica' incluso cuando
+            // existia el token (solo que el juego se habia desmarcado como
+            // publico).
+            'publicUrl' => $game->public_token
+                ? url("/game/live/{$game->public_token}")
                 : '',
         ]))"
         x-init="start()"

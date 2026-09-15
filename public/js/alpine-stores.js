@@ -571,7 +571,7 @@ document.addEventListener('alpine:init', () => {
             // El link publico se pasa como prop (config.publicUrl) desde x-data.
             const url = this.publicUrl;
             if (! url) {
-                this.toast('Este juego aun no tiene URL publica.', 'error');
+                this.toast('Este juego aun no tiene un token publico asignado.', 'error');
                 return;
             }
             window.open(url, '_blank', 'noopener,noreferrer');
@@ -581,7 +581,7 @@ document.addEventListener('alpine:init', () => {
         async sharePublicUrl() {
             const url = this.publicUrl;
             if (! url) {
-                this.toast('Este juego aun no tiene URL publica.', 'error');
+                this.toast('Este juego aun no tiene un token publico asignado.', 'error');
                 return;
             }
             const title = 'Sigue el juego en vivo';

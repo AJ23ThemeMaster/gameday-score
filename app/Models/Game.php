@@ -161,11 +161,17 @@ class Game extends Model
 
     public function getPublicUrlAttribute(): ?string
     {
-        if (! $this->is_public || ! $this->public_token) {
+        // DISI-44: solo necesitamos public_token para armar la URL publica;
+        // is_public ya no es requisito aqui (la politica de visibilidad se
+        // aplica por separado en live.blade.php con `@if ($game->is_public &&
+        // $game->public_url)`). Asi un juego con token generado pero con
+        // is_public=false sigue teniendo URL accesible, solo que el scoreboard
+        // no muestra el boton Live para evitar compartirla.
+        if (! $this->public_token) {
             return null;
         }
 
-        return url("/juego/publico/{$this->public_token}");
+        return url("/game/live/{$this->public_token}");
     }
 
     public function isInProgress(): bool
