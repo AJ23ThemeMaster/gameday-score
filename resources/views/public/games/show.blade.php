@@ -112,7 +112,7 @@
                         <img src="{{ $game->homeTeam->logoUrl }}" alt="{{ $game->homeTeam->name }}" class="h-20 w-20 mx-auto object-contain mb-2">
                     @endif
                     <h2 class="font-bold text-base sm:text-lg">{{ $game->homeTeam->name }}</h2>
-                    <p class="text-xs text-slate-400 mt-1">{{ __('Local') }}</p>
+                    <p class="text-xs text-slate-400 mt-1 mb-4">{{ __('Local') }}</p>
                 </div>
 
                 {{-- Score --}}
@@ -136,13 +136,13 @@
                         <img src="{{ $game->awayTeam->logoUrl }}" alt="{{ $game->awayTeam->name }}" class="h-20 w-20 mx-auto object-contain mb-2">
                     @endif
                     <h2 class="font-bold text-base sm:text-lg">{{ $game->awayTeam->name }}</h2>
-                    <p class="text-xs text-slate-400 mt-1">{{ __('Visitante') }}</p>
+                    <p class="text-xs text-slate-400 mt-1 mb-4">{{ __('Visitante') }}</p>
                 </div>
             </div>
 
-            {{-- DISI-53: Pitcher + Batter cards (solo mientras el juego esta en curso) --}}
+            {{-- DISI-54: Pitcher + Bases(diamond) + Batter cards (3 columnas) --}}
             @if ($game->isInProgress())
-                <div class="mt-5 pt-5 border-t border-slate-700 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="mt-5 pt-5 border-t border-slate-700 grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
                     {{-- Pitcher card --}}
                     <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
                         <div class="w-11 h-11 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-[12px] flex-shrink-0 overflow-hidden">
@@ -168,6 +168,11 @@
                                 <div class="text-sm text-slate-500 italic">{{ __('Sin lanzador') }}</div>
                             @endif
                         </div>
+                    </div>
+
+                    {{-- Bases diamond (DISI-54: movido del row B-S-O al row de tarjetas) --}}
+                    <div class="flex items-center justify-center p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
+                        @include('public.games._bases-diamond', ['bases' => $game->bases ?? []])
                     </div>
 
                     {{-- Batter card --}}
@@ -199,26 +204,21 @@
                 </div>
             @endif
 
-            {{-- B-S-O --}}
+            {{-- B-S-O (DISI-54: solo Bolas/Strikes/Outs — las Bases pasaron al row de tarjetas) --}}
             @if ($game->isInProgress())
                 <div class="mt-5 pt-5 border-t border-slate-700">
                     <div class="grid grid-cols-3 gap-4 text-center">
                         <div>
-                            <div class="text-2xl font-bold">{{ $game->balls }}-{{ $game->strikes }}</div>
-                            <div class="text-xs text-slate-400 uppercase tracking-wider">{{ __('Bolas y strikes') }}</div>
+                            <div class="text-2xl font-bold mt-3">{{ $game->balls }}</div>
+                            <div class="text-xs text-slate-400 uppercase tracking-wider">{{ __('Bolas') }}</div>
                         </div>
                         <div>
-                            <div class="text-2xl font-bold">{{ $game->outs }}</div>
+                            <div class="text-2xl font-bold mt-3">{{ $game->strikes }}</div>
+                            <div class="text-xs text-slate-400 uppercase tracking-wider">{{ __('Strikes') }}</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold mt-3">{{ $game->outs }}</div>
                             <div class="text-xs text-slate-400 uppercase tracking-wider">{{ __('Outs') }}</div>
-                        </div>
-                        <div>
-                            <div class="flex items-center justify-center gap-1.5">
-                                @php $b = $game->bases ?? []; @endphp
-                                <span id="base-3-display" class="w-3 h-3 rounded-full {{ ! empty($b['third']) ? 'bg-yellow-400' : 'bg-slate-600' }}"></span>
-                                <span id="base-2-display" class="w-3 h-3 rounded-full {{ ! empty($b['second']) ? 'bg-yellow-400' : 'bg-slate-600' }}"></span>
-                                <span id="base-1-display" class="w-3 h-3 rounded-full {{ ! empty($b['first']) ? 'bg-yellow-400' : 'bg-slate-600' }}"></span>
-                            </div>
-                            <div class="text-xs text-slate-400 uppercase tracking-wider mt-1">{{ __('Bases') }}</div>
                         </div>
                     </div>
                 </div>
