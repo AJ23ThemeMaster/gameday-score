@@ -288,6 +288,17 @@ class ScoreboardController extends Controller
             'homeTeam.athletes', 'awayTeam.athletes',
         ]);
 
+        // DISI-45: backfill del public_token para juegos publicos existentes
+        // que nunca lo recibieron. El hook 'saving' del modelo solo dispara
+        // cuando el juego se guarda; juegos creados antes de que el auto-gen
+        // existiera (o importados manualmente) quedan sin token aunque
+        // is_public=true. Aqui los regeneramos on-the-fly para que el boton
+        // Live del scoreboard siempre tenga URL valida.
+        if ($game->is_public && empty($game->public_token)) {
+            $game->public_token = \Illuminate\Support\Str::random(48);
+            $game->save();
+        }
+
         [$state, $pitcher, $batter, $onDeck, $pitcherStats, $batterStats] =
             $this->buildSnapshot($game);
 
@@ -321,6 +332,15 @@ class ScoreboardController extends Controller
     public function poll(Request $request, Game $game): JsonResponse
     {
         $this->authorize('view', $game);
+
+        // DISI-45: mismo backfill que show() por si el poll() se llama antes
+        // de que el usuario haya cargado el scoreboard (e.g. desde la vista
+        // publica /game/live/{token}). Garantiza que el token siempre exista
+        // antes de que buildSnapshot consulte Game::public_url.
+        if ($game->is_public && empty($game->public_token)) {
+            $game->public_token = \Illuminate\Support\Str::random(48);
+            $game->save();
+        }
 
         [$state, $pitcher, $batter, $onDeck, $pitcherStats, $batterStats] =
             $this->buildSnapshot($game);
