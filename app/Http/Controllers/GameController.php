@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreGameRequest;
 use App\Http\Requests\UpdateGameRequest;
 use App\Http\Requests\UpdateGameStateRequest;
+use App\Models\Athlete;
 use App\Models\Category;
 use App\Models\Game;
 use App\Models\Scorekeeper;
@@ -97,9 +98,20 @@ class GameController extends Controller
         // Sincronizar anotadores y árbitros (M2M)
         $this->syncStaff($game, $data);
 
+        // DISI-67: auto-poblar el roster con todos los atletas de los 2 equipos
+        // que pertenezcan a la categoria del juego.
+        $rosterCount = $this->seedRosterFromCategory($game);
+
+        $flash = "Juego «{$game->homeTeam->name} vs {$game->awayTeam->name}» creado correctamente.";
+        if ($rosterCount > 0) {
+            $flash .= " Se precargaron {$rosterCount} atletas del roster.";
+        } else {
+            $flash .= ' No hay atletas en esos equipos para esta categoría todavía.';
+        }
+
         return redirect()
             ->route('games.show', $game)
-            ->with('status', "Juego «{$game->homeTeam->name} vs {$game->awayTeam->name}» creado correctamente.");
+            ->with('status', $flash);
     }
 
     public function show(Game $game): View
@@ -295,5 +307,36 @@ class GameController extends Controller
         // sync() con pivot 'role' por defecto
         $game->scorekeepers()->sync($scorekeeperIds);
         $game->referees()->sync($refereeIds);
+    }
+
+    /**
+     * DISI-67: auto-poblar el roster del juego con todos los atletas del
+     * equipo local Y visitante que tengan `category_id` igual a la
+     * categoria del juego. Devuelve la cantidad insertada.
+     *
+     * El `team_id` del pivot se llena con el equipo del atleta (que tiene
+     * que coincidir con local o visitante por el filtro whereIn).
+     */
+    private function seedRosterFromCategory(Game $game): int
+    {
+        $athletes = Athlete::query()
+            ->where('category_id', $game->category_id)
+            ->whereIn('team_id', [$game->home_team_id, $game->away_team_id])
+            ->select(['id', 'team_id'])
+            ->get();
+
+        if ($athletes->isEmpty()) {
+            return 0;
+        }
+
+        $syncData = [];
+        foreach ($athletes as $a) {
+            // sync() espera [athlete_id => [pivot_data]]
+            $syncData[$a->id] = ['team_id' => $a->team_id];
+        }
+
+        $game->athletes()->sync($syncData);
+
+        return $athletes->count();
     }
 }
