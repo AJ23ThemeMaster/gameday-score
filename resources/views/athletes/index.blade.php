@@ -84,6 +84,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Foto') }}</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Nombre') }}</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Equipo') }}</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Categoria') }}</th>
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('N°') }}</th>
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Pos.') }}</th>
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('B/T') }}</th>
@@ -108,6 +109,13 @@
                                         @if ($a->document_id)<p class="text-xs text-gray-500">{{ $a->document_id }}</p>@endif
                                     </td>
                                     <td class="px-6 py-3 text-sm text-gray-600">{{ $a->team->name ?? '—' }}</td>
+                                    <td class="px-6 py-3 text-sm">
+                                        @if ($a->category)
+                                            <a href="{{ route('categories.show', $a->category) }}" class="text-indigo-600 hover:text-indigo-800">{{ $a->category->name }}</a>
+                                        @else
+                                            <span class="text-gray-400">—</span>
+                                        @endif
+                                    </td>
                                     <td class="px-6 py-3 text-center text-sm">{{ $a->number ?? '—' }}</td>
                                     <td class="px-6 py-3 text-center text-sm font-mono">{{ $a->position ?? '—' }}</td>
                                     <td class="px-6 py-3 text-center text-xs">{{ $a->bats }}/{{ $a->throws }}</td>
