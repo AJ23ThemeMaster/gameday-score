@@ -529,15 +529,35 @@ class ScoreboardController extends Controller
             ];
         }
 
-        // Atletas elegibles para pitcher/MVP (todos los de los dos equipos del juego)
-        $athletes = Athlete::with('team')
-            ->whereIn('team_id', [$game->home_team_id, $game->away_team_id])
-            ->orderBy('team_id')
-            ->orderBy('number')
-            ->get();
+        // DISI-70: roster por equipo para los selects del box-score.
+        // - Pitcher ganador (G), Juego salvado (SV) y MVP -> roster del EQUIPO GANADOR
+        // - Pitcher perdedor (P) -> roster del EQUIPO PERDEDOR
+        // Determinar ganador/perdedor segun score; si hay empate (juego en curso
+        // o finalizado en empate), los selects quedan vacios.
+        $homeWins = $game->home_score > $game->away_score;
+        $awayWins = $game->away_score > $game->home_score;
+
+        $winnerTeamId = $homeWins ? $game->home_team_id : ($awayWins ? $game->away_team_id : null);
+        $loserTeamId = $homeWins ? $game->away_team_id : ($awayWins ? $game->home_team_id : null);
+
+        $rosterFor = function (?int $teamId) use ($game) {
+            if (! $teamId) {
+                return collect();
+            }
+
+            return $game->athletes()
+                ->with('team')
+                ->wherePivot('team_id', $teamId)
+                ->get()
+                ->sortBy('number')
+                ->values();
+        };
+
+        $winningRoster = $rosterFor($winnerTeamId);
+        $losingRoster = $rosterFor($loserTeamId);
 
         return view('games.box-score', compact(
-            'game', 'score', 'lineScore', 'totalInnings', 'athletes'
+            'game', 'score', 'lineScore', 'totalInnings', 'winningRoster', 'losingRoster'
         ));
     }
 
