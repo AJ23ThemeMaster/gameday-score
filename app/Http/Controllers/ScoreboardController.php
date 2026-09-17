@@ -529,6 +529,15 @@ class ScoreboardController extends Controller
             ];
         }
 
+        // DISI-73: distinguir innings JUGADOS sin carreras (mostrar 0) vs
+        // innings NO JUGADOS al finalizar el juego antes del limite (mostrar X).
+        // Solo aplica cuando el juego esta en estado terminal (completado/suspendido/cancelado).
+        $maxPlayedInning = Play::where('game_id', $game->id)->max('inning') ?? 0;
+        if ($game->current_inning > $maxPlayedInning) {
+            $maxPlayedInning = $game->current_inning;
+        }
+        $gameEnded = in_array($game->status, ['completed', 'suspended', 'cancelled'], true);
+
         // DISI-70: roster por equipo para los selects del box-score.
         // - Pitcher ganador (G), Juego salvado (SV) y MVP -> roster del EQUIPO GANADOR
         // - Pitcher perdedor (P) -> roster del EQUIPO PERDEDOR
@@ -557,7 +566,8 @@ class ScoreboardController extends Controller
         $losingRoster = $rosterFor($loserTeamId);
 
         return view('games.box-score', compact(
-            'game', 'score', 'lineScore', 'totalInnings', 'winningRoster', 'losingRoster'
+            'game', 'score', 'lineScore', 'totalInnings',
+            'winningRoster', 'losingRoster', 'maxPlayedInning', 'gameEnded'
         ));
     }
 

@@ -138,7 +138,13 @@
                                     <tr class="text-lg font-medium border-b border-white/10">
                                         <td class="py-2 text-left pl-4 truncate" title="{{ $game->awayTeam->name }}">{{ $game->awayTeam->name }}</td>
                                         @for ($i = 1; $i <= $totalInnings; $i++)
-                                            <td class="py-2 px-2">{{ $lineScore[$i]['away'] }}</td>
+                                            <td class="py-2 px-2">
+                                                @if ($gameEnded && $i > $maxPlayedInning)
+                                                    <span class="text-indigo-400 font-medium">X</span>
+                                                @else
+                                                    {{ $lineScore[$i]['away'] }}
+                                                @endif
+                                            </td>
                                         @endfor
                                         <td class="py-2 px-3 bg-white/10 font-bold">{{ $score['away'] }}</td>
                                         <td class="py-2 px-3 bg-white/10">{{ $score['totals_hits']['away'] }}</td>
@@ -148,7 +154,13 @@
                                     <tr class="text-lg font-medium">
                                         <td class="py-2 text-left pl-4 truncate" title="{{ $game->homeTeam->name }}">{{ $game->homeTeam->name }}</td>
                                         @for ($i = 1; $i <= $totalInnings; $i++)
-                                            <td class="py-2 px-2">{{ $lineScore[$i]['home'] }}</td>
+                                            <td class="py-2 px-2">
+                                                @if ($gameEnded && $i > $maxPlayedInning)
+                                                    <span class="text-indigo-400 font-medium">X</span>
+                                                @else
+                                                    {{ $lineScore[$i]['home'] }}
+                                                @endif
+                                            </td>
                                         @endfor
                                         <td class="py-2 px-3 bg-white/10 font-bold">{{ $score['home'] }}</td>
                                         <td class="py-2 px-3 bg-white/10">{{ $score['totals_hits']['home'] }}</td>
