@@ -139,8 +139,12 @@
                                         <td class="py-2 text-left pl-4 truncate" title="{{ $game->awayTeam->name }}">{{ $game->awayTeam->name }}</td>
                                         @for ($i = 1; $i <= $totalInnings; $i++)
                                             <td class="py-2 px-2">
-                                                @if ($gameEnded && $i > $maxPlayedInning)
-                                                    <span class="text-indigo-400 font-medium">X</span>
+                                                @if ($i > $maxPlayedInning)
+                                                    @if ($gameEnded)
+                                                        <span class="text-indigo-400 font-medium">X</span>
+                                                    @elseif (in_array($game->status, ['in_progress', 'paused'], true))
+                                                        <span class="text-indigo-400 font-medium">-</span>
+                                                    @endif
                                                 @else
                                                     {{ $lineScore[$i]['away'] }}
                                                 @endif
@@ -155,8 +159,12 @@
                                         <td class="py-2 text-left pl-4 truncate" title="{{ $game->homeTeam->name }}">{{ $game->homeTeam->name }}</td>
                                         @for ($i = 1; $i <= $totalInnings; $i++)
                                             <td class="py-2 px-2">
-                                                @if ($gameEnded && $i > $maxPlayedInning)
-                                                    <span class="text-indigo-400 font-medium">X</span>
+                                                @if ($i > $maxPlayedInning)
+                                                    @if ($gameEnded)
+                                                        <span class="text-indigo-400 font-medium">X</span>
+                                                    @elseif (in_array($game->status, ['in_progress', 'paused'], true))
+                                                        <span class="text-indigo-400 font-medium">-</span>
+                                                    @endif
                                                 @else
                                                     {{ $lineScore[$i]['home'] }}
                                                 @endif
