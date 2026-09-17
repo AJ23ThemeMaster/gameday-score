@@ -39,17 +39,17 @@
                 </div>
 
                 <p class="text-xs text-gray-500 mb-3">
-                    {{ __('La imagen generada es cuadrada (1080x1080), incluye logos de los equipos, inning-by-inning con carreras/hits/errores y pitchers/MVP del juego.') }}
+                    {{ __('La imagen generada es cuadrada (720x720), incluye logos de los equipos, inning-by-inning con carreras/hits/errores y pitchers/MVP del juego.') }}
                 </p>
 
                 <div class="flex justify-center">
-                    {{-- Contenedor de escala: el card mide 1080px de ancho nativo.
+                    {{-- Contenedor de escala: el card mide 720px de ancho nativo.
                          La altura es natural (auto) para que el preview no tenga
-                         huecos vacios. Solo durante el export se fuerza 1080x1080. --}}
-                    <div id="box-score-wrapper" class="w-full max-w-[1080px]">
+                         huecos vacios. Solo durante el export se fuerza 720x720. --}}
+                    <div id="box-score-wrapper" class="w-full max-w-[720px]">
                         <div id="box-score-card"
                              class="mx-auto bg-indigo-900 text-white shadow-2xl rounded-xl flex flex-col overflow-hidden border-0 outline-none"
-                             style="width: 1080px; transform-origin: top center;">
+                             style="width: 720px; transform-origin: top center;">
 
                         {{-- Header --}}
                         <div class="px-8 py-6 border-b border-white/20 flex-shrink-0 export-grow">
@@ -138,7 +138,7 @@
                                     <tr class="text-lg font-medium border-b border-white/10">
                                         <td class="py-2 text-left pl-4 truncate" title="{{ $game->awayTeam->name }}">{{ $game->awayTeam->name }}</td>
                                         @for ($i = 1; $i <= $totalInnings; $i++)
-                                            <td class="py-2 px-2">{{ $lineScore[$i]['away'] ?: '' }}</td>
+                                            <td class="py-2 px-2">{{ $lineScore[$i]['away'] }}</td>
                                         @endfor
                                         <td class="py-2 px-3 bg-white/10 font-bold">{{ $score['away'] }}</td>
                                         <td class="py-2 px-3 bg-white/10">{{ $score['totals_hits']['away'] }}</td>
@@ -148,7 +148,7 @@
                                     <tr class="text-lg font-medium">
                                         <td class="py-2 text-left pl-4 truncate" title="{{ $game->homeTeam->name }}">{{ $game->homeTeam->name }}</td>
                                         @for ($i = 1; $i <= $totalInnings; $i++)
-                                            <td class="py-2 px-2">{{ $lineScore[$i]['home'] ?: '' }}</td>
+                                            <td class="py-2 px-2">{{ $lineScore[$i]['home'] }}</td>
                                         @endfor
                                         <td class="py-2 px-3 bg-white/10 font-bold">{{ $score['home'] }}</td>
                                         <td class="py-2 px-3 bg-white/10">{{ $score['totals_hits']['home'] }}</td>
@@ -319,7 +319,7 @@
 
             // ---- Escalado responsivo del preview (el card tiene altura NATURAL;
             //      solo se escala horizontalmente para caber en el viewport) ----
-            const NATIVE_W = 1080;
+            const NATIVE_W = 720;
             function fitCard() {
                 const wrapperWidth = card.parentElement.clientWidth;
                 const scale = Math.min(1, wrapperWidth / NATIVE_W);
@@ -355,7 +355,7 @@
                 }));
             }
 
-            // ---- Snapshot para descargar/compartir (1080x1080 con card clonado) ----
+            // ---- Snapshot para descargar/compartir (720x720 con card clonado) ----
             async function snapshot(scale = 1) {
                 // 1) Esperar a que las imagenes reales del DOM terminen de cargar
                 await inlineImages(card);
@@ -371,7 +371,7 @@
                 clone.style.height = 'auto';
                 clone.style.boxShadow = 'none';
 
-                // 4) Envoltorio 1080x1080 con fondo indigo para forzar el 1:1
+                // 4) Envoltorio 720x720 con fondo indigo para forzar el 1:1
                 const wrapper = document.createElement('div');
                 wrapper.style.cssText = [
                     'position: fixed',
