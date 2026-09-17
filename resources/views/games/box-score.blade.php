@@ -350,9 +350,10 @@
             fitCard();
             window.addEventListener('resize', fitCard);
 
-            // Convierte <img src="http://..."> a data URL base64 para evitar
-            // problemas de CORS al capturar con html2canvas. Si falla, deja
-            // el src original (la imagen saldra vacia pero el resto se vera OK).
+            // Convierte <img src="..."> a data URL base64 para evitar
+            // problemas de CORS al capturar con html2canvas. Si falla,
+            // deja el src original y se loguea (la imagen saldra vacia
+            // en el PNG final).
             async function inlineImages(rootEl) {
                 const imgs = rootEl.querySelectorAll('img');
                 await Promise.all([...imgs].map(async (img) => {
@@ -369,6 +370,8 @@
                             reader.readAsDataURL(blob);
                         });
                         img.src = dataUrl;
+                        // Esperar a que el navegador decodifique el bitmap
+                        await img.decode().catch(() => {});
                     } catch (e) {
                         console.warn('No se pudo inlinear imagen:', src, e.message);
                     }
@@ -391,7 +394,11 @@
                 clone.style.height = 'auto';
                 clone.style.boxShadow = 'none';
 
-                // 4) Envoltorio 720x720 con fondo indigo para forzar el 1:1
+                // 4) Envoltorio 720x720 con fondo indigo, centrado, overflow hidden
+                //    para que el clon (que puede ser mas alto que 720) ESCALADO quepa.
+                const PAD = 40;
+                const INNER_W = NATIVE_W - PAD * 2;
+                const INNER_H = NATIVE_W - PAD * 2;
                 const wrapper = document.createElement('div');
                 wrapper.style.cssText = [
                     'position: fixed',
@@ -401,15 +408,32 @@
                     'height: ' + NATIVE_W + 'px',
                     'background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 50%, #1e3a8a 100%)',
                     'display: flex',
-                    'flex-direction: column',
-                    'padding: 40px',
+                    'align-items: center',
+                    'justify-content: center',
+                    'padding: ' + PAD + 'px',
                     'box-sizing: border-box',
+                    'overflow: hidden',
                     'z-index: -1',
                 ].join(';');
                 document.body.appendChild(wrapper);
                 wrapper.appendChild(clone);
 
-                // 5) Pequeña pausa para que el navegador renderice el clon + imagenes
+                // 4b) Si la altura natural del clon > INNER_H (640), escalarlo para
+                //     que quepa entero sin recortar el footer.
+                const naturalH = clone.scrollHeight;
+                const naturalW = clone.scrollWidth;
+                const fitScale = Math.min(INNER_W / naturalW, INNER_H / naturalH, 1);
+                if (fitScale < 1) {
+                    clone.style.transform = 'scale(' + fitScale + ')';
+                    clone.style.transformOrigin = 'center center';
+                }
+
+                // 5) Esperar a que el navegador decodifique las imagenes del CLON
+                //    (cloneNode copia el DOM pero no el bitmap cargado).
+                await Promise.all([...clone.querySelectorAll('img')].map((img) =>
+                    img.decode().catch(() => {})
+                ));
+                // Doble rAF para asegurar layout + paint antes de html2canvas.
                 await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
                 const canvas = await html2canvas(wrapper, {
@@ -418,7 +442,7 @@
                     width: NATIVE_W,
                     height: NATIVE_W,
                     useCORS: true,
-                    allowTaint: true,
+                    allowTaint: false,
                     logging: false,
                 });
 
