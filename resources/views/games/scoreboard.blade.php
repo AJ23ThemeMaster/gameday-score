@@ -880,7 +880,7 @@
                                 <span x-text="inningSummary?.errors ?? 0"></span> E
                             </div>
                         </div>
-                        <button type="button" @click="closeModal()"
+                        <button type="button" @click="location.reload()"
                                 class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl">
                             {{ __('Continuar') }}
                         </button>
