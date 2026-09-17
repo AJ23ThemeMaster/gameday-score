@@ -390,13 +390,30 @@
     </div>
 
     <script>
-        // DISI-51: auto-refresh cada 30 segundos para mantener el marcador
-        // y las jugadas actualizadas. Antes era cada 10s; subido a 30s porque
-        // la vista publica suele ser informativa y los usuarios no necesitan
-        // una frecuencia tan alta (ademas reduce carga al server). El usuario
-        // puede forzar una actualizacion inmediata con el boton refresh del
-        // header (esquina superior derecha).
-        setTimeout(() => location.reload(), 30000);
+        // DISI-71: auto-refresh segun status del juego:
+        // - scheduled  -> recargar cuando llegue la fecha/hora del juego
+        // - paused     -> recargar cada 5 minutos
+        // - in_progress-> recargar cada 30 segundos (DISI-51)
+        // - completed / suspended / cancelled -> NO recargar (estados terminales)
+        const gameStatus = @json($game->status);
+        const scheduledAtMs = {{ $game->scheduled_at ? $game->scheduled_at->valueOf() : 'null' }};
+        const now = Date.now();
+
+        let reloadDelayMs = null;
+        if (gameStatus === 'scheduled') {
+            // recargar justo cuando llegue la hora; si ya paso, recargar en 5s
+            reloadDelayMs = (scheduledAtMs != null)
+                ? Math.max(0, scheduledAtMs - now) || 5000
+                : 5000;
+        } else if (gameStatus === 'paused') {
+            reloadDelayMs = 5 * 60 * 1000; // 5 minutos
+        } else if (gameStatus === 'in_progress') {
+            reloadDelayMs = 30 * 1000; // 30 segundos (DISI-51)
+        } // completed / suspended / cancelled => null (no recarga)
+
+        if (reloadDelayMs !== null) {
+            setTimeout(() => location.reload(), reloadDelayMs);
+        }
     </script>
 
 </body>
