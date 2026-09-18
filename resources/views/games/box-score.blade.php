@@ -1,4 +1,23 @@
 <x-app-layout>
+    @php
+        // DISI-77: convertir logos a data URLs base64 server-side para que el export
+        // via html2canvas no dependa de CORS ni del timing de fetch+decode del clon.
+        $logoDataUrl = function (?string $path): ?string {
+            if (! $path || ! Storage::disk('public')->exists($path)) {
+                return null;
+            }
+            try {
+                $contents = Storage::disk('public')->get($path);
+                $absolutePath = Storage::disk('public')->path($path);
+                $mime = @mime_content_type($absolutePath) ?: 'image/png';
+                return 'data:'.$mime.';base64,'.base64_encode($contents);
+            } catch (\Throwable $e) {
+                return null;
+            }
+        };
+        $homeLogoData = $logoDataUrl($game->homeTeam->logo_path);
+        $awayLogoData = $logoDataUrl($game->awayTeam->logo_path);
+    @endphp
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -82,8 +101,8 @@
                             <div class="flex items-center justify-center gap-6">
                                 {{-- Local (logo + nombre a la izquierda) --}}
                                 <div class="flex flex-col items-center gap-3 w-1/3">
-                                    @if ($game->homeTeam->logoUrl)
-                                        <img src="{{ $game->homeTeam->logoUrl }}" alt="{{ $game->homeTeam->name }}"
+                                    @if ($homeLogoData)
+                                        <img src="{{ $homeLogoData }}" alt="{{ $game->homeTeam->name }}"
                                              class="h-24 w-24 object-contain bg-white/10 rounded-2xl p-2">
                                     @else
                                         <div class="h-24 w-24 rounded-2xl bg-white/10 flex items-center justify-center text-2xl font-bold">
@@ -103,8 +122,8 @@
 
                                 {{-- Visitante (logo + nombre a la derecha) --}}
                                 <div class="flex flex-col items-center gap-3 w-1/3">
-                                    @if ($game->awayTeam->logoUrl)
-                                        <img src="{{ $game->awayTeam->logoUrl }}" alt="{{ $game->awayTeam->name }}"
+                                    @if ($awayLogoData)
+                                        <img src="{{ $awayLogoData }}" alt="{{ $game->awayTeam->name }}"
                                              class="h-24 w-24 object-contain bg-white/10 rounded-2xl p-2">
                                     @else
                                         <div class="h-24 w-24 rounded-2xl bg-white/10 flex items-center justify-center text-2xl font-bold">
