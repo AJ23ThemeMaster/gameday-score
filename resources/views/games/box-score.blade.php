@@ -97,42 +97,42 @@
                         </div>
 
                         {{-- Equipos con logos y score CENTRADO entre ellos --}}
-                        <div class="px-8 py-6 border-b border-white/20 flex-shrink-0 export-grow">
-                            <div class="flex items-center justify-center gap-6">
+                        <div class="px-6 py-5 border-b border-white/20 flex-shrink-0 export-grow">
+                            <div class="flex items-center justify-center gap-4">
                                 {{-- Local (logo + nombre a la izquierda) --}}
-                                <div class="flex flex-col items-center gap-3 w-1/3">
+                                <div class="flex flex-col items-center gap-2 w-2/5 min-w-0">
                                     @if ($homeLogoData)
                                         <img src="{{ $homeLogoData }}" alt="{{ $game->homeTeam->name }}"
-                                             class="h-24 w-24 object-contain bg-white/10 rounded-2xl p-2">
+                                             class="h-20 w-20 object-contain bg-white/10 rounded-2xl p-2">
                                     @else
-                                        <div class="h-24 w-24 rounded-2xl bg-white/10 flex items-center justify-center text-2xl font-bold">
+                                        <div class="h-20 w-20 rounded-2xl bg-white/10 flex items-center justify-center text-xl font-bold">
                                             {{ mb_substr($game->homeTeam->name, 0, 3) }}
                                         </div>
                                     @endif
-                                    <div class="text-center min-w-0">
+                                    <div class="text-center w-full">
                                         <p class="text-xs uppercase tracking-widest text-indigo-200">Local</p>
-                                        <p class="text-lg font-bold leading-tight truncate" title="{{ $game->homeTeam->name }}">{{ $game->homeTeam->name }}</p>
+                                        <p class="text-base font-bold leading-snug break-words" title="{{ $game->homeTeam->name }}">{{ $game->homeTeam->name }}</p>
                                     </div>
                                 </div>
 
                                 {{-- Score CENTRADO --}}
-                                <div class="text-center flex-shrink-0 px-4">
-                                    <p class="text-6xl font-black">{{ $score['home'] }} - {{ $score['away'] }}</p>
+                                <div class="text-center flex-shrink-0 px-2">
+                                    <p class="text-5xl font-black">{{ $score['home'] }} - {{ $score['away'] }}</p>
                                 </div>
 
                                 {{-- Visitante (logo + nombre a la derecha) --}}
-                                <div class="flex flex-col items-center gap-3 w-1/3">
+                                <div class="flex flex-col items-center gap-2 w-2/5 min-w-0">
                                     @if ($awayLogoData)
                                         <img src="{{ $awayLogoData }}" alt="{{ $game->awayTeam->name }}"
-                                             class="h-24 w-24 object-contain bg-white/10 rounded-2xl p-2">
+                                             class="h-20 w-20 object-contain bg-white/10 rounded-2xl p-2">
                                     @else
-                                        <div class="h-24 w-24 rounded-2xl bg-white/10 flex items-center justify-center text-2xl font-bold">
+                                        <div class="h-20 w-20 rounded-2xl bg-white/10 flex items-center justify-center text-xl font-bold">
                                             {{ mb_substr($game->awayTeam->name, 0, 3) }}
                                         </div>
                                     @endif
-                                    <div class="text-center min-w-0">
+                                    <div class="text-center w-full">
                                         <p class="text-xs uppercase tracking-widest text-indigo-200">Visitante</p>
-                                        <p class="text-lg font-bold leading-tight truncate" title="{{ $game->awayTeam->name }}">{{ $game->awayTeam->name }}</p>
+                                        <p class="text-base font-bold leading-snug break-words" title="{{ $game->awayTeam->name }}">{{ $game->awayTeam->name }}</p>
                                     </div>
                                 </div>
                             </div>
