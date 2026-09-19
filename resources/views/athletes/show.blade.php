@@ -182,6 +182,74 @@
                 </div>
             </div>
 
+            {{-- DISI-79: stats por torneo (y generales si no hay torneo) --}}
+            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-5 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-base font-bold text-gray-900">{{ __('Estadísticas por torneo') }}</h3>
+                    <span class="text-sm text-gray-500">{{ $perTournament->count() }} {{ \Illuminate\Support\Str::plural('torneo', $perTournament->count()) }}</span>
+                </div>
+                @if ($perTournament->count() > 0)
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-[10px] font-bold text-gray-600 uppercase tracking-wider">{{ __('Torneo') }}</th>
+                                    <th class="px-3 py-2 text-center text-[10px] font-bold text-gray-600 uppercase tracking-wider" title="Juegos jugados en el torneo">{{ __('JJ') }}</th>
+                                    <th colspan="5" class="px-3 py-2 text-center text-[10px] font-bold text-amber-700 uppercase tracking-wider bg-amber-50/40">{{ __('Bateo') }}</th>
+                                    <th colspan="5" class="px-3 py-2 text-center text-[10px] font-bold text-indigo-700 uppercase tracking-wider bg-indigo-50/40">{{ __('Pitcheo') }}</th>
+                                </tr>
+                                <tr class="border-t border-gray-200">
+                                    <th></th>
+                                    <th></th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-gray-500 uppercase">AB</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-gray-500 uppercase">H</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-gray-500 uppercase">AVG</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-gray-500 uppercase">BB</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-gray-500 uppercase">K</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-gray-500 uppercase">Lanz.</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-gray-500 uppercase">S</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-gray-500 uppercase">B</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-gray-500 uppercase">K</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-gray-500 uppercase">H</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-gray-500 uppercase">BB</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach ($perTournament as $row)
+                                    @php $b = $row['batting']; $p = $row['pitching']; @endphp
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-3 py-2 whitespace-nowrap">
+                                            @if ($row['tournament'])
+                                                <a href="{{ route('tournaments.show', $row['tournament']) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $row['tournament']->name }}</a>
+                                            @else
+                                                <span class="text-gray-500 italic">Sin torneo</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-2 text-center text-gray-700 font-mono">{{ $row['games_count'] }}</td>
+                                        <td class="px-3 py-2 text-center text-gray-700 font-mono">{{ $b['at_bats'] }}</td>
+                                        <td class="px-3 py-2 text-center text-gray-700 font-mono">{{ $b['hits'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono font-semibold {{ $b['avg'] >= 0.3 ? 'text-green-700' : 'text-gray-900' }}">{{ number_format($b['avg'], 3, '.', '') }}</td>
+                                        <td class="px-3 py-2 text-center text-gray-700 font-mono">{{ $b['walks'] }}</td>
+                                        <td class="px-3 py-2 text-center text-gray-700 font-mono">{{ $b['strikeouts'] }}</td>
+                                        <td class="px-3 py-2 text-center text-gray-700 font-mono">{{ $p['pitches'] }}</td>
+                                        <td class="px-3 py-2 text-center text-gray-700 font-mono">{{ $p['strikes'] }}</td>
+                                        <td class="px-3 py-2 text-center text-gray-700 font-mono">{{ $p['balls'] }}</td>
+                                        <td class="px-3 py-2 text-center text-gray-700 font-mono">{{ $p['strikeouts'] }}</td>
+                                        <td class="px-3 py-2 text-center text-gray-700 font-mono">{{ $p['hits'] }}</td>
+                                        <td class="px-3 py-2 text-center text-gray-700 font-mono">{{ $p['walks'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="px-5 py-2 text-[11px] text-gray-500 italic border-t border-gray-200">
+                        {{ __('AVG = H/AB del propio torneo. JJ = juegos jugados como bateador o pitcher en el torneo. Los juegos sin torneo asignado (amistosos) se agrupan en "Sin torneo".') }}
+                    </p>
+                @else
+                    <div class="p-8 text-center text-gray-500 text-sm">{{ __('Aún no hay jugadas registradas para agrupar por torneo.') }}</div>
+                @endif
+            </div>
+
             {{-- DISI-62: stats per game --}}
             <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-5 border-b border-gray-200 flex justify-between items-center">

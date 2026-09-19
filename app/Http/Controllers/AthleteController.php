@@ -133,12 +133,12 @@ class AthleteController extends Controller
             ->with(['homeTeam', 'awayTeam', 'tournament'])
             ->get();
 
-        // Stats globales (todos los juegos del atleta)
-        $careerBatting = \App\Models\Play::statsForBatter($athlete->id, $athlete->id);
-        // (Play::statsForBatter espera (gameId, batterId) — usamos un shim
-        //  para "todos los juegos" llamando directo a la query agregada.)
+        // Stats generales (todos los juegos del atleta, sin agrupar)
         $careerBatting = $this->aggregateBatterStats($athlete->id);
         $careerPitching = $this->aggregatePitcherStats($athlete->id);
+
+        // DISI-79: stats agrupadas por torneo (batting + pitching + games count)
+        $perTournament = $this->aggregateStatsByTournament($athlete->id);
 
         // Stats por juego (para la tabla)
         $perGame = [];
@@ -152,7 +152,9 @@ class AthleteController extends Controller
             ];
         }
 
-        return view('athletes.show', compact('athlete', 'games', 'careerBatting', 'careerPitching', 'perGame'));
+        return view('athletes.show', compact(
+            'athlete', 'games', 'careerBatting', 'careerPitching', 'perTournament', 'perGame'
+        ));
     }
 
     /**
@@ -163,40 +165,7 @@ class AthleteController extends Controller
     private function aggregateBatterStats(int $athleteId): array
     {
         $plays = \App\Models\Play::where('batter_id', $athleteId)->get();
-        $at_bats = 0;
-        $hits = 0;
-        $strikeouts = 0;
-        $walks = 0;
-        foreach ($plays as $p) {
-            $type = $p->type;
-            if ($type === \App\Models\Play::TYPE_HIT) {
-                $at_bats++; $hits++;
-            } elseif ($type === \App\Models\Play::TYPE_OUT) {
-                // Strikeout cuenta como AB; otros outs (groundout, flyout, etc.)
-                // tambien cuentan como AB (en baseball cualquier out no-K es AB).
-                $at_bats++;
-                if ($p->subtype === \App\Models\Play::SUBTYPE_OUT_STRIKEOUT) {
-                    $strikeouts++;
-                }
-            } elseif ($type === \App\Models\Play::TYPE_WALK) {
-                // Walk (base por bolas) NO cuenta como AB (no es un at-bat).
-                $walks++;
-            } elseif ($type === \App\Models\Play::TYPE_HBP) {
-                // HBP tampoco cuenta como AB.
-            } elseif ($type === \App\Models\Play::TYPE_BUNT) {
-                // Sacrifice bunt / bunt out: NO cuenta como AB si es sacrifice;
-                // SI cuenta como AB si es bunt out / bunt single.
-                if ($p->subtype !== \App\Models\Play::SUBTYPE_BUNT_SACRIFICE) {
-                    $at_bats++;
-                    if ($p->subtype === \App\Models\Play::SUBTYPE_BUNT_SINGLE) {
-                        $hits++;
-                    }
-                }
-            }
-        }
-        $avg = $at_bats > 0 ? round($hits / $at_bats, 3) : 0.0;
-
-        return compact('at_bats', 'hits', 'strikeouts', 'walks', 'avg');
+        return $this->batterStatsFromPlays($plays);
     }
 
     /**
@@ -206,35 +175,155 @@ class AthleteController extends Controller
     private function aggregatePitcherStats(int $athleteId): array
     {
         $plays = \App\Models\Play::where('pitcher_id', $athleteId)->get();
-        $pitches = 0;
-        $strikes = 0;
-        $balls = 0;
-        $strikeouts = 0;
-        $hits = 0;
-        $walks = 0;
+        return $this->pitcherStatsFromPlays($plays);
+    }
+
+    /**
+     * DISI-79: agrega batting + pitching del atleta, agrupado por
+     * tournament_id (viene de play->game->tournament_id). Las jugadas
+     * sin torneo (tournament_id NULL) se agrupan bajo la clave 'none'
+     * y se renderizan como "Sin torneo".
+     */
+    private function aggregateStatsByTournament(int $athleteId): \Illuminate\Support\Collection
+    {
+        $plays = \App\Models\Play::with('game:id,tournament_id')
+            ->where(function ($q) use ($athleteId) {
+                $q->where('batter_id', $athleteId)
+                  ->orWhere('pitcher_id', $athleteId);
+            })
+            ->get();
+
+        $byTournament = [];
         foreach ($plays as $p) {
-            $type = $p->type;
-            $subtype = $p->subtype;
-            if ($type === \App\Models\Play::TYPE_PITCH) {
-                if ($subtype === 'at_bat_start') {
-                    continue;
-                }
-                $pitches++;
-                if ($subtype === 'ball') {
-                    $balls++;
-                } elseif (in_array($subtype, ['looking', 'swinging', 'foul_tip'], true)) {
-                    $strikes++;
-                }
-            } elseif ($type === \App\Models\Play::TYPE_OUT && $subtype === \App\Models\Play::SUBTYPE_OUT_STRIKEOUT) {
-                $strikeouts++;
-            } elseif ($type === \App\Models\Play::TYPE_HIT) {
-                $hits++;
-            } elseif ($type === \App\Models\Play::TYPE_WALK) {
-                $walks++;
+            $tid = $p->game?->tournament_id;
+            $key = $tid === null ? 'none' : 't:' . $tid;
+            if (! isset($byTournament[$key])) {
+                $byTournament[$key] = [
+                    'tournament_id' => $tid,
+                    'game_ids' => [],
+                    'batting' => ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0],
+                    'pitching' => ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0],
+                ];
             }
+            $gid = $p->game_id;
+            if (! in_array($gid, $byTournament[$key]['game_ids'], true)) {
+                $byTournament[$key]['game_ids'][] = $gid;
+            }
+            $row = &$byTournament[$key];
+            if ($p->batter_id === $athleteId) {
+                $this->accumulateBatter($row['batting'], $p);
+            }
+            if ($p->pitcher_id === $athleteId) {
+                $this->accumulatePitcher($row['pitching'], $p);
+            }
+            unset($row);
         }
 
-        return compact('pitches', 'strikes', 'balls', 'strikeouts', 'hits', 'walks');
+        // Calcular AVG + games_count, descartar game_ids
+        foreach ($byTournament as &$row) {
+            $b = &$row['batting'];
+            $b['avg'] = $b['at_bats'] > 0 ? round($b['hits'] / $b['at_bats'], 3) : 0.0;
+            unset($b);
+            $row['games_count'] = count($row['game_ids']);
+            unset($row['game_ids']);
+        }
+        unset($row);
+
+        // Resolver modelos Tournament para los IDs conocidos (batch query).
+        $tIds = collect($byTournament)->pluck('tournament_id')->filter()->unique()->values();
+        $tournaments = \App\Models\Tournament::whereIn('id', $tIds)->get()->keyBy('id');
+        foreach ($byTournament as &$row) {
+            $row['tournament'] = $row['tournament_id'] ? ($tournaments[$row['tournament_id']] ?? null) : null;
+        }
+        unset($row);
+
+        // Ordenar: primero torneos con nombre, luego "Sin torneo" al final.
+        return collect($byTournament)
+            ->sortBy(function ($r) {
+                return $r['tournament'] ? $r['tournament']->name : 'ZZZ-Sin torneo';
+            })
+            ->values();
+    }
+
+    /**
+     * Helper: devuelve las stats de bateo a partir de una Collection de plays
+     * donde el atleta figura como batter (caller filtra previamente).
+     */
+    private function batterStatsFromPlays(iterable $plays): array
+    {
+        $stats = ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0];
+        foreach ($plays as $p) {
+            $this->accumulateBatter($stats, $p);
+        }
+        $stats['avg'] = $stats['at_bats'] > 0 ? round($stats['hits'] / $stats['at_bats'], 3) : 0.0;
+        return $stats;
+    }
+
+    /**
+     * Helper: devuelve las stats de pitcheo a partir de una Collection de plays
+     * donde el atleta figura como pitcher (caller filtra previamente).
+     */
+    private function pitcherStatsFromPlays(iterable $plays): array
+    {
+        $stats = ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0];
+        foreach ($plays as $p) {
+            $this->accumulatePitcher($stats, $p);
+        }
+        return $stats;
+    }
+
+    /**
+     * Suma una jugada a un acumulador de bateo (mutates $stats in place).
+     */
+    private function accumulateBatter(array &$stats, \App\Models\Play $p): void
+    {
+        $type = $p->type;
+        if ($type === \App\Models\Play::TYPE_HIT) {
+            $stats['at_bats']++;
+            $stats['hits']++;
+        } elseif ($type === \App\Models\Play::TYPE_OUT) {
+            $stats['at_bats']++;
+            if ($p->subtype === \App\Models\Play::SUBTYPE_OUT_STRIKEOUT) {
+                $stats['strikeouts']++;
+            }
+        } elseif ($type === \App\Models\Play::TYPE_WALK) {
+            $stats['walks']++;
+        } elseif ($type === \App\Models\Play::TYPE_HBP) {
+            // No cuenta como AB ni hit
+        } elseif ($type === \App\Models\Play::TYPE_BUNT) {
+            if ($p->subtype !== \App\Models\Play::SUBTYPE_BUNT_SACRIFICE) {
+                $stats['at_bats']++;
+                if ($p->subtype === \App\Models\Play::SUBTYPE_BUNT_SINGLE) {
+                    $stats['hits']++;
+                }
+            }
+        }
+    }
+
+    /**
+     * Suma una jugada a un acumulador de pitcheo (mutates $stats in place).
+     */
+    private function accumulatePitcher(array &$stats, \App\Models\Play $p): void
+    {
+        $type = $p->type;
+        $subtype = $p->subtype;
+        if ($type === \App\Models\Play::TYPE_PITCH) {
+            if ($subtype === 'at_bat_start') {
+                return;
+            }
+            $stats['pitches']++;
+            if ($subtype === 'ball') {
+                $stats['balls']++;
+            } elseif (in_array($subtype, ['looking', 'swinging', 'foul_tip'], true)) {
+                $stats['strikes']++;
+            }
+        } elseif ($type === \App\Models\Play::TYPE_OUT && $subtype === \App\Models\Play::SUBTYPE_OUT_STRIKEOUT) {
+            $stats['strikeouts']++;
+        } elseif ($type === \App\Models\Play::TYPE_HIT) {
+            $stats['hits']++;
+        } elseif ($type === \App\Models\Play::TYPE_WALK) {
+            $stats['walks']++;
+        }
     }
 
     public function edit(Athlete $athlete): View
