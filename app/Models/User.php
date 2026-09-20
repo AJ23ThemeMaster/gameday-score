@@ -7,6 +7,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -24,6 +25,7 @@ class User extends Authenticatable
         'email',
         'password',
         'avatar_path',
+        'team_id',
     ];
 
     protected $hidden = [
@@ -80,6 +82,26 @@ class User extends Authenticatable
     public function isAnotador(): bool
     {
         return $this->hasRole('anotador');
+    }
+
+    /**
+     * DISI-81: verificar si este usuario es gestor de su equipo asociado.
+     * El gestor solo puede administrar el equipo al que esta asociado y los
+     * atletas de ese equipo. Requiere tanto el rol 'gestor' como un team_id
+     * no nulo.
+     */
+    public function isGestor(): bool
+    {
+        return $this->hasRole('gestor') && $this->team_id !== null;
+    }
+
+    /**
+     * DISI-80: equipo al que esta asociado el usuario (nullable).
+     * Un admin del sistema puede o no tener equipo asociado.
+     */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
     }
 
     // ---------------------------------------------------------------------

@@ -36,6 +36,24 @@
                     @csrf
                     @method('PUT')
 
+                    {{-- DISI-80: equipo asociado (opcional) --}}
+                    <div class="mb-6 pb-6 border-b border-gray-200">
+                        <x-input-label for="team_id" :value="__('Equipo asociado')" />
+                        <p class="mt-1 text-sm text-gray-600 mb-3">
+                            {{ __('Asigna al usuario a un equipo específico. Si tiene el rol gestor, sólo podrá administrar este equipo y sus atletas. Deja vacío para no asociarlo.') }}
+                        </p>
+                        <select id="team_id" name="team_id"
+                                class="block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md text-sm">
+                            <option value="">{{ __('— Sin equipo asociado —') }}</option>
+                            @foreach ($teams as $team)
+                                <option value="{{ $team->id }}" {{ (string) old('team_id', $user->team_id) === (string) $team->id ? 'selected' : '' }}>
+                                    {{ $team->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('team_id')" class="mt-2" />
+                    </div>
+
                     <div>
                         <x-input-label :value="__('Roles del usuario')" />
                         <p class="mt-1 text-sm text-gray-600 mb-3">
