@@ -1,7 +1,11 @@
 // DISI-82: service worker de la PWA de Gameday Score.
 // Estrategia: network-first, con fallback a cache. Solo cacheamos
 // respuestas GET del mismo origen y exitosas.
-const CACHE_VERSION = 'gameday-v1';
+//
+// v2: bump para invalidar el cache遗留 del dark theme de la rama
+// feature-design (commits b9ab23c/b63022e revertidos). Si volvés a
+// ver dark theme en master, bump a v3 o mas.
+const CACHE_VERSION = 'gameday-v2';
 const CORE_ASSETS = [
     '/',
     '/juego',
