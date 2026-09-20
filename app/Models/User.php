@@ -96,6 +96,22 @@ class User extends Authenticatable
     }
 
     /**
+     * DISI-81: el gestor actua sobre el modelo dado? Solo si el team_id del
+     * modelo coincide con el team_id del usuario. Para el modelo Team el
+     * identificador relevante es el propio id (no team_id, que no existe).
+     */
+    public function isGestorOwning($model): bool
+    {
+        if (! $this->isGestor()) {
+            return false;
+        }
+        // Team: usar id directamente. Athlete y otros con team_id: usar team_id.
+        $modelTeamId = $model instanceof Team ? $model->id : ($model->team_id ?? null);
+
+        return $modelTeamId !== null && (int) $modelTeamId === (int) $this->team_id;
+    }
+
+    /**
      * DISI-80: equipo al que esta asociado el usuario (nullable).
      * Un admin del sistema puede o no tener equipo asociado.
      */

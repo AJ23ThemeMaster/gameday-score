@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // DISI-15: alias para los middlewares de permisologia
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            // DISI-81: alias para acciones permitidas a admin o gestor
+            'admin_or_gestor' => \App\Http\Middleware\EnsureAdminOrGestor::class,
             // DISI-16b: alias para el challenge de 2FA tras login
             '2fa.challenge' => \App\Http\Middleware\EnsureTwoFactorChallenged::class,
         ]);
