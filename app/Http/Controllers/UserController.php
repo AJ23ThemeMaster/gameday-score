@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateUserRolesRequest;
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -31,8 +32,9 @@ class UserController extends Controller
         $user->load('roles');
         $roles = Role::orderBy('name')->get();
         $assigned = $user->roles->pluck('name')->all();
+        $teams = Team::orderBy('name')->get();
 
-        return view('users.edit', compact('user', 'roles', 'assigned'));
+        return view('users.edit', compact('user', 'roles', 'assigned', 'teams'));
     }
 
     public function update(UpdateUserRolesRequest $request, User $user): RedirectResponse
@@ -48,10 +50,15 @@ class UserController extends Controller
             }
         }
 
+        $data = $request->validated();
         $user->syncRoles($roles);
+
+        // DISI-80: asignar (o quitar) equipo asociado. Nullable.
+        $user->team_id = $data['team_id'] ?? null;
+        $user->save();
 
         return redirect()
             ->route('users.edit', $user)
-            ->with('status', "Roles actualizados correctamente para {$user->name}.");
+            ->with('status', "Usuario «{$user->name}» actualizado correctamente.");
     }
 }
