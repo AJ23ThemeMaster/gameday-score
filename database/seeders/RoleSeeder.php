@@ -17,6 +17,9 @@ class RoleSeeder extends Seeder
         // Crear roles base
         $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $anotador = Role::firstOrCreate(['name' => 'anotador', 'guard_name' => 'web']);
+        // DISI-81: rol gestor — solo puede administrar SU equipo asociado
+        // y los atletas de ese equipo. El team_id del usuario define el scope.
+        $gestor = Role::firstOrCreate(['name' => 'gestor', 'guard_name' => 'web']);
 
         // Permisos granulares para admin (gestiona todo)
         $adminPermissions = [
@@ -24,6 +27,8 @@ class RoleSeeder extends Seeder
             'manage leagues', 'manage tournaments', 'manage teams', 'manage categories', 'manage athletes',
             // Gestionar anotadores y referees
             'manage scorekeepers', 'manage referees',
+            // Gestionar usuarios + roles (incluye asignar gestores)
+            'manage users',
             // Gestionar juegos
             'manage games',
             // Anotar en cualquier juego
@@ -41,6 +46,17 @@ class RoleSeeder extends Seeder
         foreach ($anotadorPermissions as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
             $anotador->givePermissionTo($perm);
+        }
+
+        // DISI-81: permisos para gestor — solo los permisos base; el chequeo
+        // de scope (team_id matching) lo hace User::isGestor() en cada controlador.
+        $gestorPermissions = [
+            'manage assigned team',
+            'manage assigned team athletes',
+        ];
+        foreach ($gestorPermissions as $perm) {
+            Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
+            $gestor->givePermissionTo($perm);
         }
 
         // Asignar rol admin al usuario frank@gameday.test (owner actual)

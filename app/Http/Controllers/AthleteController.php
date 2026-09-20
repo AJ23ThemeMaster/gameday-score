@@ -18,7 +18,22 @@ class AthleteController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('admin');
+        // DISI-81: gestor puede crear/editar atletas pero solo de su equipo.
+        // Index y destroy siguen siendo admin-only para no exponer la lista completa.
+        $this->middleware('admin_or_gestor')->except(['show', 'destroy']);
+        $this->middleware('admin')->only(['index', 'destroy']);
+    }
+
+    /**
+     * DISI-81: gestor solo puede actuar sobre atletas de SU equipo asociado.
+     * Admin puede actuar sobre cualquiera.
+     */
+    private function authorizeGestorOnAthlete(Athlete $athlete): void
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user && $user->isGestor() && ! $user->isGestorOwning($athlete)) {
+            abort(403, 'Solo puedes administrar atletas del equipo al que estás asociado.');
+        }
     }
 
     public function index(Request $request): View
@@ -87,7 +102,11 @@ class AthleteController extends Controller
 
     public function create(): View
     {
-        $teams = Team::orderBy('name')->get();
+        $user = \Illuminate\Support\Facades\Auth::user();
+        // DISI-81: gestor solo puede crear atletas para su equipo asociado.
+        $teams = $user->isGestor()
+            ? Team::where('id', $user->team_id)->get()
+            : Team::orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
 
         return view('athletes.create', compact('teams', 'categories'));
@@ -100,6 +119,12 @@ class AthleteController extends Controller
         // Cast defensivo para PHP 8.4 strict types
         $data['team_id'] = isset($data['team_id']) && $data['team_id'] !== null ? (int) $data['team_id'] : null;
         $data['category_id'] = isset($data['category_id']) && $data['category_id'] !== null ? (int) $data['category_id'] : null;
+
+        // DISI-81: gestor solo puede crear atletas para su equipo asociado.
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user && $user->isGestor()) {
+            $data['team_id'] = $user->team_id;
+        }
 
         if ($request->hasFile('photo')) {
             $data['photo_path'] = $request->file('photo')->store('athletes/photos', 'public');
@@ -328,7 +353,12 @@ class AthleteController extends Controller
 
     public function edit(Athlete $athlete): View
     {
-        $teams = Team::orderBy('name')->get();
+        $this->authorizeGestorOnAthlete($athlete);
+        $user = \Illuminate\Support\Facades\Auth::user();
+        // DISI-81: gestor solo puede ver atletas de su equipo.
+        $teams = ($user && $user->isGestor())
+            ? Team::where('id', $user->team_id)->get()
+            : Team::orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
 
         return view('athletes.edit', compact('athlete', 'teams', 'categories'));
@@ -336,10 +366,18 @@ class AthleteController extends Controller
 
     public function update(UpdateAthleteRequest $request, Athlete $athlete): RedirectResponse
     {
+        $this->authorizeGestorOnAthlete($athlete);
         $data = $request->validated();
         $data['active'] = $request->boolean('active', $athlete->active);
         $data['team_id'] = isset($data['team_id']) && $data['team_id'] !== null ? (int) $data['team_id'] : null;
         $data['category_id'] = isset($data['category_id']) && $data['category_id'] !== null ? (int) $data['category_id'] : null;
+
+        // DISI-81: gestor no puede cambiar el equipo del atleta a uno que
+        // no sea el suyo.
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user->isGestor()) {
+            $data['team_id'] = $user->team_id;
+        }
 
         if ($request->hasFile('photo')) {
             $this->deletePhoto($athlete);

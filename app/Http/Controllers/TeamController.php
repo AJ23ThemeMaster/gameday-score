@@ -13,13 +13,28 @@ use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class TeamController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('admin');
+        // DISI-81: gestor puede editar solo SU equipo. El chequeo fino se hace
+        // dentro de cada metodo (index/create/store/destroy siguen siendo admin-only).
+        $this->middleware('admin_or_gestor')->except(['show']);
+        $this->middleware('admin')->only(['index', 'create', 'store', 'destroy']);
+    }
+
+    /**
+     * DISI-81: gestor solo puede editar SU equipo asociado. Admin edita cualquiera.
+     */
+    private function authorizeGestorOnTeam(Team $team): void
+    {
+        $user = Auth::user();
+        if ($user && $user->isGestor() && ! $user->isGestorOwning($team)) {
+            abort(403, 'Solo puedes administrar el equipo al que estás asociado.');
+        }
     }
 
     public function index(): View
@@ -151,6 +166,7 @@ class TeamController extends Controller
 
     public function edit(Team $team): View
     {
+        $this->authorizeGestorOnTeam($team);
         $leagues = League::where('active', true)
             ->orderBy('name')
             ->get();
@@ -160,6 +176,7 @@ class TeamController extends Controller
 
     public function update(UpdateTeamRequest $request, Team $team): RedirectResponse
     {
+        $this->authorizeGestorOnTeam($team);
         $data = $request->validated();
         $data['active'] = $request->boolean('active', $team->active);
         $data['league_id'] = $data['league_id'] !== null ? (int) $data['league_id'] : null;
@@ -181,6 +198,7 @@ class TeamController extends Controller
 
     public function destroy(Team $team): RedirectResponse
     {
+        $this->authorizeGestorOnTeam($team);
         if ($team->homeGames()->exists() || $team->awayGames()->exists()) {
             return redirect()
                 ->route('teams.index')
