@@ -17,37 +17,54 @@
            un slide-in desde arriba + slide-out hacia abajo + pulse de color
            para dar feedback claro del cambio. */
         @keyframes inning-flip {
-            0%   { transform: translateY(-120%); opacity: 0; color: #f59e0b; }
-            40%  { transform: translateY(0);     opacity: 1; color: #f59e0b; }
-            70%  { transform: translateY(0);     opacity: 1; color: #111827; }
-            100% { transform: translateY(0);     opacity: 1; color: #111827; }
+            0%   { transform: translateY(-120%); opacity: 0; color: #ffb95f; }
+            40%  { transform: translateY(0);     opacity: 1; color: #ffb95f; }
+            70%  { transform: translateY(0);     opacity: 1; color: #dfe2f1; }
+            100% { transform: translateY(0);     opacity: 1; color: #dfe2f1; }
         }
         .inning-anim-host.is-flipping {
             animation: inning-flip 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         /* MEJ-5: indicador del equipo que esta bateando.
-           Cuando data-batting="1" se aplica un fondo verde MUY sutil
-           y el nombre del equipo + label cambian a verde bold.
-           SIN anillo, SIN escala, SIN box-shadow (estructura limpia
-           similar al scoreboard del adjunto). */
+           Refactor DISE-O: emerald pulse bar al lado del score del equipo
+           bateando + cambio del label "BATEANDO" con ping animation.
+           Las clases team-zone[data-batting="1"] se preservan para no romper
+           la logica de Alpine (applyPitchState sigue cambiando data-batting). */
         .team-zone {
             transition: background-color 0.3s ease;
-            position: relative;
-            border-radius: 1rem;
-            padding: 1rem;
         }
-        .team-zone[data-batting="1"] {
-            background-color: rgba(16, 185, 129, 0.08);
+
+        /* DISE: barra emerald pulsante al lado del score del equipo bateando.
+           La pone applyPitchState() automaticamente via data-batting="1". */
+        .team-zone[data-batting="1"] .bat-indicator {
+            display: block;
+            animation: bat-pulse 1.6s ease-in-out infinite;
         }
-        .team-zone[data-batting="1"] .team-name {
-            color: #047857;
+        .team-zone .bat-indicator {
+            display: none;
         }
-        .team-zone[data-batting="1"] .team-label-local,
-        .team-zone[data-batting="1"] .team-label-away {
-            color: #047857;
-            font-weight: 700;
+        @keyframes bat-pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(78, 222, 163, 0.6); }
+            50%      { opacity: 0.5; box-shadow: 0 0 4px rgba(78, 222, 163, 0.3); }
         }
+
+        /* DISE: pulse animation sobre el score cuando se incrementa.
+           El JS (applyPitchState) agrega la clase is-scoring por 600ms cuando
+           el numero cambia; el keyframe hace un scale + flash emerald. */
+        @keyframes score-tick {
+            0%   { transform: scale(1);    color: inherit; text-shadow: 0 0 0 rgba(78,222,163,0); }
+            40%  { transform: scale(1.22); color: #4edea3; text-shadow: 0 0 16px rgba(78,222,163,0.7); }
+            100% { transform: scale(1);    color: inherit; text-shadow: 0 0 0 rgba(78,222,163,0); }
+        }
+        .score-tick.is-scoring {
+            animation: score-tick 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* DISE: ocultar scrollbar pero mantener scroll en filas horizontales
+           (cards de pitcher/batter/ondeck, fila de pills, action grid). */
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 
     <div
@@ -97,41 +114,45 @@
         <div class="max-w-2xl mx-auto sm:px-4">
 
             {{-- ============ HEADER: LOGOS + SCORES + COUNT ============ --}}
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            {{-- DISE: dark wrapper (bg-surface-container) con borde hairline para
+                 definir el limite en dark mode. Los tokens `surface-container` y
+                 `outline-variant/30` vienen del commit 1 (tailwind.config.js). --}}
+            <div class="bg-surface-container rounded-2xl shadow-lg overflow-hidden border border-outline-variant/30">
 
                 {{-- Breadcrumb Liga / Torneo / Categoria (DISI-13) --}}
-                <div class="px-4 py-2 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center gap-2 text-xs">
+                {{-- DISE: dark theme via tokens surface-container-low / outline-variant. --}}
+                <div class="px-4 py-2 bg-surface-container-low border-b border-outline-variant/30 flex flex-wrap items-center gap-2 text-xs">
                     @if ($game->tournament?->league)
                         <a href="{{ route('leagues.show', $game->tournament->league) }}"
-                           class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded-md hover:border-indigo-400 transition"
+                           class="inline-flex items-center gap-1.5 px-2 py-1 bg-surface border border-outline-variant/40 rounded-md hover:border-primary/50 transition"
                            title="{{ $game->tournament->league->name }}">
                             @if ($game->tournament->league->logo_url)
                                 <img src="{{ $game->tournament->league->logo_url }}" alt="" class="h-4 w-4 object-contain">
                             @endif
-                            <span class="font-semibold text-gray-700">{{ $game->tournament->league->short_name ?? $game->tournament->league->name }}</span>
+                            <span class="font-semibold text-on-surface">{{ $game->tournament->league->short_name ?? $game->tournament->league->name }}</span>
                         </a>
-                        <span class="text-gray-400">/</span>
+                        <span class="text-outline">/</span>
                     @endif
                     @if ($game->tournament)
                         <a href="{{ route('tournaments.show', $game->tournament) }}"
-                           class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded-md hover:border-indigo-400 transition"
+                           class="inline-flex items-center gap-1.5 px-2 py-1 bg-surface border border-outline-variant/40 rounded-md hover:border-primary/50 transition"
                            title="{{ $game->tournament->name }}">
                             @if ($game->tournament->logo_url)
                                 <img src="{{ $game->tournament->logo_url }}" alt="" class="h-4 w-4 object-contain">
                             @endif
-                            <span class="font-semibold text-gray-700">{{ $game->tournament->name }}</span>
+                            <span class="font-semibold text-on-surface">{{ $game->tournament->name }}</span>
                             @if ($game->tournament->season)
-                                <span class="text-gray-500 text-[10px]">({{ $game->tournament->season }})</span>
+                                <span class="text-on-surface-variant text-[10px]">({{ $game->tournament->season }})</span>
                             @endif
                         </a>
-                        <span class="text-gray-400">/</span>
+                        <span class="text-outline">/</span>
                     @endif
                     @if ($game->category)
-                        <span class="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md font-bold">
+                        <span class="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md font-bold">
                             {{ $game->category->name }}
                         </span>
                     @else
-                        <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-500 rounded-md italic">
+                        <span class="inline-flex items-center px-2 py-1 bg-surface-container-high text-on-surface-variant rounded-md italic">
                             {{ __('Sin categoría') }}
                         </span>
                     @endif
@@ -146,7 +167,7 @@
                     {{-- funciona (no hay hermano anterior que empuje). --}}
                     <div class="ml-auto flex items-center gap-1.5">
                         <a href="{{ route('games.show', $game) }}"
-                           class="inline-flex items-center justify-center h-7 w-7 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-indigo-600 hover:border-indigo-400 transition"
+                           class="inline-flex items-center justify-center h-7 w-7 bg-surface border border-outline-variant/40 rounded-md text-on-surface-variant hover:text-primary hover:border-primary/50 transition"
                            title="{{ __('Ver detalle del juego') }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
                                 <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
@@ -163,7 +184,7 @@
                         @if ($game->is_public && $game->public_token)
                             <button type="button"
                                     @click="openLiveShareModal()"
-                                    class="inline-flex items-center justify-center h-7 w-7 bg-white border border-emerald-300 rounded-md text-emerald-600 hover:text-emerald-700 hover:border-emerald-500 transition"
+                                    class="inline-flex items-center justify-center h-7 w-7 bg-surface border border-primary/40 rounded-md text-primary hover:bg-primary/10 transition"
                                     title="{{ __('Compartir / abrir vista en vivo (requiere juego público)') }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
                                     <path d="M6.3 2.84A1 1 0 0 0 5 3.75v12.5a1 1 0 0 0 1.55.83l10-6.25a1 1 0 0 0 0-1.66l-10-6.25a1 1 0 0 0-.25-.08Z" />
@@ -171,14 +192,14 @@
                             </button>
                         @endif
                         <a href="{{ route('games.roster.index', $game) }}"
-                           class="inline-flex items-center justify-center h-7 w-7 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-indigo-600 hover:border-indigo-400 transition"
+                           class="inline-flex items-center justify-center h-7 w-7 bg-surface border border-outline-variant/40 rounded-md text-on-surface-variant hover:text-primary hover:border-primary/50 transition"
                            title="{{ __('Ver roster del juego') }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
                                 <path fill-rule="evenodd" d="M2 3.75A.75.75 0 0 1 2.75 3h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 3.75Zm0 4.167a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Zm0 4.166a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Zm0 4.167a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
                             </svg>
                         </a>
                         <a href="{{ route('games.index') }}"
-                           class="inline-flex items-center justify-center h-7 w-7 bg-white border border-gray-200 rounded-md text-gray-600 hover:text-indigo-600 hover:border-indigo-400 transition"
+                           class="inline-flex items-center justify-center h-7 w-7 bg-surface border border-outline-variant/40 rounded-md text-on-surface-variant hover:text-primary hover:border-primary/50 transition"
                            title="{{ __('Ir al listado de juegos') }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
                                 <path fill-rule="evenodd" d="M9.293 2.293a1 1 0 0 1 1.414 0l7 7a1 1 0 0 1 0 1.414l-7 7a1 1 0 0 1-1.414-1.414L14.586 11H3a1 1 0 1 1 0-2h11.586l-5.293-5.293a1 1 0 0 1 0-1.414Z" clip-rule="evenodd" />
@@ -187,86 +208,159 @@
                     </div>
                 </div>
 
-                {{-- Header: Local | Score centrado | Visitante (estructura del adjunto) --}}
-                <div class="grid grid-cols-3 items-center gap-2 sm:gap-4 border-b-2 border-gray-100 py-5 px-3 sm:px-6">
+                {{-- Header: Local | Score centrado | Visitante (estructura Stitch) --}}
+                {{-- DISE: patron "Stadium Midnight telemetry strip" del design system de Stitch. --}}
+                {{-- Layout: [Local team strip] [score central Oswald 56px + active bat indicator] [Visitante team strip con BATEANDO]. --}}
+                {{-- data-attrs preservados para que applyPitchState() siga funcionando sin tocar alpine-stores.js. --}}
+                <div class="px-4 py-5 sm:px-6 sm:py-6 border-b border-outline-variant/30">
 
-                    {{-- Local: logo arriba, nombre medio, label abajo (centrado en su columna) --}}
-                    <div class="team-zone flex flex-col items-center gap-1.5"
-                         data-team-zone="home"
-                         data-batting="{{ $state['half'] === 'bottom' ? '1' : '0' }}">
-                        @if ($game->homeTeam->logoUrl)
-                            <img src="{{ $game->homeTeam->logoUrl }}" class="h-16 w-16 sm:h-20 sm:w-20 object-contain">
-                        @else
-                            <div class="h-16 w-16 sm:h-20 sm:w-20 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs">LOGO</div>
-                        @endif
-                        <div class="team-name text-sm sm:text-base font-bold text-gray-800 text-center leading-tight">{{ $game->homeTeam->name }}</div>
-                        <div class="team-label-local text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider">{{ __('Local') }}</div>
-                    </div>
+                    {{-- Top row: Inning indicator (izq) | Score central | overflow menu (der) --}}
+                    <div class="flex items-center justify-between gap-2 mb-3 sm:mb-4">
+                        {{-- Inning indicator: tertiary color (amber) --}}
+                        <div class="flex items-center gap-1.5 px-2.5 py-1 bg-surface-container-lowest rounded-lg">
+                            <span class="font-telemetry-md text-tertiary inning-anim-host" data-inning-half data-inning-anim>{{ $state['half'] === 'top' ? '▲' : '▼' }}</span>
+                            <span class="font-telemetry-lg text-on-surface inning-anim-host" data-inning-number data-inning-anim>{{ $state['inning'] }}</span>
+                            <span class="font-label-caps text-on-surface-variant hidden sm:inline">{{ __('Inning') }}</span>
+                        </div>
 
-                    {{-- Centro: score "home - away" + Inning indicator --}}
-                    <div class="flex flex-col items-center justify-center gap-1">
-                        <div class="flex items-baseline gap-2 sm:gap-3 text-3xl sm:text-5xl font-black text-gray-900 leading-none">
-                            <span data-score="home">{{ $score['home'] }}</span>
-                            <span class="text-gray-400">-</span>
-                            <span data-score="away">{{ $score['away'] }}</span>
-                        </div>
-                        <div class="text-xs sm:text-sm text-gray-500 flex items-center gap-1" data-inning-indicator>
-                            <span>{{ __('Inning') }}</span>
-                            <span class="font-bold text-gray-700 inning-anim-host" data-inning-number data-inning-anim>{{ $state['inning'] }}</span>
-                            <span class="text-gray-600 inning-anim-host" data-inning-half data-inning-anim>{{ $state['half'] === 'top' ? '▲' : '▼' }}</span>
-                        </div>
                         {{-- DISI-39: badge "JUEGO FINALIZADO" cuando el juego esta terminado --}}
                         {{-- Aparece centrado debajo del inning cuando $game->isCompleted()=true. --}}
                         {{-- Usa x-show para que la reactividad Alpine (DISI-34) lo muestre/oculte --}}
                         {{-- sin recargar cuando el juego se finaliza via poll. --}}
                         @if ($game->isCompleted())
-                            <div class="mt-1 inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 border border-emerald-300 rounded-full text-emerald-800 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm"
+                            <div class="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/15 border border-primary/40 rounded-full text-primary text-[10px] font-black uppercase tracking-wider shadow-glow-primary"
                                  x-show="isFinalized"
                                  data-game-status="finalized">
-                                <span>{{ __('Juego finalizado') }}</span>
+                                <span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                <span>{{ __('Finalizado') }}</span>
                             </div>
                         @endif
                     </div>
 
-                    {{-- Visitante: logo arriba, nombre medio, label abajo (centrado en su columna) --}}
-                    <div class="team-zone flex flex-col items-center gap-1.5"
-                         data-team-zone="away"
-                         data-batting="{{ $state['half'] === 'top' ? '1' : '0' }}">
-                        @if ($game->awayTeam->logoUrl)
-                            <img src="{{ $game->awayTeam->logoUrl }}" class="h-16 w-16 sm:h-20 sm:w-20 object-contain">
-                        @else
-                            <div class="h-16 w-16 sm:h-20 sm:w-20 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs">LOGO</div>
-                        @endif
-                        <div class="team-name text-sm sm:text-base font-bold text-gray-800 text-center leading-tight">{{ $game->awayTeam->name }}</div>
-                        <div class="team-label-away text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider">{{ __('Visitante') }}</div>
+                    {{-- Main row: [Local] [Score] [Visitante] --}}
+                    <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-6">
+
+                        {{-- Local: logo + nombre + label "BATEANDO" (cuando aplica) --}}
+                        <div class="team-zone flex items-center gap-2 sm:gap-3 justify-end text-right"
+                             data-team-zone="home"
+                             data-batting="{{ $state['half'] === 'bottom' ? '1' : '0' }}">
+                            {{-- BATEANDO label + ping dot, solo visible cuando local batea (data-batting="1") --}}
+                            <div class="hidden sm:flex flex-col items-end"
+                                 :class="$el.closest('[data-team-zone]').dataset.batting === '1' ? 'flex' : 'hidden'">
+                                <div class="flex items-center gap-1">
+                                    <span class="font-label-caps text-primary uppercase">{{ __('Bateando') }}</span>
+                                    <span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+                                </div>
+                                <span class="font-telemetry-sm text-on-surface-variant">{{ $pitcher?->full_name ?? '—' }}</span>
+                            </div>
+                            <div class="flex flex-col items-end">
+                                <div class="team-name font-display text-headline-md text-on-surface leading-tight">{{ $game->homeTeam->short_name ?? $game->homeTeam->name }}</div>
+                                <div class="team-label-local font-telemetry-sm text-on-surface-variant uppercase tracking-wider">{{ __('Local') }}</div>
+                            </div>
+                            @if ($game->homeTeam->logoUrl)
+                                <img src="{{ $game->homeTeam->logoUrl }}" class="h-10 w-10 sm:h-14 sm:w-14 object-contain flex-shrink-0">
+                            @else
+                                <div class="h-10 w-10 sm:h-14 sm:w-14 bg-surface-container-high rounded-full flex items-center justify-center text-on-surface-variant text-[10px] flex-shrink-0">LOGO</div>
+                            @endif
+                        </div>
+
+                        {{-- Centro: score "home - away" en Oswald display-score + active bat indicator --}}
+                        {{-- Mantiene [data-score="home/away"] + [data-team-zone] para Alpine. --}}
+                        <div class="flex items-center bg-surface-container-lowest rounded-lg px-3 py-1.5 sm:px-4 sm:py-2">
+                            <div class="relative flex items-center team-zone"
+                                 data-team-zone="home"
+                                 data-batting="{{ $state['half'] === 'bottom' ? '1' : '0' }}">
+                                {{-- DISE: emerald pulse bar al lado del score del equipo bateando --}}
+                                <span class="bat-indicator absolute -left-2 top-1 bottom-1 w-1 bg-primary rounded-full"></span>
+                                <span class="font-display text-display-score-mobile sm:text-display-score text-on-surface leading-none score-tick" data-score="home">{{ $score['home'] }}</span>
+                            </div>
+                            <span class="font-telemetry-md text-outline mx-2 sm:mx-3 leading-none">:</span>
+                            <div class="relative flex items-center team-zone"
+                                 data-team-zone="away"
+                                 data-batting="{{ $state['half'] === 'top' ? '1' : '0' }}">
+                                <span class="bat-indicator absolute -left-2 top-1 bottom-1 w-1 bg-primary rounded-full"></span>
+                                <span class="font-display text-display-score-mobile sm:text-display-score text-on-surface leading-none score-tick" data-score="away">{{ $score['away'] }}</span>
+                            </div>
+                        </div>
+
+                        {{-- Visitante: logo + nombre + sub-info --}}
+                        <div class="team-zone flex items-center gap-2 sm:gap-3"
+                             data-team-zone="away"
+                             data-batting="{{ $state['half'] === 'top' ? '1' : '0' }}">
+                            @if ($game->awayTeam->logoUrl)
+                                <img src="{{ $game->awayTeam->logoUrl }}" class="h-10 w-10 sm:h-14 sm:w-14 object-contain flex-shrink-0">
+                            @else
+                                <div class="h-10 w-10 sm:h-14 sm:w-14 bg-surface-container-high rounded-full flex items-center justify-center text-on-surface-variant text-[10px] flex-shrink-0">LOGO</div>
+                            @endif
+                            <div class="flex flex-col items-start">
+                                <div class="team-name font-display text-headline-md text-on-surface leading-tight">{{ $game->awayTeam->short_name ?? $game->awayTeam->name }}</div>
+                                <div class="team-label-away font-telemetry-sm text-on-surface-variant uppercase tracking-wider">{{ __('Visitante') }}</div>
+                            </div>
+                            {{-- BATEANDO label + ping dot, solo visible cuando visitante batea (data-batting="1") --}}
+                            <div class="hidden sm:flex flex-col items-start"
+                                 :class="$el.closest('[data-team-zone]').dataset.batting === '1' ? 'flex' : 'hidden'">
+                                <div class="flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+                                    <span class="font-label-caps text-primary uppercase">{{ __('Bateando') }}</span>
+                                </div>
+                                <span class="font-telemetry-sm text-on-surface-variant">{{ $batter?->full_name ?? '—' }}</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {{-- Bottom row: contextual info (away pitcher cuando local batea, al reves) --}}
+                    {{-- Solo visible en mobile (en desktop ya esta en el bloque de arriba) --}}
+                    <div class="sm:hidden mt-2 text-center text-telemetry-sm text-on-surface-variant">
+                        <span data-batting-home-pitcher class="{{ $state['half'] === 'bottom' ? 'hidden' : '' }}">
+                            P: {{ $pitcher?->full_name ?? '—' }}
+                        </span>
+                        <span data-batting-away-pitcher class="{{ $state['half'] === 'top' ? 'hidden' : '' }}">
+                            P: {{ $batter?->full_name ?? '—' }}
+                        </span>
                     </div>
 
                 </div>
 
                 {{-- Count: BOLAS / STRIKES / OUTS — solo visible mientras el juego esta en curso --}}
+                {{-- DISE: dark theme via tokens. Dots vacios usan surface-container-highest con --}}
+                {{-- borde outline-variant; dots llenos mantienen colores semanticos (emerald/amber/rose) --}}
+                {{-- y obtienen glow shadows para feedback visual inmediato. --}}
                 @if (! $game->isCompleted())
-                <div class="grid grid-cols-3 border-b-2 border-gray-100 text-center" x-show="!isFinalized">
-                    <div class="py-3 px-2 border-r border-gray-100">
-                        <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">{{ __('Bolas') }}</div>
+                <div class="grid grid-cols-3 border-b border-outline-variant/30 text-center bg-surface-container-low" x-show="!isFinalized">
+                    <div class="py-3 px-2 border-r border-outline-variant/30">
+                        <div class="font-label-caps text-on-surface-variant mb-2">{{ __('Bolas') }}</div>
                         <div class="flex justify-center gap-2" data-balls>
                             @for ($i = 0; $i < 4; $i++)
-                                <span class="w-3 h-3 rounded-full border border-gray-400 {{ $i < $state['balls'] ? 'bg-emerald-500 border-emerald-600' : 'bg-gray-100' }}"></span>
+                                @if ($i < $state['balls'])
+                                    <span class="w-3 h-3 rounded-full bg-primary shadow-glow-primary"></span>
+                                @else
+                                    <span class="w-3 h-3 rounded-full bg-surface-container-highest border border-outline-variant"></span>
+                                @endif
                             @endfor
                         </div>
                     </div>
-                    <div class="py-3 px-2 border-r border-gray-100">
-                        <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">{{ __('Strikes') }}</div>
+                    <div class="py-3 px-2 border-r border-outline-variant/30">
+                        <div class="font-label-caps text-on-surface-variant mb-2">{{ __('Strikes') }}</div>
                         <div class="flex justify-center gap-2" data-strikes>
                             @for ($i = 0; $i < 3; $i++)
-                                <span class="w-3 h-3 rounded-full border border-gray-400 {{ $i < $state['strikes'] ? 'bg-amber-500 border-amber-600' : 'bg-gray-100' }}"></span>
+                                @if ($i < $state['strikes'])
+                                    <span class="w-3 h-3 rounded-full bg-tertiary shadow-glow-tertiary"></span>
+                                @else
+                                    <span class="w-3 h-3 rounded-full bg-surface-container-highest border border-outline-variant"></span>
+                                @endif
                             @endfor
                         </div>
                     </div>
                     <div class="py-3 px-2">
-                        <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">{{ __('Outs') }}</div>
+                        <div class="font-label-caps text-on-surface-variant mb-2">{{ __('Outs') }}</div>
                         <div class="flex justify-center gap-2" data-outs>
                             @for ($i = 0; $i < 3; $i++)
-                                <span class="w-3 h-3 rounded-full border border-gray-400 {{ $i < $state['outs'] ? 'bg-rose-500 border-rose-600' : 'bg-gray-100' }}"></span>
+                                @if ($i < $state['outs'])
+                                    <span class="w-3 h-3 rounded-full bg-error shadow-glow-error"></span>
+                                @else
+                                    <span class="w-3 h-3 rounded-full bg-surface-container-highest border border-outline-variant"></span>
+                                @endif
                             @endfor
                         </div>
                     </div>
@@ -274,10 +368,12 @@
                 @endif
 
                 {{-- Pitcher + Batter — solo visible mientras el juego esta en curso --}}
+                {{-- DISE: dark theme via tokens. Las cards mantienen los colores semanticos --}}
+                {{-- (indigo para pitcher, amber para batter) pero el fondo y texto usan tokens. --}}
                 @if (! $game->isCompleted())
-                <div class="grid grid-cols-2 gap-0 border-b-2 border-gray-100" x-show="!isFinalized">
+                <div class="grid grid-cols-2 gap-0 border-b border-outline-variant/30" x-show="!isFinalized">
                     {{-- Pitcher --}}
-                    <div class="p-3 flex items-center gap-3 border-r border-gray-100" data-card="pitcher">
+                    <div class="p-3 flex items-center gap-3 border-r border-outline-variant/30" data-card="pitcher">
                         <div class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-[11px] flex-shrink-0 overflow-hidden" data-athlete-avatar>
                             @if ($pitcher && $pitcher->photoUrl)
                                 <img src="{{ $pitcher->photoUrl }}" class="w-full h-full object-cover" data-athlete-photo>
@@ -288,24 +384,24 @@
                             @endif
                         </div>
                         <div class="min-w-0 flex-1">
-                            <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">{{ __('Pitcheando') }}</div>
+                            <div class="font-label-caps text-on-surface-variant">{{ __('Pitcheando') }}</div>
                             @if ($pitcher)
-                                <div class="text-sm font-bold text-gray-900 truncate">
-                                    <span class="text-indigo-600">#{{ $pitcher->number ?? '?' }}</span>
+                                <div class="text-sm font-bold text-on-surface truncate">
+                                    <span class="text-indigo-400">#{{ $pitcher->number ?? '?' }}</span>
                                     {{ $pitcher->full_name }}
                                 </div>
-                                <div class="text-[10px] text-gray-600 mt-0.5 truncate" data-pitcher-stats>
+                                <div class="font-telemetry-sm text-on-surface-variant mt-0.5 truncate" data-pitcher-stats>
                                     {{ $pitcherStats['pitches'] }} lanz. ({{ $pitcherStats['strikes'] }}S / {{ $pitcherStats['balls'] }}B) · K: {{ $pitcherStats['strikeouts'] }} · H: {{ $pitcherStats['hits'] }}
                                 </div>
                             @else
-                                <div class="text-sm text-gray-400 italic">{{ __('Sin lanzador') }}</div>
+                                <div class="text-sm text-outline italic">{{ __('Sin lanzador') }}</div>
                             @endif
                         </div>
                     </div>
 
                     {{-- Batter --}}
                     <div class="p-3 flex items-center gap-3" data-card="batter">
-                        <div class="w-9 h-9 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-[11px] flex-shrink-0 overflow-hidden" data-athlete-avatar>
+                        <div class="w-9 h-9 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center font-bold text-[11px] flex-shrink-0 overflow-hidden" data-athlete-avatar>
                             @if ($batter && $batter->photoUrl)
                                 <img src="{{ $batter->photoUrl }}" class="w-full h-full object-cover" data-athlete-photo>
                             @elseif ($batter)
@@ -315,25 +411,26 @@
                             @endif
                         </div>
                         <div class="min-w-0 flex-1">
-                            <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">{{ __('Al bate') }}</div>
+                            <div class="font-label-caps text-on-surface-variant">{{ __('Al bate') }}</div>
                             @if ($batter)
-                                <div class="text-sm font-bold text-gray-900 truncate">
-                                    <span class="text-amber-600">#{{ $batter->number ?? '?' }}</span>
+                                <div class="text-sm font-bold text-on-surface truncate">
+                                    <span class="text-tertiary">#{{ $batter->number ?? '?' }}</span>
                                     {{ $batter->full_name }}
                                 </div>
-                                <div class="text-[10px] text-gray-600 mt-0.5 truncate" data-batter-stats>
+                                <div class="font-telemetry-sm text-on-surface-variant mt-0.5 truncate" data-batter-stats>
                                     AB: {{ $batterStats['at_bats'] }} · H: {{ $batterStats['hits'] }} · AVG: {{ number_format($batterStats['avg'], 3, '.', '') }} · BB: {{ $batterStats['walks'] }} · K: {{ $batterStats['strikeouts'] }}
                                 </div>
                             @else
-                                <div class="text-sm text-gray-400 italic">{{ __('Sin bateador') }}</div>
+                                <div class="text-sm text-outline italic">{{ __('Sin bateador') }}</div>
                             @endif
                         </div>
                     </div>
                 </div>
 
                 {{-- On-deck (Prevenido) — solo visible mientras el juego esta en curso --}}
-                <div class="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center gap-2" data-card="ondeck" x-show="!isFinalized">
-                    <div class="w-7 h-7 rounded-full bg-slate-500 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0 overflow-hidden" data-athlete-avatar>
+                {{-- DISE: dark theme via tokens surface-container-low. --}}
+                <div class="px-3 py-2 bg-surface-container-low border-b border-outline-variant/30 flex items-center gap-2" data-card="ondeck" x-show="!isFinalized">
+                    <div class="w-7 h-7 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center font-bold font-telemetry-sm flex-shrink-0 overflow-hidden" data-athlete-avatar>
                         @if ($onDeck && $onDeck->photoUrl)
                             <img src="{{ $onDeck->photoUrl }}" class="w-full h-full object-cover" data-athlete-photo>
                         @elseif ($onDeck)
@@ -342,13 +439,13 @@
                             <span>?</span>
                         @endif
                     </div>
-                    <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">{{ __('Prevenido') }}</div>
-                    <div class="text-sm font-bold text-gray-700" data-on-deck-name>
+                    <div class="font-label-caps text-on-surface-variant">{{ __('Prevenido') }}</div>
+                    <div class="text-sm font-bold text-on-surface" data-on-deck-name>
                         @if ($onDeck)
-                            <span class="text-gray-500">#{{ $onDeck->number ?? '?' }}</span>
+                            <span class="text-on-surface-variant">#{{ $onDeck->number ?? '?' }}</span>
                             {{ $onDeck->full_name }}
                         @else
-                            <span class="text-gray-400 italic font-normal">{{ __('Sin prevenido') }}</span>
+                            <span class="text-outline italic font-normal">{{ __('Sin prevenido') }}</span>
                         @endif
                     </div>
                 </div>
@@ -468,93 +565,97 @@
                 {{-- pintada ya refleja la condicion correcta sin parpadeos. --}}
                 <div>
                     {{-- Tab buttons: 3 botones en juego en curso, 1 solo (Extras) cuando finalizado --}}
-                    <div class="grid grid-cols-3 border-t-2 border-gray-100" x-show="!isFinalized">
+                    {{-- DISE: dark theme; tab activo usa border-tertiary + text-tertiary en vez de amber nativo. --}}
+                    <div class="grid grid-cols-3 border-t border-outline-variant/30" x-show="!isFinalized">
                         <button type="button" @click="tab = 'pitch'"
-                                :class="tab === 'pitch' ? 'border-b-2 border-amber-500 text-amber-600 font-bold' : 'text-gray-500'"
-                                class="py-3 text-center text-sm uppercase tracking-wider">
+                                :class="tab === 'pitch' ? 'border-b-2 border-tertiary text-tertiary font-bold' : 'text-on-surface-variant'"
+                                class="py-3 text-center font-label-caps">
                             {{ __('Pitcheo') }}
                         </button>
                         <button type="button" @click="tab = 'hit'"
-                                :class="tab === 'hit' ? 'border-b-2 border-amber-500 text-amber-600 font-bold' : 'text-gray-500'"
-                                class="py-3 text-center text-sm uppercase tracking-wider">
+                                :class="tab === 'hit' ? 'border-b-2 border-tertiary text-tertiary font-bold' : 'text-on-surface-variant'"
+                                class="py-3 text-center font-label-caps">
                             {{ __('Bateo') }}
                         </button>
                         <button type="button" @click="tab = 'extra'"
-                                :class="tab === 'extra' ? 'border-b-2 border-amber-500 text-amber-600 font-bold' : 'text-gray-500'"
-                                class="py-3 text-center text-sm uppercase tracking-wider">
+                                :class="tab === 'extra' ? 'border-b-2 border-tertiary text-tertiary font-bold' : 'text-on-surface-variant'"
+                                class="py-3 text-center font-label-caps">
                             {{ __('Extras') }}
                         </button>
                     </div>
-                    <div class="grid grid-cols-1 border-t-2 border-gray-100" x-show="isFinalized">
+                    <div class="grid grid-cols-1 border-t border-outline-variant/30" x-show="isFinalized">
                         <button type="button" @click="tab = 'extra'"
-                                :class="tab === 'extra' ? 'border-b-2 border-amber-500 text-amber-600 font-bold' : 'text-gray-500'"
-                                class="py-3 text-center text-sm uppercase tracking-wider">
+                                :class="tab === 'extra' ? 'border-b-2 border-tertiary text-tertiary font-bold' : 'text-on-surface-variant'"
+                                class="py-3 text-center font-label-caps">
                             {{ __('Extras') }}
                         </button>
                     </div>
 
                     {{-- Tab content: PITCHEo (Fase 2 — funcional) — solo en curso --}}
-                    <div x-show="tab === 'pitch' && !isFinalized" x-cloak class="grid grid-cols-4 gap-2 p-4">
+                    {{-- DISE: action buttons con dark theme. Colores semanticos: Ball=primary, --}}
+                    {{-- Strike=tertiary, Foul=secondary, Out=surface-container-high + text. --}}
+                    <div x-show="tab === 'pitch' && !isFinalized" x-cloak class="grid grid-cols-4 gap-2 p-4 bg-surface-container-low">
                         <button type="button" @click="sendBall()"
                                 :disabled="isPitching"
-                                class="py-6 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
+                                class="py-6 bg-surface-container-highest hover:bg-primary/20 disabled:opacity-50 text-primary text-2xl font-black rounded-2xl transition border border-primary/30">
                             {{ __('Ball') }}
                         </button>
                         <button type="button" @click="openStrikeModal()"
                                 :disabled="isPitching"
-                                class="py-6 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
+                                class="py-6 bg-surface-container-highest hover:bg-tertiary/20 disabled:opacity-50 text-tertiary text-2xl font-black rounded-2xl transition border border-tertiary/30">
                             {{ __('Strike') }}
                         </button>
                         <button type="button" @click="sendFoul()"
                                 :disabled="isPitching"
-                                class="py-6 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
+                                class="py-6 bg-surface-container-highest hover:bg-secondary/20 disabled:opacity-50 text-secondary text-2xl font-black rounded-2xl transition border border-secondary/30">
                             {{ __('Foul') }}
                         </button>
                         <button type="button" @click="openOutStep1()"
                                 :disabled="isPitching"
-                                class="py-6 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white text-2xl font-black rounded-2xl transition">
+                                class="py-6 bg-surface-container-highest hover:bg-error/20 disabled:opacity-50 text-error text-2xl font-black rounded-2xl transition border border-error/30">
                             {{ __('Out') }}
                         </button>
                     </div>
 
                     {{-- Tab content: BATEo (Fase 3 — hits) — solo en curso --}}
-                    <div x-show="tab === 'hit' && !isFinalized" x-cloak class="grid grid-cols-4 gap-2 p-4">
+                    {{-- DISE: hit buttons dark theme; mantiene color semantico por tipo de hit. --}}
+                    <div x-show="tab === 'hit' && !isFinalized" x-cloak class="grid grid-cols-4 gap-2 p-4 bg-surface-container-low">
                         <button type="button" @click="openHitModal('single')"
                                 :disabled="isPitching"
-                                class="py-6 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
+                                class="py-6 bg-primary/15 hover:bg-primary/25 disabled:opacity-50 text-primary text-base font-black rounded-2xl transition border border-primary/30">
                             {{ __('Sencillo') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-0.5">1B</div>
+                            <div class="font-telemetry-sm font-normal opacity-80 mt-0.5">1B</div>
                         </button>
                         <button type="button" @click="openHitModal('double')"
                                 :disabled="isPitching"
-                                class="py-6 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
+                                class="py-6 bg-secondary/15 hover:bg-secondary/25 disabled:opacity-50 text-secondary text-base font-black rounded-2xl transition border border-secondary/30">
                             {{ __('Doble') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-0.5">2B</div>
+                            <div class="font-telemetry-sm font-normal opacity-80 mt-0.5">2B</div>
                         </button>
                         <button type="button" @click="openHitModal('triple')"
                                 :disabled="isPitching"
-                                class="py-6 bg-violet-500 hover:bg-violet-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
+                                class="py-6 bg-violet-500/15 hover:bg-violet-500/25 disabled:opacity-50 text-violet-300 text-base font-black rounded-2xl transition border border-violet-500/30">
                             {{ __('Triple') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-0.5">3B</div>
+                            <div class="font-telemetry-sm font-normal opacity-80 mt-0.5">3B</div>
                         </button>
                         <button type="button" @click="openHitModal('hr')"
                                 :disabled="isPitching"
-                                class="py-6 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
+                                class="py-6 bg-error/15 hover:bg-error/25 disabled:opacity-50 text-error text-base font-black rounded-2xl transition border border-error/30">
                             {{ __('HR') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-0.5">Home Run</div>
+                            <div class="font-telemetry-sm font-normal opacity-80 mt-0.5">Home Run</div>
                         </button>
                         <button type="button" @click="openHitModal('inside_park')"
                                 :disabled="isPitching"
-                                class="col-span-2 py-5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
+                                class="col-span-2 py-5 bg-tertiary/15 hover:bg-tertiary/25 disabled:opacity-50 text-tertiary text-base font-black rounded-2xl transition border border-tertiary/30">
                             {{ __('HR de pierna') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-0.5">Inside-the-park</div>
+                            <div class="font-telemetry-sm font-normal opacity-80 mt-0.5">Inside-the-park</div>
                         </button>
                         {{-- DISI-28: Toque de bolas movido de EXTRAS a BATEO --}}
                         <button type="button" @click="openBuntModal()"
                                 :disabled="isPitching"
-                                class="col-span-2 py-5 bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white text-base font-black rounded-2xl transition">
+                                class="col-span-2 py-5 bg-yellow-500/15 hover:bg-yellow-500/25 disabled:opacity-50 text-yellow-300 text-base font-black rounded-2xl transition border border-yellow-500/30">
                             {{ __('Toque de bolas') }}
-                            <div class="text-[10px] font-normal opacity-80 mt-0.5">{{ __('Sacrifice o bunt single') }}</div>
+                            <div class="font-telemetry-sm font-normal opacity-80 mt-0.5">{{ __('Sacrifice o bunt single') }}</div>
                         </button>
                     </div>
 
@@ -563,56 +664,57 @@
                     {{--   - Juego finalizado: 1x2 con SOLO Stats del juego + Box Score --}}
                     {{--   - Juego en curso: 2x4 con los 7 botones de EXTRAS --}}
                     <div x-show="tab === 'extra'" x-cloak>
-                        <div class="grid grid-cols-2 gap-3 p-4" x-show="isFinalized">
+                        {{-- DISE: dark theme en extras, mismo patron que PITCHEo/BATEo. --}}
+                        <div class="grid grid-cols-2 gap-3 p-4 bg-surface-container-low" x-show="isFinalized">
                             <button type="button" @click="openStatsModal()"
-                                    class="py-4 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold rounded-2xl transition text-center">
+                                    class="py-4 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 text-sm font-bold rounded-2xl transition text-center border border-indigo-500/30">
                                 {{ __('Stats del juego') }}
-                                <div class="text-[10px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo: pitcheo y bateo') }}</div>
+                                <div class="font-telemetry-sm font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo: pitcheo y bateo') }}</div>
                             </button>
                             <a href="{{ route('games.box-score', $game) }}"
-                               class="py-4 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-2xl transition text-center block">
+                               class="py-4 bg-surface-container-highest hover:bg-surface-bright text-on-surface text-sm font-bold rounded-2xl transition text-center block border border-outline-variant">
                                 📋 {{ __('Box Score') }}
-                                <div class="text-[10px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Carreras, hits, errores por inning') }}</div>
+                                <div class="font-telemetry-sm font-normal opacity-80 mt-0.5 leading-tight">{{ __('Carreras, hits, errores por inning') }}</div>
                             </a>
                         </div>
-                        <div class="grid grid-cols-4 gap-2 p-4" x-show="!isFinalized">
+                        <div class="grid grid-cols-4 gap-2 p-4 bg-surface-container-low" x-show="!isFinalized">
                             <button type="button" @click="openSubstituteModal()"
                                     :disabled="isPitching"
-                                    class="py-3 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
+                                    class="py-3 bg-surface-container-highest hover:bg-secondary/20 disabled:opacity-50 text-secondary text-sm font-bold rounded-lg transition border border-secondary/30">
                                 {{ __('Sustituir') }}
-                                <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Pitcher, bateador o corredor') }}</div>
+                                <div class="font-telemetry-sm font-normal opacity-80 mt-0.5 leading-tight">{{ __('Pitcher, bateador o corredor') }}</div>
                             </button>
                             <button type="button" @click="sendBalk()"
                                     :disabled="isPitching"
-                                    class="py-3 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
+                                    class="py-3 bg-surface-container-highest hover:bg-violet-500/20 disabled:opacity-50 text-violet-300 text-sm font-bold rounded-lg transition border border-violet-500/30">
                                 {{ __('Balk') }}
-                                <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Corredores avanzan 1 base') }}</div>
+                                <div class="font-telemetry-sm font-normal opacity-80 mt-0.5 leading-tight">{{ __('Corredores avanzan 1 base') }}</div>
                             </button>
                             <button type="button" @click="openLineupModal()"
                                     :disabled="isPitching"
-                                    class="py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
+                                    class="py-3 bg-surface-container-highest hover:bg-primary/20 disabled:opacity-50 text-primary text-sm font-bold rounded-lg transition border border-primary/30">
                                 {{ __('Reordenar lineup') }}
-                                <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Drag & drop para cambiar el orden de bateo') }}</div>
+                                <div class="font-telemetry-sm font-normal opacity-80 mt-0.5 leading-tight">{{ __('Drag & drop para cambiar el orden de bateo') }}</div>
                             </button>
                             <button type="button" @click="openStatsModal()"
                                     :disabled="isPitching"
-                                    class="py-3 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition">
+                                    class="py-3 bg-surface-container-highest hover:bg-indigo-500/20 disabled:opacity-50 text-indigo-300 text-sm font-bold rounded-lg transition border border-indigo-500/30">
                                 {{ __('Stats del juego') }}
-                                <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo: pitcheo y bateo') }}</div>
+                                <div class="font-telemetry-sm font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo: pitcheo y bateo') }}</div>
                             </button>
                             <a href="{{ route('games.box-score', $game) }}"
-                               class="py-3 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-lg transition text-center block">
+                               class="py-3 bg-surface-container-highest hover:bg-surface-bright text-on-surface text-sm font-bold rounded-lg transition text-center block border border-outline-variant">
                                 📋 {{ __('Box Score') }}
-                                <div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Carreras, hits, errores por inning') }}</div>
+                                <div class="font-telemetry-sm font-normal opacity-80 mt-0.5 leading-tight">{{ __('Carreras, hits, errores por inning') }}</div>
                             </a>
                             <button type="button" @click="openEndInningModal()"
                                     :disabled="isPitching"
-                                    class="py-3 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 text-sm font-bold rounded-lg border border-rose-200 transition">
+                                    class="py-3 bg-surface-container-highest hover:bg-error/20 disabled:opacity-50 text-error text-sm font-bold rounded-lg border border-error/30 transition">
                                 {{ __('Finalizar inning') }}
                             </button>
                             <button type="button" @click="openEndGameModal()"
                                     :disabled="isPitching"
-                                    class="py-3 bg-rose-100 hover:bg-rose-200 disabled:opacity-50 text-rose-800 text-sm font-bold rounded-lg border border-rose-300 transition">
+                                    class="py-3 bg-error/15 hover:bg-error/25 disabled:opacity-50 text-error text-sm font-bold rounded-lg border border-error/40 transition">
                                 {{ __('Finalizar juego') }}
                             </button>
                         </div>
@@ -622,7 +724,8 @@
             </div>
 
             {{-- Indicador de conexion en vivo --}}
-            <div class="mt-3 text-center text-xs text-gray-400" data-poll-indicator>
+            {{-- DISE: poll indicator en dark theme. --}}
+            <div class="mt-3 text-center font-telemetry-sm text-outline" data-poll-indicator>
                 <span x-text="pollStatus"></span>
             </div>
 
