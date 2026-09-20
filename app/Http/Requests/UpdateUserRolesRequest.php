@@ -19,7 +19,10 @@ class UpdateUserRolesRequest extends FormRequest
     {
         return [
             'roles' => ['array'],
-            'roles.*' => ['string', Rule::exists(Role::class, 'name')->where('guard_name', 'web')],
+            'roles.*' => ['string', Rule::exists(\Spatie\Permission\Models\Role::class, 'name')->where('guard_name', 'web')],
+            // DISI-80: equipo asociado (opcional). Validamos exists solo si se
+            // envia un valor no nulo.
+            'team_id' => ['nullable', 'integer', Rule::exists(\App\Models\Team::class, 'id')],
         ];
     }
 
@@ -27,6 +30,7 @@ class UpdateUserRolesRequest extends FormRequest
     {
         return [
             'roles.*.exists' => 'Uno de los roles seleccionados no existe.',
+            'team_id.exists' => 'El equipo seleccionado no existe.',
         ];
     }
 }
