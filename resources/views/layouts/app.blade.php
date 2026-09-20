@@ -11,6 +11,8 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        @include('partials._pwa')
+
         {{-- Alpine stores y data components: cargados ANTES del @vite para que
              el listener de 'alpine:init' se registre antes de que Alpine.start()
              se ejecute (que es lo que dispara el evento). Mientras el build de

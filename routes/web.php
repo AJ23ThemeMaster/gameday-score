@@ -39,6 +39,9 @@ Route::get('/game/live/{token}', [PublicGameController::class, 'show'])
 Route::get('/juego/publico/{token}/state', [PublicGameController::class, 'stateJson'])
     ->name('public.games.state');
 
+// DISI-82: vista offline que sirve el service worker cuando no hay red.
+Route::view('/offline', 'offline')->name('offline');
+
 // DISI-44: state JSON para la ruta /game/live/{token} (alias del de la publica)
 Route::get('/game/live/{token}/state', [PublicGameController::class, 'stateJson'])
     ->name('games.live.public.state');
