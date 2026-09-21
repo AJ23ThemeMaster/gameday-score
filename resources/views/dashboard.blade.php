@@ -1,12 +1,6 @@
 {{--
   Dashboard redise~ado al sistema WattVision (feature/style/wattvision).
-  Style guide: DESIGN.md del sistema de monitoreo electrico.
-  Aplicado SOLO al dashboard. Scoreboard, box-score y live quedan intactos
-  (no se tocan ni en este branch ni en master).
---}}
-{{--
-  Dashboard redise~ado al sistema WattVision (feature/style/wattvision).
-  Style guide: DESIGN.md del sistema de monitoreo electrico.
+  Style guide: DESIGN.md.
   Aplicado SOLO al dashboard. Scoreboard, box-score y live quedan intactos.
 --}}
 @php
@@ -20,26 +14,120 @@
     try { $kpis['games']    = \App\Models\Game::count(); } catch (\Throwable $e) {}
     try { $kpis['teams']    = \App\Models\Team::count(); } catch (\Throwable $e) {}
     try { $kpis['athletes'] = \App\Models\Athlete::count(); } catch (\Throwable $e) {}
+
+    // Juegos del dia (jornada): scheduled_at entre hoy 00:00 y hoy 23:59.
+    // Estados que muestran marcador: in_progress, paused, completed.
+    // Estados sin marcador (solo programacion): scheduled.
+    // Filtramos por usuario autenticado: admins ven todos; gestores y otros
+    // solo los juegos donde estan involucrados como staff (anotadores o
+    // arbitros), igual que la seccion "Mis juegos" del sidebar.
+    $todayGames = collect();
+    try {
+        $todayQuery = \App\Models\Game::query()
+            ->with(['homeTeam', 'awayTeam', 'category', 'stadium'])
+            ->whereIn('status', ['scheduled', 'in_progress', 'paused', 'completed'])
+            ->whereBetween('scheduled_at', [now()->startOfDay(), now()->endOfDay()])
+            ->orderBy('scheduled_at');
+
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user && ! $user->isAdmin()) {
+            // Gestores / anotadores / arbitros: solo juegos donde estan asignados.
+            $todayQuery->where(function ($q) use ($user) {
+                $q->whereHas('scorekeepers', fn ($sq) => $sq->where('users.id', $user->id))
+                  ->orWhereHas('referees', fn ($rq) => $rq->where('users.id', $user->id));
+            });
+        }
+
+        $todayGames = $todayQuery->get();
+    } catch (\Throwable $e) {
+        $todayGames = collect();
+    }
 @endphp
 
 <x-app-layout>
-    <x-slot name="header">
-        {{-- Header dark coherente con el body bg-wv-bg --}}
-        <h2 class="font-semibold text-h-wv text-wv-text leading-tight">
-            {{ __('Panel de Control') }}
-        </h2>
-        <p class="text-sm text-wv-text-secondary mt-1">
-            {{ __('Vista general del sistema Gameday Score') }}
-        </p>
-    </x-slot>
+    {{-- El slot del header ya no muestra "Panel de Control / Vista general".
+         En su lugar, en esta misma zona del layout se inyecta el carousel de
+         juegos del dia (via componente game-day-card) con flechas de scroll
+         si hay mas de 4 juegos. --}}
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             {{-- ===========================================================
-                 FILA 1: KPI cards (3 columnas) — Diseño WattVision §5
-                 Tipografia JetBrains Mono Bold 32px para los numeros.
-                 Border 1px solid #2C2C2E, radius 16px, padding 20px.
+                 CARRUSEL: Juegos del dia (jornada)
+                 - 1 fila de cards de 1/3 del ancho (col-3 en desktop lg).
+                 - Si hay > 4 juegos aparecen flechas izquierda/derecha que
+                   hacen scrollBy de aprox 1 card por click.
+                 - Empty state cuando no hay juegos del dia.
+                 =========================================================== --}}
+            <div x-data="{
+                        scroller: null,
+                        scrollPrev() { if (this.scroller) this.scroller.scrollBy({left: -this.scroller.clientWidth * 0.8, behavior: 'smooth'}); },
+                        scrollNext() { if (this.scroller) this.scroller.scrollBy({left: this.scroller.clientWidth * 0.8,  behavior: 'smooth'}); }
+                    }"
+                 x-init="scroller = $refs.carousel"
+                 class="relative mb-6">
+
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h2 class="font-semibold text-h-wv text-wv-text leading-tight">
+                            {{ __('Juegos del dia') }}
+                        </h2>
+                        <p class="text-xs text-wv-text-secondary mt-0.5">
+                            {{ __('Jornada de hoy') }} ·
+                            <span class="font-mono">{{ now()->translatedFormat('d \\d\\e F, Y') }}</span>
+                            · {{ $todayGames->count() }}
+                            {{ $todayGames->count() === 1 ? __('juego') : __('juegos') }}
+                        </p>
+                    </div>
+
+                    {{-- Flechas: solo si hay > 4 juegos --}}
+                    @if ($todayGames->count() > 4)
+                        <div class="flex gap-1">
+                            <button type="button"
+                                    @click="scrollPrev()"
+                                    aria-label="{{ __('Anterior') }}"
+                                    class="inline-flex items-center justify-center w-9 h-9 rounded-card bg-wv-surface border border-wv-border text-wv-text-secondary hover:text-wv-text hover:bg-wv-surface-hover hover:border-wv-accent transition">
+                                <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+                            </button>
+                            <button type="button"
+                                    @click="scrollNext()"
+                                    aria-label="{{ __('Siguiente') }}"
+                                    class="inline-flex items-center justify-center w-9 h-9 rounded-card bg-wv-surface border border-wv-border text-wv-text-secondary hover:text-wv-text hover:bg-wv-surface-hover hover:border-wv-accent transition">
+                                <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+                            </button>
+                        </div>
+                    @endif
+                </div>
+
+                @if ($todayGames->isEmpty())
+                    {{-- Empty state: no hay juegos en la jornada --}}
+                    <div class="bg-wv-surface border border-wv-border rounded-card p-10 text-center">
+                        <span class="material-symbols-outlined text-wv-text-secondary text-[48px]">event_busy</span>
+                        <h3 class="mt-2 text-base font-semibold text-wv-text">{{ __('Sin juegos para hoy') }}</h3>
+                        <p class="mt-1 text-sm text-wv-text-secondary">{{ __('No tienes juegos programados, en vivo ni finalizados en la jornada de hoy.') }}</p>
+                        <a href="{{ route('games.index') }}"
+                           class="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-wv-accent hover:text-wv-accent-hover">
+                            {{ __('Ir al listado de juegos') }}
+                            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                        </a>
+                    </div>
+                @else
+                    {{-- Scroller horizontal con snap --}}
+                    <div x-ref="carousel"
+                         class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-2 px-2 nav-scroll">
+
+                        @foreach ($todayGames as $g)
+                            <x-game-day-card :game="$g" />
+                        @endforeach
+
+                    </div>
+                @endif
+
+            </div>
+
+            {{-- ===========================================================
+                 FILA 2: KPI cards (3 columnas) - Diseno WattVision §5
                  =========================================================== --}}
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
 
@@ -89,7 +177,7 @@
             </div>
 
             {{-- ===========================================================
-                 FILA 2: bienvenida + acceso rapido a legacy
+                 FILA 3: bienvenida + acceso rapido a legacy
                  8 columnas izquierda (bienvenida), 4 columnas derecha (legacy)
                  =========================================================== --}}
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
@@ -111,9 +199,8 @@
                     </div>
                 </div>
 
-                {{-- PWA Legacy (4 cols) — card destacada con border cyan --}}
+                {{-- PWA Legacy (4 cols) - card destacada con border cyan --}}
                 <div class="lg:col-span-4 bg-wv-surface border-2 border-wv-accent/40 rounded-card p-5 relative overflow-hidden">
-                    {{-- Glow accent en esquina --}}
                     <div class="absolute -top-12 -right-12 w-32 h-32 bg-wv-accent/10 rounded-full blur-2xl"></div>
 
                     <div class="relative">
@@ -136,13 +223,10 @@
             </div>
 
             {{-- ===========================================================
-                 FILA 3: Modulos principales (grid 3 columnas)
-                 Cards con icon + titulo + descripcion + CTA.
-                 Border 1px #2C2C2E, radius 16px, hover surface-hover.
+                 FILA 4: Modulos principales (grid 3 columnas)
                  =========================================================== --}}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                {{-- Modulo: Mis juegos --}}
                 <a href="{{ route('games.index') }}"
                    class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
                     <div class="flex items-center justify-between mb-3">
@@ -159,7 +243,6 @@
                     </span>
                 </a>
 
-                {{-- Modulo: Categorias --}}
                 <a href="{{ route('categories.index') }}"
                    class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
                     <div class="flex items-center justify-between mb-3">
@@ -176,7 +259,6 @@
                     </span>
                 </a>
 
-                {{-- Modulo: Estadios --}}
                 <a href="{{ route('stadiums.index') }}"
                    class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
                     <div class="flex items-center justify-between mb-3">
@@ -193,7 +275,6 @@
                     </span>
                 </a>
 
-                {{-- Modulo: Equipos --}}
                 <a href="{{ route('teams.index') }}"
                    class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
                     <div class="flex items-center justify-between mb-3">
@@ -210,7 +291,6 @@
                     </span>
                 </a>
 
-                {{-- Modulo: Atletas --}}
                 <a href="{{ route('athletes.index') }}"
                    class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
                     <div class="flex items-center justify-between mb-3">
@@ -227,7 +307,6 @@
                     </span>
                 </a>
 
-                {{-- Modulo: Anotadores --}}
                 <a href="{{ route('scorekeepers.index') }}"
                    class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
                     <div class="flex items-center justify-between mb-3">
@@ -244,7 +323,6 @@
                     </span>
                 </a>
 
-                {{-- Modulo: Arbitros --}}
                 <a href="{{ route('referees.index') }}"
                    class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block md:col-span-2 lg:col-span-1">
                     <div class="flex items-center justify-between mb-3">
