@@ -4,7 +4,7 @@
     <div class="md:col-span-2">
         <x-input-label for="league_id" :value="__('Liga')" />
         <select id="league_id" name="league_id" required
-                class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
             <option value="">-- {{ __('Selecciona una liga') }} --</option>
             @foreach ($leagues as $l)
                 <option value="{{ $l->id }}" {{ (string) old('league_id', $tournament->league_id ?? request('league_id', '')) === (string) $l->id ? 'selected' : '' }}>
@@ -23,27 +23,27 @@
             <div class="md:col-span-2">
                 <x-input-label :value="__('Equipos del torneo')" />
                 @if ($availableTeams->isEmpty())
-                    <p class="mt-1 text-sm text-gray-500 italic">
+                    <p class="mt-1 text-sm text-wv-text-secondary italic">
                         {{ __('La liga seleccionada no tiene equipos registrados aún.') }}
                     </p>
                 @else
-                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-48 overflow-y-auto p-3 bg-gray-50 rounded-md border border-gray-200">
+                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-48 overflow-y-auto p-3 bg-wv-bg rounded-md border border-wv-border">
                         @php
                             $selectedTeamIds = old('team_ids', $tournament->teams->pluck('id')->toArray());
                         @endphp
                         @foreach ($availableTeams as $t)
-                            <label class="flex items-center gap-2 text-sm hover:bg-white px-2 py-1 rounded cursor-pointer">
+                            <label class="flex items-center gap-2 text-sm hover:bg-wv-surface-hover px-2 py-1 rounded cursor-pointer text-wv-text">
                                 <input type="checkbox" name="team_ids[]" value="{{ $t->id }}"
                                        {{ in_array($t->id, $selectedTeamIds, true) ? 'checked' : '' }}
-                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                       class="rounded border-wv-border bg-wv-surface text-wv-accent focus:ring-wv-accent focus:ring-offset-wv-bg">
                                 @if ($t->logo_url)
-                                    <img src="{{ $t->logo_url }}" alt="" class="h-4 w-4 object-contain">
+                                    <img src="{{ $t->logo_url }}" alt="" class="h-4 w-4 object-contain bg-white rounded">
                                 @endif
-                                <span>{{ $t->name }}@if ($t->short_name) <span class="text-gray-500 text-xs">({{ $t->short_name }})</span>@endif</span>
+                                <span>{{ $t->name }}@if ($t->short_name) <span class="text-wv-text-secondary text-xs">({{ $t->short_name }})</span>@endif</span>
                             </label>
                         @endforeach
                     </div>
-                    <p class="mt-1 text-xs text-gray-500">
+                    <p class="mt-1 text-xs text-wv-text-secondary">
                         {{ __('Selecciona los equipos que participan en este torneo. Solo aparecen equipos del mismo league (regla: 1 liga por equipo).') }}
                     </p>
                 @endif
@@ -93,25 +93,25 @@
     <div class="md:col-span-2">
         <x-input-label for="description" :value="__('Descripción')" />
         <textarea id="description" name="description" rows="3"
-                  class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('description', $tournament->description ?? '') }}</textarea>
+                  class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text placeholder-wv-text-secondary focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">{{ old('description', $tournament->description ?? '') }}</textarea>
         <x-input-error :messages="$errors->get('description')" class="mt-2" />
     </div>
 
     <div class="md:col-span-2">
         <x-input-label for="logo" :value="__('Logo del torneo')" />
         <input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"
-               class="block mt-1 w-full text-sm text-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+               class="block mt-1 w-full text-sm text-wv-text-secondary file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-wv-accent-soft file:text-wv-accent hover:file:bg-wv-accent" />
         <x-input-error :messages="$errors->get('logo')" class="mt-2" />
-        <p class="mt-1 text-xs text-gray-500">PNG, JPG, WebP o SVG. Máximo 2 MB.</p>
+        <p class="mt-1 text-xs text-wv-text-secondary">PNG, JPG, WebP o SVG. Máximo 2 MB.</p>
 
         @if (isset($tournament) && $tournament->logo_path)
-            <div class="mt-3 flex items-center gap-3 p-3 bg-gray-50 rounded-md">
+            <div class="mt-3 flex items-center gap-3 p-3 bg-wv-bg border border-wv-border rounded-md">
                 <img src="{{ $tournament->logo_url }}" alt="Logo de {{ $tournament->name }}"
                      class="h-14 w-14 object-contain rounded bg-white p-1">
-                <label class="flex items-center text-sm text-red-600">
+                <label class="flex items-center text-sm text-wv-alert">
                     <input type="checkbox" name="remove_logo" value="1"
                            {{ old('remove_logo') ? 'checked' : '' }}
-                           class="rounded border-gray-300 text-red-600 focus:ring-red-500 mr-2">
+                           class="rounded border-wv-border bg-wv-surface text-wv-alert focus:ring-wv-alert mr-2">
                     {{ __('Eliminar logo actual') }}
                 </label>
             </div>
@@ -121,8 +121,8 @@
     <div class="md:col-span-2 flex items-center">
         <input id="active" name="active" type="checkbox" value="1"
                {{ old('active', $tournament->active ?? true) ? 'checked' : '' }}
-               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-        <label for="active" class="ms-2 text-sm text-gray-700">
+               class="rounded border-wv-border bg-wv-surface text-wv-accent focus:ring-wv-accent focus:ring-offset-wv-bg">
+        <label for="active" class="ms-2 text-sm text-wv-text">
             {{ __('Torneo activo (visible en formularios de creación de juegos)') }}
         </label>
     </div>

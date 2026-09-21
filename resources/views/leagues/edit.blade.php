@@ -1,25 +1,28 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Editar liga') }}: {{ $league->name }}
-        </h2>
+        <div>
+            <h2 class="font-semibold text-h-wv text-wv-text leading-tight">
+                {{ __('Editar liga') }}: {{ $league->name }}
+            </h2>
+            <p class="text-sm text-wv-text-secondary mt-1">{{ __('Modifica los datos de la liga.') }}</p>
+        </div>
     </x-slot>
 
     <div class="py-8">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
 
             <div class="mb-4 flex gap-3 text-sm">
-                <a href="{{ route('leagues.index') }}" class="text-indigo-600 hover:text-indigo-800">
+                <a href="{{ route('leagues.index') }}" class="text-wv-accent hover:text-wv-accent-hover">
                     ← {{ __('Volver al listado') }}
                 </a>
-                <a href="{{ route('leagues.show', $league) }}" class="text-indigo-600 hover:text-indigo-800">
+                <a href="{{ route('leagues.show', $league) }}" class="text-wv-accent hover:text-wv-accent-hover">
                     {{ __('Ver detalle') }}
                 </a>
             </div>
 
             @include('partials._flash')
 
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+            <div class="bg-wv-surface border border-wv-border rounded-card">
                 <form method="POST" action="{{ route('leagues.update', $league) }}" enctype="multipart/form-data" class="p-6">
                     @csrf
                     @method('PUT')
@@ -27,7 +30,7 @@
 
                     <div class="flex justify-end mt-6 gap-3">
                         <a href="{{ route('leagues.show', $league) }}"
-                           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                           class="inline-flex items-center px-4 py-2 border border-wv-border hover:bg-wv-surface-hover text-wv-text text-sm font-medium rounded-card">
                             {{ __('Cancelar') }}
                         </a>
                         <x-primary-button>
