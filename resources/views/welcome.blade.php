@@ -109,7 +109,10 @@
              del componente <x-game-day-card>.
              =========================================================== --}}
         @if ($todayGames->count() > 0)
-            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            {{-- x-data vacio: Alpine solo expone $refs dentro de un scope
+                 x-data. Sin este wrapper, $refs.todayGamesCarousel es
+                 undefined y los botones prev/next no hacen nada. --}}
+            <section x-data="{}" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div class="flex items-center justify-between mb-6">
                     <div>
                         <h2 class="text-2xl sm:text-3xl font-bold text-wv-text">{{ __('Juegos del dia') }}</h2>
