@@ -3,31 +3,20 @@
 @tailwind utilities;
 
 /*
-  WattVision: helper para ocultar elementos Alpine antes de su primera
-  inicializacion. Marca los elementos con x-cloak como display:none hasta
-  que Alpine.js los muestre via x-show o directivas similares.
+  Material Symbols Outlined — regla CSS de mapeo de clase.
 
-  Se aplica globalmente porque lo usan el sidebar (drawer), el dropdown de
-  usuario, y cualquier otro componente interactivo del layout.
-*/
-[x-cloak] {
-    display: none !important;
-}
+  El @font-face viene de @fontsource/material-symbols-outlined/400.css,
+  importado en resources/js/app.js (donde Vite resuelve la ruta a
+  node_modules).
 
-/*
-  Material Symbols Outlined — regla CSS manual.
+  Esta regla es necesaria porque ni @fontsource ni Tailwind declaran
+  font-family 'Material Symbols Outlined' para la clase
+  .material-symbols-outlined; sin ella, los elementos con esa clase
+  heredan font-sans/Inter y muestran el texto literal "sports_baseball"
+  en vez del glifo PUA del bate.
 
-  Bunny Fonts solo sirve el @font-face de Material Symbols Outlined pero NO
-  inyecta la regla .material-symbols-outlined que mapea la clase al
-  font-family correcto (a diferencia de Google Fonts). Sin esta regla,
-  los <span class="material-symbols-outlined">sports_baseball</span>
-  renderizan texto literal en vez del icono.
-
-  Esta regla replica la convencion oficial de Material Symbols:
-  - font-family: 'Material Symbols Outlined' (sustituye a font-sans/Inter)
-  - font-weight normal (la fuente ya codifica el grosor via ligaduras)
-  - font-feature-settings 'liga' para activar las ligaduras que mapean
-    el texto (sports_baseball) al glifo PUA correspondiente
+  font-feature-settings 'liga' activa las ligaduras que mapean texto
+  ("sports_baseball") al glifo PUA correspondiente.
 */
 .material-symbols-outlined {
     font-family: 'Material Symbols Outlined';
@@ -44,4 +33,16 @@
     font-feature-settings: 'liga';
     -webkit-font-feature-settings: 'liga';
     -webkit-font-smoothing: antialiased;
+}
+
+/*
+  WattVision: helper para ocultar elementos Alpine antes de su primera
+  inicializacion. Marca los elementos con x-cloak como display:none hasta
+  que Alpine.js los muestre via x-show o directivas similares.
+
+  Se aplica globalmente porque lo usan el sidebar (drawer), el dropdown de
+  usuario, y cualquier otro componente interactivo del layout.
+*/
+[x-cloak] {
+    display: none !important;
 }
