@@ -24,9 +24,16 @@
 
         {{-- WattVision: Inter (titulos/cuerpo) + JetBrains Mono (KPIs) + Material Symbols (iconos UI).
              Se cargan en todo el sistema EXCEPTO en las rutas excluidas.
-             Material Symbols Outlined lo usan sidebar, dashboard y otros componentes. --}}
+             Material Symbols Outlined lo usan sidebar, dashboard y otros componentes.
+
+             Bunny Fonts NO inyecta la regla CSS .material-symbols-outlined
+             (a diferencia de Google Fonts), por eso esa regla se declara
+             manualmente en resources/css/app.css (ver bloque "Material
+             Symbols Outlined"). Sin esa regla, los elementos con la clase
+             renderizan texto literal en lugar de los iconos. --}}
         @unless ($wvExcluded)
-            <link href="https://fonts.bunny.net/css?family=inter:wght@400;500;600;700&family=jetbrains-mono:wght@400;500;700&family=material-symbols-outlined:opsz,wght,FILL,GRAD@20..24,400..700,0..1,-50..200&display=swap" rel="stylesheet">
+            <link href="https://fonts.bunny.net/css?family=inter:wght@400;500;600;700&family=jetbrains-mono:wght@400;500;700&display=swap" rel="stylesheet">
+            <link href="https://fonts.bunny.net/css?family=material-symbols-outlined&display=swap" rel="stylesheet">
         @endunless
 
         @include('partials._pwa')

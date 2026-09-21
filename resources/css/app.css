@@ -13,3 +13,35 @@
 [x-cloak] {
     display: none !important;
 }
+
+/*
+  Material Symbols Outlined — regla CSS manual.
+
+  Bunny Fonts solo sirve el @font-face de Material Symbols Outlined pero NO
+  inyecta la regla .material-symbols-outlined que mapea la clase al
+  font-family correcto (a diferencia de Google Fonts). Sin esta regla,
+  los <span class="material-symbols-outlined">sports_baseball</span>
+  renderizan texto literal en vez del icono.
+
+  Esta regla replica la convencion oficial de Material Symbols:
+  - font-family: 'Material Symbols Outlined' (sustituye a font-sans/Inter)
+  - font-weight normal (la fuente ya codifica el grosor via ligaduras)
+  - font-feature-settings 'liga' para activar las ligaduras que mapean
+    el texto (sports_baseball) al glifo PUA correspondiente
+*/
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    font-feature-settings: 'liga';
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+}
