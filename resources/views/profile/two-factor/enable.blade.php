@@ -1,11 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Activar autenticacion en 2 pasos') }}
-            </h2>
+            <div>
+                <h2 class="font-semibold text-h-wv text-wv-text leading-tight">
+                    {{ __('Activar autenticacion en 2 pasos') }}
+                </h2>
+                <p class="text-sm text-wv-text-secondary mt-1">
+                    {{ __('Sigue los 2 pasos para activar la verificacion TOTP en tu cuenta.') }}
+                </p>
+            </div>
             <a href="{{ route('profile.edit') }}"
-               class="text-sm text-gray-600 hover:text-gray-900 underline">
+               class="text-sm text-wv-text-secondary hover:text-wv-text underline">
                 {{ __('← Volver a Mi perfil') }}
             </a>
         </div>
@@ -14,42 +19,43 @@
     <div class="py-8">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            <div class="bg-white shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            <div class="bg-wv-surface border border-wv-border rounded-card p-6">
+                <h3 class="text-lg font-semibold text-wv-text mb-2">
                     {{ __('Paso 1: Escanea el codigo QR') }}
                 </h3>
-                <p class="text-sm text-gray-600 mb-4">
+                <p class="text-sm text-wv-text-secondary mb-4">
                     {{ __('Abre tu aplicacion autenticadora (Google Authenticator, Authy, 1Password, Bitwarden, etc.) y escanea este codigo QR.') }}
                 </p>
 
                 @if (str_starts_with($qrCodeInline, 'data:image/'))
-                    <div class="flex justify-center bg-gray-50 p-4 rounded-md">
+                    {{-- El QR ya viene como PNG data URL. Lo mostramos sobre bg blanco para max contraste (los QR son oscuros). --}}
+                    <div class="flex justify-center bg-white p-4 rounded-card">
                         <img src="{{ $qrCodeInline }}" alt="Codigo QR 2FA" class="h-64 w-64">
                     </div>
                 @else
-                    <div class="flex justify-center bg-white p-4 rounded-md border border-gray-200">
+                    <div class="flex justify-center bg-white p-4 rounded-card border border-wv-border">
                         {!! $qrCodeInline !!}
                     </div>
                 @endif
 
-                <div class="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
-                    <p class="text-xs font-semibold text-gray-700 mb-1">
+                <div class="mt-4 p-3 bg-wv-bg border border-wv-border rounded-card">
+                    <p class="text-xs font-semibold text-wv-text-secondary mb-1">
                         {{ __('O ingresa este secreto manualmente:') }}
                     </p>
-                    <code class="block font-mono text-sm text-gray-900 select-all break-all">{{ $secret }}</code>
+                    <code class="block font-mono text-sm text-wv-text select-all break-all">{{ $secret }}</code>
                 </div>
             </div>
 
-            <div class="bg-white shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            <div class="bg-wv-surface border border-wv-border rounded-card p-6">
+                <h3 class="text-lg font-semibold text-wv-text mb-2">
                     {{ __('Paso 2: Ingresa el codigo de verificacion') }}
                 </h3>
-                <p class="text-sm text-gray-600 mb-4">
+                <p class="text-sm text-wv-text-secondary mb-4">
                     {{ __('Tu aplicacion te mostrara un codigo de 6 digitos que rota cada 30 segundos. Ingresalo aqui para confirmar que la configuracion funciona.') }}
                 </p>
 
                 @if (session('status') === 'two-factor-enabled')
-                    <div class="mb-4 rounded-md bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-800">
+                    <div class="mb-4 rounded-card bg-wv-surface-hover border border-wv-success/40 p-4 text-sm text-wv-success">
                         {{ __('Autenticacion en 2 pasos activada correctamente. Guarda tus codigos de recuperacion.') }}
                     </div>
                 @endif
@@ -70,7 +76,7 @@
 
                     <div class="mt-6 flex items-center justify-end gap-3">
                         <a href="{{ route('profile.edit') }}"
-                           class="text-sm text-gray-600 hover:text-gray-900 underline">
+                           class="text-sm text-wv-text-secondary hover:text-wv-text underline">
                             {{ __('Cancelar') }}
                         </a>
                         <x-primary-button>

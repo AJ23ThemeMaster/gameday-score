@@ -2,17 +2,17 @@
     <header class="flex items-center gap-4">
         @if ($user->avatar_url)
             <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}"
-                 class="h-16 w-16 rounded-full object-cover bg-gray-100">
+                 class="h-16 w-16 rounded-full object-cover bg-wv-bg border border-wv-border">
         @else
-            <div class="h-16 w-16 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl font-semibold">
+            <div class="h-16 w-16 rounded-full bg-wv-accent-soft text-wv-accent flex items-center justify-center text-xl font-semibold border border-wv-border">
                 {{ $user->avatar_initials }}
             </div>
         @endif
         <div>
-            <h2 class="text-lg font-medium text-gray-900">
+            <h2 class="text-lg font-medium text-wv-text">
                 {{ __('Informacion del perfil') }}
             </h2>
-            <p class="mt-1 text-sm text-gray-600">
+            <p class="mt-1 text-sm text-wv-text-secondary">
                 {{ __('Actualiza tu nombre, correo electronico y fotografia.') }}
             </p>
         </div>
@@ -41,16 +41,17 @@
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div>
-                    <p class="text-sm mt-2 text-gray-800">
+                    <p class="text-sm mt-2 text-wv-text-secondary">
                         {{ __('Tu correo electronico no esta verificado.') }}
 
-                        <button form="send-verification" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <button form="send-verification"
+                                class="underline text-sm text-wv-text-secondary hover:text-wv-text rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wv-accent focus:ring-offset-wv-bg">
                             {{ __('Haz clic aqui para reenviar el correo de verificacion.') }}
                         </button>
                     </p>
 
                     @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600">
+                        <p class="mt-2 font-medium text-sm text-wv-success">
                             {{ __('Se ha enviado un nuevo enlace de verificacion a tu correo.') }}
                         </p>
                     @endif
@@ -61,17 +62,17 @@
         <div>
             <x-input-label for="avatar" :value="__('Fotografia de perfil')" />
             <input id="avatar" name="avatar" type="file" accept="image/png,image/jpeg,image/webp"
-                   class="block mt-1 w-full text-sm text-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                   class="block mt-1 w-full text-sm text-wv-text-secondary file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-wv-accent-soft file:text-wv-accent hover:file:bg-wv-accent" />
             <x-input-error :messages="$errors->get('avatar')" class="mt-2" />
-            <p class="mt-1 text-xs text-gray-500">JPG, PNG o WebP. Maximo 2 MB.</p>
+            <p class="mt-1 text-xs text-wv-text-secondary">JPG, PNG o WebP. Maximo 2 MB.</p>
 
             @if ($user->avatar_path)
-                <div class="mt-3 flex items-center gap-3 p-3 bg-gray-50 rounded-md">
-                    <img src="{{ $user->avatar_url }}" alt="" class="h-12 w-12 rounded-full object-cover bg-white p-0.5">
-                    <label class="flex items-center text-sm text-red-600">
+                <div class="mt-3 flex items-center gap-3 p-3 bg-wv-bg border border-wv-border rounded-md">
+                    <img src="{{ $user->avatar_url }}" alt="" class="h-12 w-12 rounded-full object-cover bg-wv-surface p-0.5">
+                    <label class="flex items-center text-sm text-wv-alert">
                         <input type="checkbox" name="remove_avatar" value="1"
                                {{ old('remove_avatar') ? 'checked' : '' }}
-                               class="rounded border-gray-300 text-red-600 focus:ring-red-500 mr-2">
+                               class="rounded border-wv-border bg-wv-surface text-wv-alert focus:ring-wv-alert mr-2">
                         {{ __('Eliminar fotografia actual') }}
                     </label>
                 </div>
@@ -84,12 +85,12 @@
             @if (session('status') === 'profile-updated')
                 <p x-data="{ show: true }" x-show="show" x-transition
                    x-init="setTimeout(() => show = false, 2000)"
-                   class="text-sm text-gray-600">{{ __('Guardado.') }}</p>
+                   class="text-sm text-wv-success">{{ __('Guardado.') }}</p>
             @endif
             @if (session('status') === 'avatar-removed')
                 <p x-data="{ show: true }" x-show="show" x-transition
                    x-init="setTimeout(() => show = false, 2000)"
-                   class="text-sm text-gray-600">{{ __('Fotografia eliminada.') }}</p>
+                   class="text-sm text-wv-success">{{ __('Fotografia eliminada.') }}</p>
             @endif
         </div>
     </form>
