@@ -88,8 +88,17 @@ class SearchController extends Controller
             ),
 
             'athletes' => $this->mapSimple(
-                Athlete::query()->with('team')->where('first_name', 'LIKE', $like)->orWhere('last_name', 'LIKE', $like)->orWhere('document_id', 'LIKE', $like)->orderBy('last_name')->limit(5)->get(),
-                fn ($a) => $this->row($a->full_name, ($a->team->short_name ?? $a->team->name ?? '') . ($a->number ? " · #{$a->number}" : ''), route('athletes.show', $a))
+                // DISI-N: el subtitle del atleta ahora muestra Equipo - Categoria -
+                // Numero (antes solo Equipo - Numero). Cargamos la relacion
+                // category ademas de team para evitar N+1.
+                Athlete::query()->with(['team', 'category'])->where('first_name', 'LIKE', $like)->orWhere('last_name', 'LIKE', $like)->orWhere('document_id', 'LIKE', $like)->orderBy('last_name')->limit(5)->get(),
+                fn ($a) => $this->row(
+                    $a->full_name,
+                    trim(($a->team->short_name ?? $a->team->name ?? '')
+                        . ($a->category?->name ? ' · ' . $a->category->name : '')
+                        . ($a->number ? ' · #' . $a->number : '')),
+                    route('athletes.show', $a)
+                )
             ),
 
             'scorekeepers' => $this->mapSimple(
