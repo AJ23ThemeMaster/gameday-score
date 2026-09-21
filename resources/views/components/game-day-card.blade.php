@@ -56,16 +56,19 @@
             <p class="text-xs font-bold text-wv-text truncate mt-1.5">{{ $homeTeam->short_name ?? $homeTeam->name ?? '—' }}</p>
         </div>
 
-        {{-- Centro: marcador o "vs" --}}
-        <div class="flex-shrink-0 text-center px-2">
+        {{-- Centro: marcador en una sola linea "home-away" + inning con flecha
+             de mitad (top/bottom) si hay score y el juego esta en curso. --}}
+        <div class="flex-shrink-0 text-center px-2 min-w-[60px]">
             @if ($meta['showScore'])
                 <div class="font-mono text-2xl font-bold {{ $meta['live'] ? 'text-wv-text' : 'text-wv-text-secondary' }} leading-none">
-                    {{ (int) ($game->home_score ?? 0) }}
+                    {{ (int) ($game->home_score ?? 0) }}-{{ (int) ($game->away_score ?? 0) }}
                 </div>
-                <div class="font-mono text-[10px] text-wv-text-secondary my-0.5">—</div>
-                <div class="font-mono text-2xl font-bold {{ $meta['live'] ? 'text-wv-text' : 'text-wv-text-secondary' }} leading-none">
-                    {{ (int) ($game->away_score ?? 0) }}
-                </div>
+                @if ((int) ($game->current_inning ?? 0) > 0)
+                    <div class="mt-1.5 text-[10px] text-wv-text-secondary font-medium leading-none">
+                        Inning{{ (int) $game->current_inning }}
+                        <span class="ml-0.5">{{ $game->inning_half === 'top' ? '▲' : '▼' }}</span>
+                    </div>
+                @endif
             @else
                 <span class="text-wv-text-secondary text-xs font-bold uppercase tracking-widest">vs</span>
             @endif
