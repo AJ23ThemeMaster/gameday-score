@@ -55,6 +55,11 @@ Route::middleware('auth')->group(function () {
 
 // DISI-16b: dashboard y resto de rutas autenticadas (protegidas por 2fa.challenge)
 Route::middleware(['auth', '2fa.challenge'])->group(function () {
+    // Busqueda global del top-navbar (juegos, ligas, categorias, torneos,
+    // equipos, atletas, anotadores, arbitros, estadios). Solo usuarios
+    // autenticados que ya pasaron el reto 2FA.
+    Route::get('/search', [\App\Http\Controllers\SearchController::class, 'search'])->name('search');
+
     // Dashboard con 'verified' adicional
     Route::get('/dashboard', function () {
         return view('dashboard');

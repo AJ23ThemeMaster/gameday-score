@@ -22,18 +22,12 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        {{-- WattVision: Inter (titulos/cuerpo) + JetBrains Mono (KPIs) + Material Symbols (iconos UI).
-             Se cargan en todo el sistema EXCEPTO en las rutas excluidas.
-             Material Symbols Outlined lo usan sidebar, dashboard y otros componentes.
-
-             Bunny Fonts NO inyecta la regla CSS .material-symbols-outlined
-             (a diferencia de Google Fonts), por eso esa regla se declara
-             manualmente en resources/css/app.css (ver bloque "Material
-             Symbols Outlined"). Sin esa regla, los elementos con la clase
-             renderizan texto literal en lugar de los iconos. --}}
+        {{-- WattVision: Inter (titulos/cuerpo) + JetBrains Mono (KPIs) via Bunny Fonts.
+             Material Symbols Outlined se carga local via @fontsource
+             (ver resources/css/app.css). Se cargan en todo el sistema
+             EXCEPTO en las rutas excluidas. --}}
         @unless ($wvExcluded)
             <link href="https://fonts.bunny.net/css?family=inter:wght@400;500;600;700&family=jetbrains-mono:wght@400;500;700&display=swap" rel="stylesheet">
-            <link href="https://fonts.bunny.net/css?family=material-symbols-outlined&display=swap" rel="stylesheet">
         @endunless
 
         @include('partials._pwa')
@@ -77,6 +71,11 @@
                             <span class="w-10"></span>
                         </div>
                     </div>
+
+                    {{-- Top navbar (solo desktop): buscador + notificaciones.
+                         El componente ya tiene hidden md:block, asi que en
+                         mobile queda invisible. --}}
+                    @include('components.top-navbar')
 
                     <!-- Page Heading (slot header opcional) -->
                     @isset($header)
