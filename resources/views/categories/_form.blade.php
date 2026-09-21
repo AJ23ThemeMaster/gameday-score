@@ -1,4 +1,3 @@
-{{-- Formulario compartido para crear/editar categoría --}}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
     <div class="md:col-span-2">
@@ -11,7 +10,7 @@
     <div class="md:col-span-2">
         <x-input-label for="team_id" :value="__('Equipo (opcional)')" />
         <select id="team_id" name="team_id"
-                class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
             <option value="">-- {{ __('Sin equipo (categoría global)') }} --</option>
             @foreach ($teams ?? [] as $t)
                 <option value="{{ $t->id }}" {{ (string) old('team_id', $category->team_id ?? request('team_id', '')) === (string) $t->id ? 'selected' : '' }}>
@@ -20,7 +19,7 @@
             @endforeach
         </select>
         <x-input-error :messages="$errors->get('team_id')" class="mt-2" />
-        <p class="mt-1 text-xs text-gray-500">{{ __('DISI-14: 1 categoría pertenece a 1 equipo. Déjalo vacío para una categoría global.') }}</p>
+        <p class="mt-1 text-xs text-wv-text-secondary">{{ __('DISI-14: 1 categoría pertenece a 1 equipo. Déjalo vacío para una categoría global.') }}</p>
     </div>
 
     <div class="md:col-span-2">
@@ -28,15 +27,13 @@
         <x-text-input id="slug" name="slug" type="text" class="block mt-1 w-full"
                       :value="old('slug', $category->slug ?? '')" required />
         <x-input-error :messages="$errors->get('slug')" class="mt-2" />
-        <p class="mt-1 text-xs text-gray-500">
-            {{ __('Solo letras minúsculas, números y guiones. Ej: "pre-infantil".') }}
-        </p>
+        <p class="mt-1 text-xs text-wv-text-secondary">{{ __('Solo letras minúsculas, números y guiones. Ej: "pre-infantil".') }}</p>
     </div>
 
     <div class="md:col-span-2">
         <x-input-label for="description" :value="__('Descripción')" />
         <textarea id="description" name="description" rows="3"
-                  class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('description', $category->description ?? '') }}</textarea>
+                  class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text placeholder-wv-text-secondary focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">{{ old('description', $category->description ?? '') }}</textarea>
         <x-input-error :messages="$errors->get('description')" class="mt-2" />
     </div>
 
@@ -71,8 +68,8 @@
     <div class="md:col-span-2 flex items-center">
         <input id="active" name="active" type="checkbox" value="1"
                {{ old('active', $category->active ?? true) ? 'checked' : '' }}
-               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-        <label for="active" class="ms-2 text-sm text-gray-700">
+               class="rounded border-wv-border bg-wv-surface text-wv-accent focus:ring-wv-accent focus:ring-offset-wv-bg">
+        <label for="active" class="ms-2 text-sm text-wv-text">
             {{ __('Categoría activa (visible en formularios de creación de juegos)') }}
         </label>
     </div>

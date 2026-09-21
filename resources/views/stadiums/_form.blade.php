@@ -1,4 +1,3 @@
-{{-- Formulario compartido para crear/editar estadio --}}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
     <div class="md:col-span-2">
@@ -39,15 +38,15 @@
     <div class="md:col-span-2">
         <x-input-label for="notes" :value="__('Notas')" />
         <textarea id="notes" name="notes" rows="3"
-                  class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('notes', $stadium->notes ?? '') }}</textarea>
+                  class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text placeholder-wv-text-secondary focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">{{ old('notes', $stadium->notes ?? '') }}</textarea>
         <x-input-error :messages="$errors->get('notes')" class="mt-2" />
     </div>
 
     <div class="md:col-span-2 flex items-center">
         <input id="active" name="active" type="checkbox" value="1"
                {{ old('active', $stadium->active ?? true) ? 'checked' : '' }}
-               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-        <label for="active" class="ms-2 text-sm text-gray-700">
+               class="rounded border-wv-border bg-wv-surface text-wv-accent focus:ring-wv-accent focus:ring-offset-wv-bg">
+        <label for="active" class="ms-2 text-sm text-wv-text">
             {{ __('Estadio activo (visible en formularios de creación de juegos)') }}
         </label>
     </div>
