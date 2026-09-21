@@ -1,110 +1,74 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Asignar roles a') }}: <span class="text-indigo-700">{{ $user->name }}</span>
-            </h2>
-            <a href="{{ route('users.index') }}"
-               class="text-sm text-gray-600 hover:text-gray-900 underline">
-                {{ __('← Volver al listado') }}
-            </a>
-        </div>
-    </x-slot>
-
+    <x-slot name="header"><h2 class="font-semibold text-h-wv text-wv-text leading-tight">{{ __('Editar usuario') }}: {{ $user->name }}</h2></x-slot>
     <div class="py-8">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-
+        <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
+            <div class="mb-4"><a href="{{ route('users.index') }}" class="text-sm text-wv-accent hover:text-wv-accent-hover">← {{ __('Volver al listado') }}</a></div>
             @include('partials._flash')
 
-            <div class="bg-white shadow-sm sm:rounded-lg p-6">
-                <div class="mb-6 flex items-center gap-4 pb-6 border-b border-gray-200">
-                    @if ($user->avatar_url)
-                        <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}"
-                             class="h-16 w-16 rounded-full object-cover bg-gray-100">
-                    @else
-                        <div class="h-16 w-16 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl font-semibold">
-                            {{ $user->avatar_initials }}
+            <div class="bg-wv-surface border border-wv-border rounded-card">
+                <form method="POST" action="{{ route('users.update', $user) }}" class="p-6">
+                    @csrf @method('PUT')
+
+                    <div class="space-y-4">
+                        <div>
+                            <x-input-label for="name" :value="__('Nombre')" />
+                            <x-text-input id="name" name="name" type="text" class="block mt-1 w-full"
+                                          :value="old('name', $user->name)" required />
+                            <x-input-error :messages="$errors->get('name')" class="mt-2" />
                         </div>
-                    @endif
-                    <div>
-                        <p class="font-semibold text-gray-900">{{ $user->name }}</p>
-                        <p class="text-sm text-gray-600">{{ $user->email }}</p>
-                    </div>
-                </div>
 
-                <form method="POST" action="{{ route('users.update', $user) }}">
-                    @csrf
-                    @method('PUT')
+                        <div>
+                            <x-input-label for="email" :value="__('Correo electrónico')" />
+                            <x-text-input id="email" name="email" type="email" class="block mt-1 w-full"
+                                          :value="old('email', $user->email)" required />
+                            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                        </div>
 
-                    {{-- DISI-80: equipo asociado (opcional) --}}
-                    <div class="mb-6 pb-6 border-b border-gray-200">
-                        <x-input-label for="team_id" :value="__('Equipo asociado')" />
-                        <p class="mt-1 text-sm text-gray-600 mb-3">
-                            {{ __('Asigna al usuario a un equipo específico. Si tiene el rol gestor, sólo podrá administrar este equipo y sus atletas. Deja vacío para no asociarlo.') }}
-                        </p>
-                        <select id="team_id" name="team_id"
-                                class="block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md text-sm">
-                            <option value="">{{ __('— Sin equipo asociado —') }}</option>
-                            @foreach ($teams as $team)
-                                <option value="{{ $team->id }}" {{ (string) old('team_id', $user->team_id) === (string) $team->id ? 'selected' : '' }}>
-                                    {{ $team->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('team_id')" class="mt-2" />
-                    </div>
-
-                    <div>
-                        <x-input-label :value="__('Roles del usuario')" />
-                        <p class="mt-1 text-sm text-gray-600 mb-3">
-                            {{ __('Marca los roles que tendrá este usuario. Los permisos se heredan de los roles asignados.') }}
-                        </p>
-
-                        @if ($roles->isEmpty())
-                            <div class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-3">
-                                {{ __('No hay roles registrados. Crea al menos uno desde') }}
-                                <a href="{{ route('roles.index') }}" class="underline">{{ __('Roles y permisos') }}</a>.
-                            </div>
-                        @else
-                            <div class="space-y-2 border border-gray-200 rounded-md p-3 bg-gray-50">
-                                @foreach ($roles as $role)
-                                    <label class="flex items-start bg-white px-3 py-2 rounded border border-gray-200 hover:border-indigo-300 cursor-pointer">
-                                        <input type="checkbox" name="roles[]" value="{{ $role->name }}"
-                                               {{ in_array($role->name, $assigned, true) ? 'checked' : '' }}
-                                               class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mt-0.5 mr-3">
-                                        <div>
-                                            <div class="text-sm font-medium text-gray-900">
-                                                {{ $role->name }}
-                                                @if (in_array($role->name, ['admin', 'anotador'], true))
-                                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">
-                                                        {{ __('Sistema') }}
-                                                    </span>
-                                                @endif
-                                            </div>
-                                            <div class="text-xs text-gray-500 mt-0.5">
-                                                {{ $role->permissions->count() }} {{ __('permiso(s) asociados') }}
-                                            </div>
-                                        </div>
-                                    </label>
+                        <div>
+                            <x-input-label for="role_id" :value="__('Rol')" />
+                            <select id="role_id" name="role_id"
+                                    class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
+                                <option value="">— {{ __('Sin rol') }} —</option>
+                                @foreach ($roles as $r)
+                                    <option value="{{ $r->id }}" {{ (string) old('role_id', $user->role_id ?? '') === (string) $r->id ? 'selected' : '' }}>
+                                        {{ $r->display_name ?? $r->name }}
+                                    </option>
                                 @endforeach
-                            </div>
-                        @endif
-                        <x-input-error :messages="$errors->get('roles')" class="mt-2" />
-                        <x-input-error :messages="$errors->get('roles.*')" class="mt-2" />
+                            </select>
+                            <x-input-error :messages="$errors->get('role_id')" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="team_id" :value="__('Equipo asociado (opcional, para gestores)')" />
+                            <select id="team_id" name="team_id"
+                                    class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
+                                <option value="">— {{ __('Sin equipo') }} —</option>
+                                @foreach ($teams ?? [] as $t)
+                                    <option value="{{ $t->id }}" {{ (string) old('team_id', $user->team_id ?? '') === (string) $t->id ? 'selected' : '' }}>
+                                        {{ $t->name }}@if ($t->short_name) ({{ $t->short_name }})@endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('team_id')" class="mt-2" />
+                            <p class="mt-1 text-xs text-wv-text-secondary">{{ __('DISI-81: los usuarios con rol gestor quedan con scope automático a su equipo.') }}</p>
+                        </div>
+
+                        <div class="flex items-center">
+                            <input id="active" name="active" type="checkbox" value="1"
+                                   {{ old('active', $user->active ?? true) ? 'checked' : '' }}
+                                   class="rounded border-wv-border bg-wv-surface text-wv-accent focus:ring-wv-accent focus:ring-offset-wv-bg">
+                            <label for="active" class="ms-2 text-sm text-wv-text">
+                                {{ __('Usuario activo (puede iniciar sesión)') }}
+                            </label>
+                        </div>
                     </div>
 
-                    <div class="mt-6 flex items-center justify-end gap-3">
-                        <a href="{{ route('users.index') }}"
-                           class="text-sm text-gray-600 hover:text-gray-900 underline">
-                            {{ __('Cancelar') }}
-                        </a>
-                        <x-primary-button>
-                            {{ __('Guardar roles') }}
-                        </x-primary-button>
+                    <div class="flex justify-end mt-6 gap-3">
+                        <a href="{{ route('users.index') }}" class="inline-flex items-center px-4 py-2 border border-wv-border hover:bg-wv-surface-hover text-wv-text text-sm font-medium rounded-card">{{ __('Cancelar') }}</a>
+                        <x-primary-button>{{ __('Guardar cambios') }}</x-primary-button>
                     </div>
                 </form>
             </div>
-
         </div>
     </div>
 </x-app-layout>

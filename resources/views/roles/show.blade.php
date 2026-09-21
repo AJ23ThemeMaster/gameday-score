@@ -1,77 +1,98 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Rol') }}: <span class="text-indigo-700">{{ $role->name }}</span>
-            </h2>
-            <div class="flex gap-3">
-                <a href="{{ route('roles.index') }}"
-                   class="text-sm text-gray-600 hover:text-gray-900 underline">
-                    {{ __('← Volver al listado') }}
-                </a>
-                <a href="{{ route('roles.edit', $role) }}"
-                   class="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-md transition">
-                    {{ __('Editar') }}
-                </a>
+            <div>
+                <h2 class="font-semibold text-h-wv text-wv-text leading-tight">
+                    {{ __('Rol') }}: <span class="text-wv-accent">{{ $role->display_name ?? $role->name }}</span>
+                </h2>
+                <p class="text-sm text-wv-text-secondary mt-1"><code>{{ $role->name }}</code></p>
+            </div>
+            <div class="flex gap-2">
+                <a href="{{ route('roles.index') }}" class="text-sm text-wv-text-secondary hover:text-wv-text">{{ __('Listado') }}</a>
+                <a href="{{ route('roles.edit', $role) }}" class="inline-flex items-center px-3 py-1.5 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-xs font-semibold rounded-card">{{ __('Editar') }}</a>
             </div>
         </div>
     </x-slot>
 
     <div class="py-8">
-        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6">
-
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             @include('partials._flash')
+            <div class="bg-wv-surface border border-wv-border rounded-card p-6">
+                @if ($role->description)
+                    <p class="text-wv-text-secondary mb-6">{{ $role->description }}</p>
+                @endif
 
-            <div class="bg-white shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ __('Permisos asignados') }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-wv-bg border border-wv-border rounded-card p-4 text-center">
+                        <div class="font-mono text-kpi text-wv-text">{{ $role->permissions->count() }}</div>
+                        <div class="text-xs text-wv-text-secondary uppercase mt-1">{{ __('Permisos') }}</div>
+                    </div>
+                    <div class="bg-wv-bg border border-wv-border rounded-card p-4 text-center">
+                        <div class="font-mono text-kpi text-wv-text">{{ $role->users->count() }}</div>
+                        <div class="text-xs text-wv-text-secondary uppercase mt-1">{{ __('Usuarios') }}</div>
+                    </div>
+                    <div class="bg-wv-bg border border-wv-border rounded-card p-4 text-center">
+                        <div class="font-mono text-kpi text-wv-text">{{ $role->created_at->format('d/m/Y') }}</div>
+                        <div class="text-xs text-wv-text-secondary uppercase mt-1">{{ __('Creado') }}</div>
+                    </div>
+                </div>
+
+                <h3 class="text-sm font-bold text-wv-text mb-3">{{ __('Permisos asignados') }}</h3>
                 @if ($role->permissions->isEmpty())
-                    <p class="text-sm text-gray-500">{{ __('Este rol no tiene permisos asignados.') }}</p>
+                    <p class="text-sm text-wv-text-secondary italic">{{ __('Este rol no tiene permisos asignados aún.') }}</p>
                 @else
-                    <div class="flex flex-wrap gap-2">
-                        @foreach ($role->permissions as $permission)
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                {{ $permission->name }}
-                            </span>
+                    @php $grouped = $role->permissions->groupBy('group'); @endphp
+                    <div class="space-y-4">
+                        @foreach ($grouped as $groupName => $perms)
+                            <div>
+                                <p class="text-xs font-semibold text-wv-text-secondary uppercase tracking-wider mb-1">{{ ucfirst($groupName) }}</p>
+                                <div class="flex flex-wrap gap-1.5">
+                                    @foreach ($perms as $perm)
+                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-wv-accent-soft text-wv-accent border border-wv-accent/40">
+                                            {{ $perm->display_name ?? $perm->name }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                            </div>
                         @endforeach
                     </div>
                 @endif
             </div>
 
-            <div class="bg-white shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ __('Usuarios con este rol') }}</h3>
-                @if ($users->isEmpty())
-                    <p class="text-sm text-gray-500">{{ __('Ningún usuario tiene este rol asignado.') }}</p>
-                @else
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">
-                                    {{ __('Nombre') }}
-                                </th>
-                                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">
-                                    {{ __('Correo electrónico') }}
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            @foreach ($users as $user)
+            @if ($role->users->count())
+                <div class="mt-4 bg-wv-surface border border-wv-border rounded-card p-6">
+                    <h3 class="text-sm font-bold text-wv-text mb-3">{{ __('Usuarios con este rol') }} ({{ $role->users->count() }})</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-wv-border text-sm">
+                            <thead class="bg-wv-surface-hover">
                                 <tr>
-                                    <td class="px-4 py-2 text-sm">
-                                        <a href="{{ route('users.edit', $user) }}" class="text-indigo-700 hover:text-indigo-900 font-medium">
-                                            {{ $user->name }}
-                                        </a>
-                                    </td>
-                                    <td class="px-4 py-2 text-sm text-gray-600">{{ $user->email }}</td>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-wv-text-secondary uppercase">{{ __('Nombre') }}</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-wv-text-secondary uppercase">{{ __('Correo') }}</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-wv-text-secondary uppercase">{{ __('Acciones') }}</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                    <div class="px-6 py-3 border-t border-gray-200">
-                        {{ $users->links() }}
+                            </thead>
+                            <tbody class="divide-y divide-wv-border">
+                                @foreach ($role->users as $u)
+                                    <tr class="hover:bg-wv-surface-hover">
+                                        <td class="px-3 py-2">
+                                            <a href="{{ route('users.edit', $u) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $u->name }}</a>
+                                        </td>
+                                        <td class="px-3 py-2 text-wv-text-secondary">{{ $u->email }}</td>
+                                        <td class="px-3 py-2 text-right">
+                                            <a href="{{ route('users.edit', $u) }}" class="text-xs text-wv-accent hover:text-wv-accent-hover">{{ __('Editar') }}</a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
-                @endif
-            </div>
+                </div>
+            @endif
 
+            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="mt-4 text-right" onsubmit="return confirm('¿Eliminar el rol «{{ $role->display_name ?? $role->name }}»?');">
+                @csrf @method('DELETE')
+                <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar rol') }}</button>
+            </form>
         </div>
     </div>
 </x-app-layout>
