@@ -30,3 +30,6 @@ Thumbs.db
 # Temp debug scripts
 scripts/tmp-debug/
 
+# Temp commit message drafts
+scripts/tmp-commit-msgs/
+
