@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+  WattVision: helper para ocultar elementos Alpine antes de su primera
+  inicializacion. Marca los elementos con x-cloak como display:none hasta
+  que Alpine.js los muestre via x-show o directivas similares.
+
+  Se aplica globalmente porque lo usan el sidebar (drawer), el dropdown de
+  usuario, y cualquier otro componente interactivo del layout.
+*/
+[x-cloak] {
+    display: none !important;
+}

@@ -22,10 +22,11 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        {{-- WattVision: Inter (titulos/cuerpo) + JetBrains Mono (KPIs) en todo
-             el sistema EXCEPTO en las rutas excluidas. --}}
+        {{-- WattVision: Inter (titulos/cuerpo) + JetBrains Mono (KPIs) + Material Symbols (iconos UI).
+             Se cargan en todo el sistema EXCEPTO en las rutas excluidas.
+             Material Symbols Outlined lo usan sidebar, dashboard y otros componentes. --}}
         @unless ($wvExcluded)
-            <link href="https://fonts.bunny.net/css?family=inter:wght@400;500;600;700&family=jetbrains-mono:wght@400;500;700&display=swap" rel="stylesheet">
+            <link href="https://fonts.bunny.net/css?family=inter:wght@400;500;600;700&family=jetbrains-mono:wght@400;500;700&family=material-symbols-outlined:opsz,wght,FILL,GRAD@20..24,400..700,0..1,-50..200&display=swap" rel="stylesheet">
         @endunless
 
         @include('partials._pwa')
@@ -45,32 +46,64 @@
           Las vistas excluidas (scoreboard/box-score/live/public) siguen con
           bg-gray-100 light + tipografia Figtree.
         --}}
-        <div class="min-h-screen @unless ($wvExcluded) bg-wv-bg text-wv-text @else bg-gray-100 @endunless">
+        <div class="@unless ($wvExcluded) bg-wv-bg text-wv-text @else bg-gray-100 @endunless min-h-screen">
+
             {{--
-              Nav global oculta en scoreboard/box-score/live (DISI-46) y ahora
-              tambien en el marcador publico para mantener consistencia: esas
-              vistas tienen su propio header/breadcrumb.
+              Nav global oculta en scoreboard/box-score/live (DISI-46) y tambien
+              en el marcador publico para mantener consistencia: esas vistas
+              tienen su propio header/breadcrumb.
             --}}
             @unless ($wvExcluded)
-                @include('layouts.navigation')
-            @endunless
+                <div x-data="{ sidebarOpen: false }" class="min-h-screen md:pl-64">
+                    {{-- Sidebar persistente en desktop, drawer en mobile --}}
+                    @include('layouts.navigation')
 
-            <!-- Page Heading -->
-            @isset($header)
-                @unless ($wvExcluded)
-                    <header class="bg-wv-bg border-b border-wv-border">
+                    {{-- Top bar mobile (solo en mobile, con hamburguesa + page title) --}}
+                    <div class="md:hidden sticky top-0 z-30 bg-wv-bg border-b border-wv-border">
+                        <div class="h-14 px-3 flex items-center justify-between">
+                            <button type="button"
+                                    @click="sidebarOpen = true"
+                                    class="inline-flex items-center justify-center w-10 h-10 rounded-card text-wv-text-secondary hover:text-wv-text hover:bg-wv-surface focus:outline-none focus:ring-2 focus:ring-wv-accent">
+                                <span class="material-symbols-outlined text-[24px]">menu</span>
+                            </button>
+                            <span class="text-sm font-semibold text-wv-text">@yield('header_mobile', config('app.name'))</span>
+                            <span class="w-10"></span>
+                        </div>
+                    </div>
+
+                    <!-- Page Heading (slot header opcional) -->
+                    @isset($header)
+                        <header class="bg-wv-bg border-b border-wv-border">
+                            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                                {{ $header }}
+                            </div>
+                        </header>
+                    @endisset
+
+                    <!-- Page Content -->
+                    <main class="min-h-[calc(100vh-3.5rem)]">
+                        {{ $slot }}
+                    </main>
+                </div>
+            @else
+                {{-- Vista excluida: sin sidebar, sin top bar mobile --}}
+                <!-- Page Heading -->
+                @isset($header)
+                    <header class="bg-white shadow">
                         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                             {{ $header }}
                         </div>
                     </header>
-                @endunless
-            @endisset
+                @endisset
 
-            <!-- Page Content -->
-            <main>
-                {{ $slot }}
-            </main>
+                <!-- Page Content -->
+                <main>
+                    {{ $slot }}
+                </main>
+            @endunless
+
         </div>
+
         {{-- Toast stack global: recibe eventos 'toast' desde cualquier store --}}
         <x-toast-stack />
     </body>

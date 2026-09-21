@@ -1,139 +1,182 @@
-<nav x-data="{ open: false }" class="bg-wv-bg border-b border-wv-border">
-    <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
-                <!-- Logo -->
-                <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-wv-accent" />
-                    </a>
-                </div>
+{{--
+  WattVision: sidebar vertical persistente en desktop (>= md), drawer
+  deslizante en mobile (< md). El state `sidebarOpen` viene del x-data
+  padre en layouts/app.blade.php.
 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('leagues.index')" :active="request()->routeIs('leagues.*')">
-                        {{ __('Ligas') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('tournaments.index')" :active="request()->routeIs('tournaments.*')">
-                        {{ __('Torneos') }}
-                    </x-nav-link>
-                    @auth
-                        @if (auth()->user()->isAdmin())
-                            <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                                {{ __('Usuarios') }}
-                            </x-nav-link>
-                            <x-nav-link :href="route('roles.index')" :active="request()->routeIs('roles.*')">
-                                {{ __('Roles') }}
-                            </x-nav-link>
-                        @endif
-                    @endauth
-                </div>
+  Items en orden del usuario:
+    Dashboard, Juegos, Ligas, Categorías, Torneos, Equipos, Atletas,
+    Anotadores, Árbitros, Estadios, Usuarios (admin), Roles (admin),
+    PWA Legacy (externo).
+--}}
+
+{{-- Backdrop solo mobile, click cierra drawer --}}
+<div x-show="sidebarOpen"
+     x-transition:enter="transition-opacity ease-linear duration-200"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition-opacity ease-linear duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     @click="sidebarOpen = false"
+     class="fixed inset-0 bg-wv-bg/80 z-40 md:hidden"
+     x-cloak>
+</div>
+
+<aside
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
+    class="fixed inset-y-0 left-0 z-50 w-64 bg-wv-bg border-r border-wv-border flex flex-col transition-transform duration-200 ease-in-out md:z-30"
+    x-cloak>
+
+    {{-- Logo / brand --}}
+    <div class="h-16 flex items-center px-5 border-b border-wv-border flex-shrink-0">
+        <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 group">
+            <span class="inline-flex items-center justify-center h-9 w-9 rounded-card bg-wv-accent-soft text-wv-accent">
+                <span class="material-symbols-outlined text-[22px]">sports_baseball</span>
+            </span>
+            <div class="leading-tight">
+                <div class="text-base font-bold text-wv-text">Gameday</div>
+                <div class="text-[10px] uppercase tracking-widest text-wv-text-secondary">Score</div>
             </div>
+        </a>
 
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-wv-border text-sm leading-4 font-medium rounded-md text-wv-text bg-wv-surface hover:bg-wv-surface-hover hover:border-wv-border-strong focus:outline-none transition ease-in-out duration-150">
-                            @if (Auth::user()->avatar_url)
-                                <img src="{{ Auth::user()->avatar_url }}" alt="" class="h-7 w-7 rounded-full object-cover bg-wv-bg me-2">
-                            @else
-                                <span class="inline-flex items-center justify-center h-7 w-7 rounded-full bg-wv-accent-soft text-wv-accent text-xs font-semibold me-2">
-                                    {{ Auth::user()->avatar_initials }}
-                                </span>
-                            @endif
-                            <div>{{ Auth::user()->name }}</div>
-
-                            <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
-
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Mi perfil') }}
-                        </x-dropdown-link>
-
-                        <!-- Authentication -->
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Cerrar sesion') }}
-                            </x-dropdown-link>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
-            </div>
-
-            <!-- Hamburger -->
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-wv-text-secondary hover:text-wv-text hover:bg-wv-surface focus:outline-none focus:bg-wv-surface focus:text-wv-text transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-        </div>
+        {{-- Cerrar (solo mobile) --}}
+        <button type="button"
+                @click="sidebarOpen = false"
+                class="md:hidden ms-auto inline-flex items-center justify-center w-9 h-9 rounded-card text-wv-text-secondary hover:text-wv-text hover:bg-wv-surface focus:outline-none focus:ring-2 focus:ring-wv-accent">
+            <span class="material-symbols-outlined text-[22px]">close</span>
+        </button>
     </div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+    {{-- Menu principal (scrollable) --}}
+    <nav class="flex-1 overflow-y-auto py-3">
+        <div class="px-3 mb-2">
+            <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
+                {{ __('Principal') }}
+            </p>
+        </div>
+        <div class="px-3 space-y-1">
+            <x-sidebar-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" icon="dashboard">
                 {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('leagues.index')" :active="request()->routeIs('leagues.*')">
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('games.index')" :active="request()->routeIs('games.*')" icon="sports_scoreboard">
+                {{ __('Juegos') }}
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('leagues.index')" :active="request()->routeIs('leagues.*')" icon="flag">
                 {{ __('Ligas') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('tournaments.index')" :active="request()->routeIs('tournaments.*')">
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('categories.index')" :active="request()->routeIs('categories.*')" icon="category">
+                {{ __('Categorías') }}
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('tournaments.index')" :active="request()->routeIs('tournaments.*')" icon="emoji_events">
                 {{ __('Torneos') }}
-            </x-responsive-nav-link>
-            @auth
-                @if (auth()->user()->isAdmin())
-                    <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                        {{ __('Usuarios') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('roles.index')" :active="request()->routeIs('roles.*')">
-                        {{ __('Roles') }}
-                    </x-responsive-nav-link>
-                @endif
-            @endauth
+            </x-sidebar-link>
         </div>
 
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-wv-border">
-            <div class="px-4">
-                <div class="font-medium text-base text-wv-text">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-wv-text-secondary">{{ Auth::user()->email }}</div>
-            </div>
+        <div class="px-3 mt-5 mb-2">
+            <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
+                {{ __('Equipos & Personas') }}
+            </p>
+        </div>
+        <div class="px-3 space-y-1">
+            <x-sidebar-link :href="route('teams.index')" :active="request()->routeIs('teams.*')" icon="groups">
+                {{ __('Equipos') }}
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('athletes.index')" :active="request()->routeIs('athletes.*')" icon="person">
+                {{ __('Atletas') }}
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('scorekeepers.index')" :active="request()->routeIs('scorekeepers.*')" icon="edit_note">
+                {{ __('Anotadores') }}
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('referees.index')" :active="request()->routeIs('referees.*')" icon="sports">
+                {{ __('Árbitros') }}
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('stadiums.index')" :active="request()->routeIs('stadiums.*')" icon="stadium">
+                {{ __('Estadios') }}
+            </x-sidebar-link>
+        </div>
 
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
+        @auth
+            @if (auth()->user()->isAdmin())
+                <div class="px-3 mt-5 mb-2">
+                    <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
+                        {{ __('Administración') }}
+                    </p>
+                </div>
+                <div class="px-3 space-y-1">
+                    <x-sidebar-link :href="route('users.index')" :active="request()->routeIs('users.*')" icon="manage_accounts">
+                        {{ __('Usuarios') }}
+                    </x-sidebar-link>
+                    <x-sidebar-link :href="route('roles.index')" :active="request()->routeIs('roles.*')" icon="shield_person">
+                        {{ __('Roles') }}
+                    </x-sidebar-link>
+                </div>
+            @endif
+        @endauth
+
+        <div class="px-3 mt-5 mb-2">
+            <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
+                {{ __('Otros') }}
+            </p>
+        </div>
+        <div class="px-3 space-y-1">
+            {{-- PWA Legacy: link externo al sitio v1.1.12 (DISI-82) --}}
+            <x-sidebar-link href="/legacy/" icon="smartphone" external>
+                {{ __('PWA Legacy') }}
+            </x-sidebar-link>
+        </div>
+    </nav>
+
+    {{-- Footer: usuario + logout --}}
+    <div class="border-t border-wv-border p-3 flex-shrink-0" x-data="{ userMenuOpen: false }">
+        <div class="relative">
+            <button type="button"
+                    @click="userMenuOpen = !userMenuOpen"
+                    @click.outside="userMenuOpen = false"
+                    class="w-full flex items-center gap-3 px-3 py-2 rounded-card hover:bg-wv-surface-hover focus:outline-none focus:ring-2 focus:ring-wv-accent transition">
+                @if (Auth::user()->avatar_url)
+                    <img src="{{ Auth::user()->avatar_url }}" alt="{{ Auth::user()->name }}"
+                         class="h-9 w-9 rounded-full object-cover bg-wv-surface flex-shrink-0">
+                @else
+                    <span class="h-9 w-9 rounded-full bg-wv-accent-soft text-wv-accent text-sm font-semibold inline-flex items-center justify-center flex-shrink-0">
+                        {{ Auth::user()->avatar_initials }}
+                    </span>
+                @endif
+                <div class="flex-1 text-left min-w-0">
+                    <div class="text-sm font-semibold text-wv-text truncate">{{ Auth::user()->name }}</div>
+                    <div class="text-xs text-wv-text-secondary truncate">{{ Auth::user()->email }}</div>
+                </div>
+                <span class="material-symbols-outlined text-[18px] text-wv-text-secondary flex-shrink-0"
+                      :class="userMenuOpen ? 'rotate-180' : ''"
+                      style="transition: transform 200ms">
+                    expand_less
+                </span>
+            </button>
+
+            {{-- Menu flotante del usuario (sobre el sidebar) --}}
+            <div x-show="userMenuOpen"
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 translate-y-1"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-100"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 translate-y-1"
+                 class="absolute bottom-full left-0 right-0 mb-2 bg-wv-surface border border-wv-border rounded-card shadow-lg overflow-hidden"
+                 x-cloak>
+                <a href="{{ route('profile.edit') }}"
+                   class="flex items-center gap-2 px-4 py-2.5 text-sm text-wv-text-secondary hover:text-wv-text hover:bg-wv-surface-hover transition">
+                    <span class="material-symbols-outlined text-[18px]">person</span>
                     {{ __('Mi perfil') }}
-                </x-responsive-nav-link>
+                </a>
 
-                <!-- Authentication -->
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
+                    <button type="submit"
+                            class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-wv-alert hover:bg-wv-surface-hover transition text-left">
+                        <span class="material-symbols-outlined text-[18px]">logout</span>
                         {{ __('Cerrar sesion') }}
-                    </x-responsive-nav-link>
+                    </button>
                 </form>
             </div>
         </div>
     </div>
-</nav>
+</aside>
