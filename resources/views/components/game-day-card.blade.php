@@ -88,25 +88,27 @@
         </div>
     </div>
 
-    {{-- Footer: categoria + estadio --}}
-    <div class="border-t border-wv-border mt-4 pt-3 space-y-1">
-        @if ($category)
-            <p class="flex items-center gap-1.5 text-xs text-wv-text-secondary truncate">
-                <span class="material-symbols-outlined text-[14px] flex-shrink-0">category</span>
-                <span class="truncate">{{ $category->name }}</span>
+    {{-- Footer: categoria + estadio centrados en una sola linea con "|".
+         Si solo hay uno de los dos, se muestra solo ese. --}}
+    @php
+        $hasCat = ! empty($category?->name);
+        $hasSta = ! empty($stadium?->name);
+    @endphp
+    @if ($hasCat || $hasSta)
+        <div class="border-t border-wv-border mt-4 pt-3">
+            <p class="flex items-center justify-center gap-1.5 text-xs text-wv-text-secondary truncate text-center">
+                @if ($hasSta)
+                    <span class="material-symbols-outlined text-[14px] flex-shrink-0">stadium</span>
+                    <span class="truncate">{{ $stadium->name }}</span>
+                @endif
+                @if ($hasCat && $hasSta)
+                    <span class="text-wv-border-strong">|</span>
+                @endif
+                @if ($hasCat)
+                    <span class="material-symbols-outlined text-[14px] flex-shrink-0">category</span>
+                    <span class="truncate">{{ $category->name }}</span>
+                @endif
             </p>
-        @endif
-        @if ($stadium)
-            <p class="flex items-center gap-1.5 text-xs text-wv-text-secondary truncate">
-                <span class="material-symbols-outlined text-[14px] flex-shrink-0">stadium</span>
-                <span class="truncate">{{ $stadium->name }}</span>
-            </p>
-        @endif
-    </div>
-
-    {{-- Hover indicator --}}
-    <div class="mt-3 flex items-center justify-end gap-1 text-[11px] font-semibold text-wv-accent opacity-0 group-hover:opacity-100 group-hover:gap-2 transition-all">
-        <span>{{ $meta['live'] ? __('Ver en vivo') : __('Ver detalle') }}</span>
-        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-    </div>
+        </div>
+    @endif
 </a>
