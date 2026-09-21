@@ -1,3 +1,9 @@
+@props([
+    'game' => null,
+    'href' => null,
+    'publicMode' => false,
+])
+
 @php
     /** @var \App\Models\Game $game */
     $game = $game ?? null;
@@ -9,6 +15,15 @@
     $awayTeam = $game->awayTeam;
     $category = $game->category;
     $stadium  = $game->stadium;
+
+    // Destino del link:
+    //   - Default (autenticado): route('games.scoreboard', $game) -> anotador.
+    //   - publicMode (welcome):   public_url del juego (/game/live/{token}).
+    //   - href custom: si el caller pasa :href, lo respetamos (ej: ruta share,
+    //     box score, etc.).
+    $href = $href ?? ($publicMode
+        ? $game->public_url
+        : route('games.scoreboard', $game));
 
     // Mapeo de status a etiqueta legible + estilo del badge.
     // - scheduled   -> "Programado"  (sin score visible)
@@ -24,7 +39,7 @@
     $meta = $statusMeta[$game->status] ?? ['label' => ucfirst((string) $game->status), 'class' => 'bg-wv-surface-hover text-wv-text-secondary border-wv-border', 'showScore' => false, 'live' => false];
 @endphp
 
-<a href="{{ route('games.scoreboard', $game) }}"
+<a href="{{ $href }}"
    class="snap-start flex-shrink-0 w-full md:w-[calc(50%-0.5rem)] lg:w-[calc((100%-2rem)/3)] bg-wv-surface border border-wv-border rounded-card p-4 hover:border-wv-accent/50 hover:bg-wv-surface-hover transition group block">
 
     {{-- Header del card: horario + status badge --}}

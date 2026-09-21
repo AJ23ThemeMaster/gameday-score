@@ -14,121 +14,18 @@
     try { $kpis['games']    = \App\Models\Game::count(); } catch (\Throwable $e) {}
     try { $kpis['teams']    = \App\Models\Team::count(); } catch (\Throwable $e) {}
     try { $kpis['athletes'] = \App\Models\Athlete::count(); } catch (\Throwable $e) {}
-
-    // Juegos del dia (jornada): scheduled_at entre hoy 00:00 y hoy 23:59.
-    // Estados que muestran marcador: in_progress, paused, completed.
-    // Estados sin marcador (solo programacion): scheduled.
-    // Filtramos por usuario autenticado: admins ven todos; gestores y otros
-    // solo los juegos donde estan involucrados como staff (anotadores o
-    // arbitros), igual que la seccion "Mis juegos" del sidebar.
-    $todayGames = collect();
-    try {
-        $todayQuery = \App\Models\Game::query()
-            ->with(['homeTeam', 'awayTeam', 'category', 'stadium'])
-            ->whereIn('status', ['scheduled', 'in_progress', 'paused', 'completed'])
-            ->whereBetween('scheduled_at', [now()->startOfDay(), now()->endOfDay()])
-            ->orderBy('scheduled_at');
-
-        $user = \Illuminate\Support\Facades\Auth::user();
-        if ($user && ! $user->isAdmin()) {
-            // Gestores / anotadores / arbitros: solo juegos donde estan asignados.
-            $todayQuery->where(function ($q) use ($user) {
-                $q->whereHas('scorekeepers', fn ($sq) => $sq->where('users.id', $user->id))
-                  ->orWhereHas('referees', fn ($rq) => $rq->where('users.id', $user->id));
-            });
-        }
-
-        $todayGames = $todayQuery->get();
-    } catch (\Throwable $e) {
-        $todayGames = collect();
-    }
 @endphp
 
 <x-app-layout>
     {{-- El slot del header ya no muestra "Panel de Control / Vista general".
-         En su lugar, en esta misma zona del layout se inyecta el carousel de
-         juegos del dia (via componente game-day-card) con flechas de scroll
-         si hay mas de 3 juegos (en lg caben 3 cards, el 4to ya hace overflow). --}}
+         Los juegos del dia ahora viven en la landing publica (welcome.blade.php)
+         y solo muestran juegos con is_public=true. --}}
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             {{-- ===========================================================
-                 CARRUSEL: Juegos del dia (jornada)
-                 - 1 fila de cards de 1/3 del ancho (col-3 en desktop lg).
-                 - Si hay > 3 juegos aparecen flechas izquierda/derecha que
-                   hacen scrollBy de aprox 1 card por click.
-                 - Empty state cuando no hay juegos del dia.
-                 =========================================================== --}}
-            <div x-data="{
-                        scroller: null,
-                        scrollPrev() { if (this.scroller) this.scroller.scrollBy({left: -this.scroller.clientWidth * 0.8, behavior: 'smooth'}); },
-                        scrollNext() { if (this.scroller) this.scroller.scrollBy({left: this.scroller.clientWidth * 0.8,  behavior: 'smooth'}); }
-                    }"
-                 x-init="scroller = $refs.carousel"
-                 class="relative mb-6">
-
-                <div class="flex items-center justify-between mb-3">
-                    <div>
-                        <h2 class="font-semibold text-h-wv text-wv-text leading-tight">
-                            {{ __('Juegos del dia') }}
-                        </h2>
-                        <p class="text-xs text-wv-text-secondary mt-0.5">
-                            {{ __('Jornada de hoy') }} ·
-                            <span class="font-mono">{{ now()->translatedFormat('d \\d\\e F, Y') }}</span>
-                            · {{ $todayGames->count() }}
-                            {{ $todayGames->count() === 1 ? __('juego') : __('juegos') }}
-                        </p>
-                    </div>
-
-                    {{-- Flechas: aparecen a partir de 4 juegos (en lg caben 3 cards,
-                         asi que el 4to ya hace overflow y requiere scroll). --}}
-                    @if ($todayGames->count() > 3)
-                        <div class="flex gap-1">
-                            <button type="button"
-                                    @click="scrollPrev()"
-                                    aria-label="{{ __('Anterior') }}"
-                                    class="inline-flex items-center justify-center w-9 h-9 rounded-card bg-wv-surface border border-wv-border text-wv-text-secondary hover:text-wv-text hover:bg-wv-surface-hover hover:border-wv-accent transition">
-                                <span class="material-symbols-outlined text-[20px]">chevron_left</span>
-                            </button>
-                            <button type="button"
-                                    @click="scrollNext()"
-                                    aria-label="{{ __('Siguiente') }}"
-                                    class="inline-flex items-center justify-center w-9 h-9 rounded-card bg-wv-surface border border-wv-border text-wv-text-secondary hover:text-wv-text hover:bg-wv-surface-hover hover:border-wv-accent transition">
-                                <span class="material-symbols-outlined text-[20px]">chevron_right</span>
-                            </button>
-                        </div>
-                    @endif
-                </div>
-
-                @if ($todayGames->isEmpty())
-                    {{-- Empty state: no hay juegos en la jornada --}}
-                    <div class="bg-wv-surface border border-wv-border rounded-card p-10 text-center">
-                        <span class="material-symbols-outlined text-wv-text-secondary text-[48px]">event_busy</span>
-                        <h3 class="mt-2 text-base font-semibold text-wv-text">{{ __('Sin juegos para hoy') }}</h3>
-                        <p class="mt-1 text-sm text-wv-text-secondary">{{ __('No tienes juegos programados, en vivo ni finalizados en la jornada de hoy.') }}</p>
-                        <a href="{{ route('games.index') }}"
-                           class="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-wv-accent hover:text-wv-accent-hover">
-                            {{ __('Ir al listado de juegos') }}
-                            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
-                        </a>
-                    </div>
-                @else
-                    {{-- Scroller horizontal con snap --}}
-                    <div x-ref="carousel"
-                         class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-2 px-2 nav-scroll">
-
-                        @foreach ($todayGames as $g)
-                            <x-game-day-card :game="$g" />
-                        @endforeach
-
-                    </div>
-                @endif
-
-            </div>
-
-            {{-- ===========================================================
-                 FILA 2: KPI cards (3 columnas) - Diseno WattVision §5
+                 FILA 1: KPI cards (3 columnas) - Diseno WattVision §5
                  =========================================================== --}}
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
 

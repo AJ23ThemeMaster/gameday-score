@@ -14,6 +14,24 @@
 </head>
 <body class="font-sans antialiased font-inter bg-wv-bg text-wv-text min-h-screen">
 
+@php
+    // Juegos del dia publicos. try/catch defensivo: si la tabla games aun no
+    // existe (instalacion fresca sin migrar) o cualquier otra columna/relacion
+    // falla, no rompemos el render del welcome.
+    $todayGames = collect();
+    try {
+        $todayGames = \App\Models\Game::query()
+            ->public() // scope: is_public = true
+            ->whereIn('status', ['scheduled', 'in_progress', 'paused', 'completed'])
+            ->whereBetween('scheduled_at', [now()->startOfDay(), now()->endOfDay()])
+            ->with(['homeTeam', 'awayTeam', 'category', 'stadium'])
+            ->orderBy('scheduled_at')
+            ->get();
+    } catch (\Throwable $e) {
+        $todayGames = collect();
+    }
+@endphp
+
     <div class="min-h-screen flex flex-col">
         {{-- Top bar --}}
         <header class="w-full">
@@ -83,6 +101,64 @@
                 </div>
             </div>
         </main>
+
+        {{-- ===========================================================
+             Juegos del dia (publico)
+             Solo juegos con is_public=true. Cada card abre el live
+             publico (/game/live/{token}) gracias a la prop publicMode
+             del componente <x-game-day-card>.
+             =========================================================== --}}
+        @if ($todayGames->count() > 0)
+            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-2xl sm:text-3xl font-bold text-wv-text">{{ __('Juegos del dia') }}</h2>
+                        <p class="text-sm text-wv-text-secondary mt-1">
+                            {{ __('Sigue el avance en vivo de los partidos habilitados para publico.') }}
+                        </p>
+                    </div>
+
+                    {{-- Flechas del carousel: solo si hay mas de 3 juegos
+                         (en lg caben 3 cards, el 4o ya hace overflow). --}}
+                    @if ($todayGames->count() > 3)
+                        <div class="hidden md:flex items-center gap-2">
+                            <button type="button"
+                                    x-on:click="$refs.todayGamesCarousel.scrollBy({ left: -340, behavior: 'smooth' })"
+                                    aria-label="{{ __('Anterior') }}"
+                                    class="p-2 rounded-card border border-wv-border hover:bg-wv-surface-hover text-wv-text transition">
+                                <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+                            </button>
+                            <button type="button"
+                                    x-on:click="$refs.todayGamesCarousel.scrollBy({ left: 340, behavior: 'smooth' })"
+                                    aria-label="{{ __('Siguiente') }}"
+                                    class="p-2 rounded-card border border-wv-border hover:bg-wv-surface-hover text-wv-text transition">
+                                <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+                            </button>
+                        </div>
+                    @endif
+                </div>
+
+                <div x-ref="todayGamesCarousel"
+                     class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 nav-scroll">
+                    @foreach ($todayGames as $g)
+                        <x-game-day-card :game="$g" publicMode />
+                    @endforeach
+                </div>
+            </section>
+        @else
+            {{-- Empty state propio del welcome: sin "Mis juegos" ni enlace al
+                 listado autenticado (eso es del dashboard). Aqui solo
+                 invitamos a volver mas tarde. --}}
+            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div class="bg-wv-surface border border-wv-border rounded-card p-8 text-center">
+                    <span class="material-symbols-outlined text-wv-text-secondary text-[40px] mb-2">sports_baseball</span>
+                    <h2 class="text-lg font-semibold text-wv-text mb-1">{{ __('Hoy no hay juegos publicos') }}</h2>
+                    <p class="text-sm text-wv-text-secondary max-w-md mx-auto">
+                        {{ __('Cuando un administrador habilite un juego para publico, aparecera aqui con su marcador y enlace al live.') }}
+                    </p>
+                </div>
+            </section>
+        @endif
 
         {{-- Features preview --}}
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
