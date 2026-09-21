@@ -87,9 +87,25 @@
                                     <li>
                                         <a href="{{ $item['url'] }}"
                                            class="flex items-center gap-3 px-4 py-3 hover:bg-wv-surface-hover transition group">
-                                            <span class="material-symbols-outlined text-wv-text-secondary text-[18px] group-hover:text-wv-accent transition">
-                                                {{ $meta['icon'] }}
-                                            </span>
+
+                                            {{-- Avatar/logo/icono segun disponibilidad --}}
+                                            @if (! empty($item['image']))
+                                                {{-- Logo o foto real (logos de equipo/liga vienen con fondo blanco, imageClass lo aplica) --}}
+                                                <img src="{{ $item['image'] }}"
+                                                     alt="{{ $item['title'] }}"
+                                                     class="h-9 w-9 flex-shrink-0 object-contain rounded-md {{ $item['imageClass'] ?? '' }}">
+                                            @elseif (! empty($item['initials']))
+                                                {{-- Iniciales para personas (atletas, anotadores, arbitros) --}}
+                                                <span class="h-9 w-9 rounded-full bg-wv-accent-soft text-wv-accent flex items-center justify-center text-xs font-semibold flex-shrink-0 border border-wv-border">
+                                                    {{ $item['initials'] }}
+                                                </span>
+                                            @else
+                                                {{-- Fallback: material-symbols-outlined con el icono del grupo --}}
+                                                <span class="material-symbols-outlined text-wv-text-secondary text-[18px] group-hover:text-wv-accent transition">
+                                                    {{ $item['fallbackIcon'] ?? $meta['icon'] }}
+                                                </span>
+                                            @endif
+
                                             <div class="flex-1 min-w-0">
                                                 <div class="text-sm font-medium text-wv-text truncate group-hover:text-wv-accent transition">
                                                     {{ $item['title'] }}

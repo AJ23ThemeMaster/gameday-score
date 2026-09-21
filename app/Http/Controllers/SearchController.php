@@ -65,55 +65,62 @@ class SearchController extends Controller
 
             'leagues' => $this->mapSimple(
                 League::query()->where('name', 'LIKE', $like)->orWhere('short_name', 'LIKE', $like)->orderBy('name')->limit(5)->get(),
-                fn ($l) => $this->row($l->name, $l->short_name ?? $l->country ?? '', route('leagues.show', $l))
+                // Visual: logo de la liga si tiene, sino icono 'flag'.
+                fn ($l) => $this->row($l->name, $l->short_name ?? $l->country ?? '', route('leagues.show', $l), image: $l->logo_url, fallbackIcon: 'flag', imageClass: 'bg-white p-1')
             ),
 
             'categories' => $this->mapSimple(
                 Category::query()->where('name', 'LIKE', $like)->orWhere('slug', 'LIKE', $like)->orderBy('name')->limit(5)->get(),
-                fn ($c) => $this->row($c->name, $c->slug ?? '', route('categories.show', $c))
+                fn ($c) => $this->row($c->name, $c->slug ?? '', route('categories.show', $c), fallbackIcon: 'category')
             ),
 
             'tournaments' => $this->mapSimple(
                 Tournament::query()->with('league')->where('name', 'LIKE', $like)->orWhere('season', 'LIKE', $like)->orderBy('name')->limit(5)->get(),
-                fn ($t) => $this->row($t->name, $t->league->name ?? $t->season ?? '', route('tournaments.show', $t))
+                fn ($t) => $this->row($t->name, $t->league->name ?? $t->season ?? '', route('tournaments.show', $t), image: $t->logo_url, fallbackIcon: 'emoji_events', imageClass: 'bg-white p-1')
             ),
 
             'teams' => $this->mapSimple(
                 Team::query()->with('league')->where('name', 'LIKE', $like)->orWhere('short_name', 'LIKE', $like)->orWhere('city', 'LIKE', $like)->orderBy('name')->limit(5)->get(),
+                // Visual: logo del equipo si tiene, sino icono 'stadium'.
                 fn ($t) => $this->row(
                     $t->name,
                     trim(($t->short_name ? "({$t->short_name}) " : '') . ($t->league->name ?? '') . ($t->city ? " · {$t->city}" : '')),
-                    route('teams.show', $t)
+                    route('teams.show', $t),
+                    image: $t->logo_url,
+                    fallbackIcon: 'stadium',
+                    imageClass: 'bg-white p-1'
                 )
             ),
 
             'athletes' => $this->mapSimple(
-                // DISI-N: el subtitle del atleta ahora muestra Equipo - Categoria -
-                // Numero (antes solo Equipo - Numero). Cargamos la relacion
-                // category ademas de team para evitar N+1.
+                // Visual: foto real del atleta si tiene, sino iniciales (primer
+                // caracter de first_name + last_name). Fallback 'person'.
                 Athlete::query()->with(['team', 'category'])->where('first_name', 'LIKE', $like)->orWhere('last_name', 'LIKE', $like)->orWhere('document_id', 'LIKE', $like)->orderBy('last_name')->limit(5)->get(),
                 fn ($a) => $this->row(
                     $a->full_name,
                     trim(($a->team->short_name ?? $a->team->name ?? '')
                         . ($a->category?->name ? ' · ' . $a->category->name : '')
                         . ($a->number ? ' · #' . $a->number : '')),
-                    route('athletes.show', $a)
+                    route('athletes.show', $a),
+                    image: $a->photoUrl,
+                    initials: self::initials($a->first_name, $a->last_name),
+                    fallbackIcon: 'person'
                 )
             ),
 
             'scorekeepers' => $this->mapSimple(
                 Scorekeeper::query()->where('first_name', 'LIKE', $like)->orWhere('last_name', 'LIKE', $like)->orWhere('document_id', 'LIKE', $like)->orderBy('last_name')->limit(5)->get(),
-                fn ($s) => $this->row($s->full_name, $s->document_id ?? '', route('scorekeepers.show', $s))
+                fn ($s) => $this->row($s->full_name, $s->document_id ?? '', route('scorekeepers.show', $s), image: $s->photoUrl, initials: self::initials($s->first_name, $s->last_name), fallbackIcon: 'edit_note')
             ),
 
             'referees' => $this->mapSimple(
                 Referee::query()->where('first_name', 'LIKE', $like)->orWhere('last_name', 'LIKE', $like)->orWhere('certification', 'LIKE', $like)->limit(5)->get(),
-                fn ($r) => $this->row($r->full_name, $r->certification ?? '', route('referees.show', $r))
+                fn ($r) => $this->row($r->full_name, $r->certification ?? '', route('referees.show', $r), image: $r->photoUrl, initials: self::initials($r->first_name, $r->last_name), fallbackIcon: 'sports')
             ),
 
             'stadiums' => $this->mapSimple(
                 Stadium::query()->where('name', 'LIKE', $like)->orWhere('city', 'LIKE', $like)->orWhere('state', 'LIKE', $like)->orderBy('name')->limit(5)->get(),
-                fn ($s) => $this->row($s->name, trim(($s->city ?? '') . (($s->city && $s->state) ? ', ' : '') . ($s->state ?? ''), ', ') ?: '', route('stadiums.show', $s))
+                fn ($s) => $this->row($s->name, trim(($s->city ?? '') . (($s->city && $s->state) ? ', ' : '') . ($s->state ?? ''), ', ') ?: '', route('stadiums.show', $s), fallbackIcon: 'stadium')
             ),
         ];
 
@@ -131,7 +138,7 @@ class SearchController extends Controller
      * Necesita formato especial porque el "title" de un juego es el
      * enfrentamiento (homeTeam vs awayTeam), no su ID.
      *
-     * @return Collection<int, array{title:string,subtitle:string,url:string}>
+     * @return Collection<int, array<string, mixed>>
      */
     private function mapGames(Collection $games): Collection
     {
@@ -143,24 +150,73 @@ class SearchController extends Controller
                 . ($g->stadium?->name ? ' · ' . $g->stadium->name : '')
             ),
             'url' => route('games.show', $g),
+            'image' => null,            // los juegos no tienen imagen individual
+            'initials' => null,
+            'fallbackIcon' => 'sports_baseball',
+            'imageClass' => '',
         ]);
     }
 
     /**
-     * Mapea una coleccion de modelos "simples" (con nombre y un ID)
-     * a filas estandar. El callable recibe el modelo y devuelve [title, subtitle, url].
+     * Mapea una coleccion de modelos "simples" a filas estandar.
+     * El callable recibe el modelo y devuelve el array completo.
      *
      * @param Collection<int, object> $items
-     * @param callable(object): array{title:string,subtitle:string,url:string} $mapper
-     * @return Collection<int, array{title:string,subtitle:string,url:string}>
+     * @param callable(object): array<string, mixed> $mapper
+     * @return Collection<int, array<string, mixed>>
      */
     private function mapSimple(Collection $items, callable $mapper): Collection
     {
         return $items->map(fn ($item) => $mapper($item));
     }
 
-    private function row(string $title, string $subtitle, string $url): array
+    /**
+     * Construye la representacion estandar de un item de busqueda.
+     *
+     * Ademas de title/subtitle/url, incluye el bloque 'visual' que la
+     * vista usa para renderizar el avatar/logo/icono a la izquierda
+     * de cada fila:
+     *   - image       URL de la imagen si la tiene (avatar/logo).
+     *                 Si es null, no se renderiza <img>.
+     *   - initials    Iniciales cuando hay persona sin foto.
+     *                 Si es null, no se renderiza el circulo de iniciales.
+     *   - fallbackIcon Glyph de material-symbols-outlined que se muestra
+     *                 cuando ni image ni initials estan disponibles.
+     *   - imageClass  Clases extra para el contenedor de <img>
+     *                 (típicamente 'bg-white p-1' para logos que vienen
+     *                 con fondo blanco y necesitan contraste).
+     *
+     * @return array<string, mixed>
+     */
+    private function row(
+        string $title,
+        string $subtitle,
+        string $url,
+        ?string $image = null,
+        ?string $initials = null,
+        string $fallbackIcon = 'circle',
+        string $imageClass = ''
+    ): array {
+        return [
+            'title' => $title,
+            'subtitle' => $subtitle,
+            'url' => $url,
+            'image' => $image,
+            'initials' => $initials,
+            'fallbackIcon' => $fallbackIcon,
+            'imageClass' => $imageClass,
+        ];
+    }
+
+    /**
+     * Iniciales para placeholder de avatar: primer caracter del
+     * nombre + primer caracter del apellido, en mayusculas.
+     * Funciona con multibyte (UTF-8): 'n' = 0xC3 0xB1, etc.
+     */
+    private static function initials(?string $first, ?string $last): string
     {
-        return ['title' => $title, 'subtitle' => $subtitle, 'url' => $url];
+        $f = mb_strtoupper(mb_substr((string) $first, 0, 1, 'UTF-8'), 'UTF-8');
+        $l = mb_strtoupper(mb_substr((string) $last, 0, 1, 'UTF-8'), 'UTF-8');
+        return $f . $l;
     }
 }
