@@ -54,9 +54,12 @@
   mal sobre el fondo dark. Aplicamos:
     - scrollbar-color + scrollbar-width (Firefox + estandar moderno)
     - ::-webkit-scrollbar-* (Chrome / Safari / Edge / Opera)
-  En ambos casos: thumb en wv-border (#2C2C2E), track transparente,
-  hover del thumb en wv-border-strong (#3A3A3C). El width de 6px es
-  discreto y suficiente para identificar la zona de scroll.
+  En ambos casos:
+    - track: transparente (deja ver el bg-wv-bg del sidebar).
+    - thumb en reposo: #2C2C2E (wv-border, casi imperceptible).
+    - thumb en hover: #00E5FF (wv-accent, mismo cyan que el hover del
+      sidebar, las cards del dashboard y los links activos).
+    - width: 6px (discreto, suficiente para identificar la zona).
 */
 .nav-scroll {
     scrollbar-width: thin;
@@ -77,5 +80,5 @@
 }
 
 .nav-scroll::-webkit-scrollbar-thumb:hover {
-    background-color: #3A3A3C;
+    background-color: #00E5FF;
 }
