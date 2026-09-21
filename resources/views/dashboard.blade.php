@@ -48,7 +48,7 @@
     {{-- El slot del header ya no muestra "Panel de Control / Vista general".
          En su lugar, en esta misma zona del layout se inyecta el carousel de
          juegos del dia (via componente game-day-card) con flechas de scroll
-         si hay mas de 4 juegos. --}}
+         si hay mas de 3 juegos (en lg caben 3 cards, el 4to ya hace overflow). --}}
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -56,7 +56,7 @@
             {{-- ===========================================================
                  CARRUSEL: Juegos del dia (jornada)
                  - 1 fila de cards de 1/3 del ancho (col-3 en desktop lg).
-                 - Si hay > 4 juegos aparecen flechas izquierda/derecha que
+                 - Si hay > 3 juegos aparecen flechas izquierda/derecha que
                    hacen scrollBy de aprox 1 card por click.
                  - Empty state cuando no hay juegos del dia.
                  =========================================================== --}}
@@ -81,8 +81,9 @@
                         </p>
                     </div>
 
-                    {{-- Flechas: solo si hay > 4 juegos --}}
-                    @if ($todayGames->count() > 4)
+                    {{-- Flechas: aparecen a partir de 4 juegos (en lg caben 3 cards,
+                         asi que el 4to ya hace overflow y requiere scroll). --}}
+                    @if ($todayGames->count() > 3)
                         <div class="flex gap-1">
                             <button type="button"
                                     @click="scrollPrev()"

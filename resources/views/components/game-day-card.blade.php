@@ -12,14 +12,14 @@
 
     // Mapeo de status a etiqueta legible + estilo del badge.
     // - scheduled   -> "Programado"  (sin score visible)
-    // - in_progress -> "En vivo"     (con score visible + dot pulsante)
+    // - in_progress -> "En vivo"     (con score visible + dot pulsante VERDE wv-success)
     // - paused      -> "Pausado"     (con score visible)
     // - completed   -> "Finalizado"  (con score visible)
     $statusMeta = [
-        'scheduled'   => ['label' => __('Programado'),  'class' => 'bg-wv-accent-soft text-wv-accent border-wv-accent/40',                 'showScore' => false, 'live' => false],
-        'in_progress' => ['label' => __('En vivo'),     'class' => 'bg-wv-alert-bg text-wv-alert border-wv-alert/40',                     'showScore' => true,  'live' => true],
-        'paused'      => ['label' => __('Pausado'),     'class' => 'bg-wv-accent-soft text-wv-accent border-wv-accent/40',                'showScore' => true,  'live' => false],
-        'completed'   => ['label' => __('Finalizado'),  'class' => 'bg-wv-success/15 text-wv-success border-wv-success/40',               'showScore' => true,  'live' => false],
+        'scheduled'   => ['label' => __('Programado'),  'class' => 'bg-wv-accent-soft text-wv-accent border-wv-accent/40',  'showScore' => false, 'live' => false],
+        'in_progress' => ['label' => __('En vivo'),     'class' => 'bg-wv-success/15 text-wv-success border-wv-success/40', 'showScore' => true,  'live' => true],
+        'paused'      => ['label' => __('Pausado'),     'class' => 'bg-wv-accent-soft text-wv-accent border-wv-accent/40', 'showScore' => true,  'live' => false],
+        'completed'   => ['label' => __('Finalizado'),  'class' => 'bg-wv-success/15 text-wv-success border-wv-success/40','showScore' => true,  'live' => false],
     ];
     $meta = $statusMeta[$game->status] ?? ['label' => ucfirst((string) $game->status), 'class' => 'bg-wv-surface-hover text-wv-text-secondary border-wv-border', 'showScore' => false, 'live' => false];
 @endphp
@@ -33,8 +33,8 @@
         <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider {{ $meta['class'] }}">
             @if ($meta['live'])
                 <span class="relative flex h-1.5 w-1.5">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-wv-alert opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-wv-alert"></span>
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-wv-success opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-wv-success"></span>
                 </span>
             @endif
             {{ $meta['label'] }}
