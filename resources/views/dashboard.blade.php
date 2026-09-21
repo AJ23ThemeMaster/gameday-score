@@ -1,135 +1,265 @@
+{{--
+  Dashboard redise~ado al sistema WattVision (feature/style/wattvision).
+  Style guide: DESIGN.md del sistema de monitoreo electrico.
+  Aplicado SOLO al dashboard. Scoreboard, box-score y live quedan intactos
+  (no se tocan ni en este branch ni en master).
+--}}
+{{--
+  Dashboard redise~ado al sistema WattVision (feature/style/wattvision).
+  Style guide: DESIGN.md del sistema de monitoreo electrico.
+  Aplicado SOLO al dashboard. Scoreboard, box-score y live quedan intactos.
+--}}
+@php
+    // KPIs en vivo. try/catch defensivo: si una tabla no existe aun (ej. fresh
+    // migrate sin seeds), no rompemos el render del dashboard.
+    $kpis = [
+        'games'   => 0,
+        'teams'   => 0,
+        'athletes' => 0,
+    ];
+    try { $kpis['games']    = \App\Models\Game::count(); } catch (\Throwable $e) {}
+    try { $kpis['teams']    = \App\Models\Team::count(); } catch (\Throwable $e) {}
+    try { $kpis['athletes'] = \App\Models\Athlete::count(); } catch (\Throwable $e) {}
+@endphp
+
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        {{-- Header dark coherente con el body bg-wv-bg --}}
+        <h2 class="font-semibold text-h-wv text-wv-text leading-tight">
             {{ __('Panel de Control') }}
         </h2>
+        <p class="text-sm text-wv-text-secondary mt-1">
+            {{ __('Vista general del sistema Gameday Score') }}
+        </p>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            {{-- Mensaje de bienvenida --}}
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6 text-gray-900">
-                    <h3 class="text-lg font-semibold mb-2">
-                        {{ __('¡Bienvenido a Gameday Score!') }}
-                    </h3>
-                    <p class="text-sm text-gray-600">
-                        {{ __('Has iniciado sesión como') }} <strong>{{ Auth::user()->name }}</strong>.
-                        {{ __('Desde aquí podrás gestionar tus juegos, equipos, atletas y mucho más.') }}
-                    </p>
+            {{-- ===========================================================
+                 FILA 1: KPI cards (3 columnas) — Diseño WattVision §5
+                 Tipografia JetBrains Mono Bold 32px para los numeros.
+                 Border 1px solid #2C2C2E, radius 16px, padding 20px.
+                 =========================================================== --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+
+                {{-- KPI: total de juegos --}}
+                <div class="bg-wv-surface border border-wv-border rounded-card p-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-wv-text-secondary uppercase tracking-wider">{{ __('Juegos') }}</span>
+                        <span class="material-symbols-outlined text-wv-accent text-[20px]">sports_baseball</span>
+                    </div>
+                    <div class="font-mono text-kpi text-wv-text">
+                        {{ $kpis['games'] }}
+                    </div>
+                    <div class="text-xs text-wv-text-secondary mt-2 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-wv-success animate-pulse"></span>
+                        {{ __('En vivo ahora') }}
+                    </div>
                 </div>
+
+                {{-- KPI: total de equipos --}}
+                <div class="bg-wv-surface border border-wv-border rounded-card p-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-wv-text-secondary uppercase tracking-wider">{{ __('Equipos') }}</span>
+                        <span class="material-symbols-outlined text-wv-accent text-[20px]">groups</span>
+                    </div>
+                    <div class="font-mono text-kpi text-wv-text">
+                        {{ $kpis['teams'] }}
+                    </div>
+                    <div class="text-xs text-wv-text-secondary mt-2">
+                        {{ __('Registrados en el sistema') }}
+                    </div>
+                </div>
+
+                {{-- KPI: total de atletas --}}
+                <div class="bg-wv-surface border border-wv-border rounded-card p-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-wv-text-secondary uppercase tracking-wider">{{ __('Atletas') }}</span>
+                        <span class="material-symbols-outlined text-wv-accent text-[20px]">person</span>
+                    </div>
+                    <div class="font-mono text-kpi text-wv-text">
+                        {{ $kpis['athletes'] }}
+                    </div>
+                    <div class="text-xs text-wv-text-secondary mt-2">
+                        {{ __('En todos los rosters') }}
+                    </div>
+                </div>
+
             </div>
 
-            {{-- Tarjetas de acciones --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {{-- ===========================================================
+                 FILA 2: bienvenida + acceso rapido a legacy
+                 8 columnas izquierda (bienvenida), 4 columnas derecha (legacy)
+                 =========================================================== --}}
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
 
-                {{-- DISI-7: Mis juegos (funcional) --}}
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <h4 class="font-semibold text-gray-900 mb-1">{{ __('Mis juegos') }}</h4>
-                        <p class="text-sm text-gray-600 mb-3">
-                            {{ __('Crea y gestiona tus partidos con sus equipos, anotadores y árbitros.') }}
-                        </p>
-                        <a href="{{ route('games.index') }}"
-                           class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
-                            {{ __('Gestionar juegos') }}
-                        </a>
+                {{-- Bienvenida (8 cols) --}}
+                <div class="lg:col-span-8 bg-wv-surface border border-wv-border rounded-card p-5">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-wv-accent text-[28px] flex-shrink-0">waving_hand</span>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-h-wv font-semibold text-wv-text mb-2">
+                                {{ __('¡Bienvenido a Gameday Score!') }}
+                            </h3>
+                            <p class="text-sm text-wv-text-secondary leading-relaxed">
+                                {{ __('Has iniciado sesion como') }}
+                                <strong class="text-wv-text font-semibold">{{ Auth::user()->name }}</strong>.
+                                {{ __('Desde aqui podras gestionar tus juegos, equipos, atletas y mucho mas.') }}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                {{-- DISI-4: Categorías (funcional) --}}
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <h4 class="font-semibold text-gray-900 mb-1">{{ __('Categorías') }}</h4>
-                        <p class="text-sm text-gray-600 mb-3">
-                            {{ __('Administra las categorías de los torneos (Pre-Infantil, Profesional, etc.).') }}
-                        </p>
-                        <a href="{{ route('categories.index') }}"
-                           class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
-                            {{ __('Gestionar categorías') }}
-                        </a>
-                    </div>
-                </div>
+                {{-- PWA Legacy (4 cols) — card destacada con border cyan --}}
+                <div class="lg:col-span-4 bg-wv-surface border-2 border-wv-accent/40 rounded-card p-5 relative overflow-hidden">
+                    {{-- Glow accent en esquina --}}
+                    <div class="absolute -top-12 -right-12 w-32 h-32 bg-wv-accent/10 rounded-full blur-2xl"></div>
 
-                {{-- DISI-4: Estadios (funcional) --}}
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <h4 class="font-semibold text-gray-900 mb-1">{{ __('Estadios') }}</h4>
-                        <p class="text-sm text-gray-600 mb-3">
-                            {{ __('Registra los estadios donde se juegan los partidos.') }}
-                        </p>
-                        <a href="{{ route('stadiums.index') }}"
-                           class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
-                            {{ __('Gestionar estadios') }}
-                        </a>
-                    </div>
-                </div>
-
-                {{-- DISI-5: Equipos (funcional) --}}
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <h4 class="font-semibold text-gray-900 mb-1">{{ __('Equipos') }}</h4>
-                        <p class="text-sm text-gray-600 mb-3">
-                            {{ __('Crea equipos con su logo.') }}
-                        </p>
-                        <a href="{{ route('teams.index') }}"
-                           class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
-                            {{ __('Gestionar equipos') }}
-                        </a>
-                    </div>
-                </div>
-
-                {{-- DISI-6: Atletas, Anotadores, Árbitros (funcional) --}}
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <h4 class="font-semibold text-gray-900 mb-1">{{ __('Atletas') }}</h4>
-                        <p class="text-sm text-gray-600 mb-3">
-                            {{ __('Gestiona los jugadores con su foto, número y posición.') }}
-                        </p>
-                        <a href="{{ route('athletes.index') }}" class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
-                            {{ __('Gestionar atletas') }}
-                        </a>
-                    </div>
-                </div>
-
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <h4 class="font-semibold text-gray-900 mb-1">{{ __('Anotadores') }}</h4>
-                        <p class="text-sm text-gray-600 mb-3">
-                            {{ __('Personas encargadas de registrar el juego en planilla.') }}
-                        </p>
-                        <a href="{{ route('scorekeepers.index') }}" class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
-                            {{ __('Gestionar anotadores') }}
-                        </a>
-                    </div>
-                </div>
-
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <h4 class="font-semibold text-gray-900 mb-1">{{ __('Árbitros') }}</h4>
-                        <p class="text-sm text-gray-600 mb-3">
-                            {{ __('Árbitros principales y de base con su certificación.') }}
-                        </p>
-                        <a href="{{ route('referees.index') }}" class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
-                            {{ __('Gestionar árbitros') }}
-                        </a>
-                    </div>
-                </div>
-
-                {{-- PWA Legacy --}}
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <h4 class="font-semibold text-gray-900 mb-1">{{ __('PWA Legacy (v1.1.12)') }}</h4>
-                        <p class="text-sm text-gray-600 mb-3">
-                            {{ __('Accede a la versión clásica de Gameday Score que aún funciona sin login.') }}
+                    <div class="relative">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm text-wv-text-secondary uppercase tracking-wider">{{ __('PWA Legacy') }}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-wv-accent/20 text-wv-accent rounded-full">v1.1.12</span>
+                        </div>
+                        <h4 class="text-base font-semibold text-wv-text mb-1">{{ __('Version sin login') }}</h4>
+                        <p class="text-xs text-wv-text-secondary mb-4 leading-relaxed">
+                            {{ __('Accede a la version clasica que aun funciona sin autenticacion.') }}
                         </p>
                         <a href="/legacy/" target="_blank"
-                           class="inline-block text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">
-                            {{ __('Abrir versión legacy') }}
+                           class="inline-flex items-center gap-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-bg font-semibold text-sm px-4 py-2 rounded-card transition">
+                            <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+                            {{ __('Abrir legacy') }}
                         </a>
                     </div>
                 </div>
+
+            </div>
+
+            {{-- ===========================================================
+                 FILA 3: Modulos principales (grid 3 columnas)
+                 Cards con icon + titulo + descripcion + CTA.
+                 Border 1px #2C2C2E, radius 16px, hover surface-hover.
+                 =========================================================== --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                {{-- Modulo: Mis juegos --}}
+                <a href="{{ route('games.index') }}"
+                   class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="material-symbols-outlined text-wv-accent text-[28px]">sports_scoreboard</span>
+                        <span class="material-symbols-outlined text-wv-text-secondary text-[18px] group-hover:text-wv-accent transition">arrow_forward</span>
+                    </div>
+                    <h4 class="text-base font-semibold text-wv-text mb-1">{{ __('Mis juegos') }}</h4>
+                    <p class="text-xs text-wv-text-secondary mb-3 leading-relaxed">
+                        {{ __('Crea y gestiona tus partidos con sus equipos, anotadores y arbitros.') }}
+                    </p>
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-wv-accent group-hover:gap-2 transition-all">
+                        {{ __('Gestionar') }}
+                        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                    </span>
+                </a>
+
+                {{-- Modulo: Categorias --}}
+                <a href="{{ route('categories.index') }}"
+                   class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="material-symbols-outlined text-wv-accent text-[28px]">category</span>
+                        <span class="material-symbols-outlined text-wv-text-secondary text-[18px] group-hover:text-wv-accent transition">arrow_forward</span>
+                    </div>
+                    <h4 class="text-base font-semibold text-wv-text mb-1">{{ __('Categorias') }}</h4>
+                    <p class="text-xs text-wv-text-secondary mb-3 leading-relaxed">
+                        {{ __('Administra las categorias de los torneos (Pre-Infantil, Profesional, etc.).') }}
+                    </p>
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-wv-accent group-hover:gap-2 transition-all">
+                        {{ __('Gestionar') }}
+                        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                    </span>
+                </a>
+
+                {{-- Modulo: Estadios --}}
+                <a href="{{ route('stadiums.index') }}"
+                   class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="material-symbols-outlined text-wv-accent text-[28px]">stadium</span>
+                        <span class="material-symbols-outlined text-wv-text-secondary text-[18px] group-hover:text-wv-accent transition">arrow_forward</span>
+                    </div>
+                    <h4 class="text-base font-semibold text-wv-text mb-1">{{ __('Estadios') }}</h4>
+                    <p class="text-xs text-wv-text-secondary mb-3 leading-relaxed">
+                        {{ __('Registra los estadios donde se juegan los partidos.') }}
+                    </p>
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-wv-accent group-hover:gap-2 transition-all">
+                        {{ __('Gestionar') }}
+                        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                    </span>
+                </a>
+
+                {{-- Modulo: Equipos --}}
+                <a href="{{ route('teams.index') }}"
+                   class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="material-symbols-outlined text-wv-accent text-[28px]">shield</span>
+                        <span class="material-symbols-outlined text-wv-text-secondary text-[18px] group-hover:text-wv-accent transition">arrow_forward</span>
+                    </div>
+                    <h4 class="text-base font-semibold text-wv-text mb-1">{{ __('Equipos') }}</h4>
+                    <p class="text-xs text-wv-text-secondary mb-3 leading-relaxed">
+                        {{ __('Crea equipos con su logo.') }}
+                    </p>
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-wv-accent group-hover:gap-2 transition-all">
+                        {{ __('Gestionar') }}
+                        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                    </span>
+                </a>
+
+                {{-- Modulo: Atletas --}}
+                <a href="{{ route('athletes.index') }}"
+                   class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="material-symbols-outlined text-wv-accent text-[28px]">sports_handball</span>
+                        <span class="material-symbols-outlined text-wv-text-secondary text-[18px] group-hover:text-wv-accent transition">arrow_forward</span>
+                    </div>
+                    <h4 class="text-base font-semibold text-wv-text mb-1">{{ __('Atletas') }}</h4>
+                    <p class="text-xs text-wv-text-secondary mb-3 leading-relaxed">
+                        {{ __('Gestiona los jugadores con su foto, numero y posicion.') }}
+                    </p>
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-wv-accent group-hover:gap-2 transition-all">
+                        {{ __('Gestionar') }}
+                        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                    </span>
+                </a>
+
+                {{-- Modulo: Anotadores --}}
+                <a href="{{ route('scorekeepers.index') }}"
+                   class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="material-symbols-outlined text-wv-accent text-[28px]">edit_note</span>
+                        <span class="material-symbols-outlined text-wv-text-secondary text-[18px] group-hover:text-wv-accent transition">arrow_forward</span>
+                    </div>
+                    <h4 class="text-base font-semibold text-wv-text mb-1">{{ __('Anotadores') }}</h4>
+                    <p class="text-xs text-wv-text-secondary mb-3 leading-relaxed">
+                        {{ __('Personas encargadas de registrar el juego en planilla.') }}
+                    </p>
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-wv-accent group-hover:gap-2 transition-all">
+                        {{ __('Gestionar') }}
+                        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                    </span>
+                </a>
+
+                {{-- Modulo: Arbitros --}}
+                <a href="{{ route('referees.index') }}"
+                   class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block md:col-span-2 lg:col-span-1">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="material-symbols-outlined text-wv-accent text-[28px]">sports</span>
+                        <span class="material-symbols-outlined text-wv-text-secondary text-[18px] group-hover:text-wv-accent transition">arrow_forward</span>
+                    </div>
+                    <h4 class="text-base font-semibold text-wv-text mb-1">{{ __('Arbitros') }}</h4>
+                    <p class="text-xs text-wv-text-secondary mb-3 leading-relaxed">
+                        {{ __('Arbitros principales y de base con su certificacion.') }}
+                    </p>
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-wv-accent group-hover:gap-2 transition-all">
+                        {{ __('Gestionar') }}
+                        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                    </span>
+                </a>
 
             </div>
 
