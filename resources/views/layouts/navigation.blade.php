@@ -58,7 +58,7 @@
             <x-sidebar-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" icon="dashboard">
                 {{ __('Dashboard') }}
             </x-sidebar-link>
-            <x-sidebar-link :href="route('games.index')" :active="request()->routeIs('games.*')" icon="sports_scoreboard">
+            <x-sidebar-link :href="route('games.index')" :active="request()->routeIs('games.*')" icon="sports_baseball">
                 {{ __('Juegos') }}
             </x-sidebar-link>
             <x-sidebar-link :href="route('leagues.index')" :active="request()->routeIs('leagues.*')" icon="flag">

@@ -146,7 +146,7 @@
                 <a href="{{ route('games.index') }}"
                    class="group bg-wv-surface border border-wv-border hover:border-wv-accent/50 hover:bg-wv-surface-hover rounded-card p-5 transition block">
                     <div class="flex items-center justify-between mb-3">
-                        <span class="material-symbols-outlined text-wv-accent text-[28px]">sports_scoreboard</span>
+                        <span class="material-symbols-outlined text-wv-accent text-[28px]">sports_baseball</span>
                         <span class="material-symbols-outlined text-wv-text-secondary text-[18px] group-hover:text-wv-accent transition">arrow_forward</span>
                     </div>
                     <h4 class="text-base font-semibold text-wv-text mb-1">{{ __('Mis juegos') }}</h4>
