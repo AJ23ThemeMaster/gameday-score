@@ -48,7 +48,7 @@
     </div>
 
     {{-- Menu principal (scrollable) --}}
-    <nav class="flex-1 overflow-y-auto py-3">
+    <nav class="flex-1 overflow-y-auto nav-scroll py-3">
         <div class="px-3 mb-2">
             <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
                 {{ __('Principal') }}
