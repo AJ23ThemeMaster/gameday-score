@@ -1,11 +1,14 @@
-{{-- Flash messages (status / error) --}}
+{{--
+  Flash messages (status / error) - WattVision dark theme.
+  Borde lateral de 3px segun nivel + texto blanco sobre superficie dark.
+--}}
 @if (session('status'))
-    <div class="mb-4 rounded-md bg-green-50 border border-green-200 p-4 text-sm text-green-800">
+    <div class="mb-4 rounded-card bg-wv-surface border border-wv-border border-l-[3px] border-l-wv-success p-4 text-sm text-wv-text">
         {{ session('status') }}
     </div>
 @endif
 @if (session('error'))
-    <div class="mb-4 rounded-md bg-red-50 border border-red-200 p-4 text-sm text-red-800">
+    <div class="mb-4 rounded-card bg-wv-surface border border-wv-border border-l-[3px] border-l-wv-alert p-4 text-sm text-wv-text">
         {{ session('error') }}
     </div>
 @endif

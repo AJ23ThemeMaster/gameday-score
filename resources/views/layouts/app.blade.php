@@ -7,16 +7,26 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Fonts -->
+        {{--
+          WATTVISION (feature/style/wattvision): el diseno se aplica globalmente.
+          Solo las rutas excluidas en app/Support/WattVision.php (scoreboard,
+          box-score, live, marcador publico) conservan la estetica original.
+          Ver DESIGN.md para la especificacion completa.
+        --}}
+        @php
+            use App\Support\WattVision;
+            $wvExcluded = WattVision::isExcluded();
+        @endphp
+
+        <!-- Fonts base: Figtree (legado Breeze) -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        {{-- WATTVISION: fuentes Inter + JetBrains Mono SOLO cuando estamos en el
-             dashboard (feature/style/wattvision). No afecta scoreboard, box-score
-             ni live — esas paginas siguen con Figtree de Bunny.net. --}}
-        @if (request()->routeIs('dashboard'))
+        {{-- WattVision: Inter (titulos/cuerpo) + JetBrains Mono (KPIs) en todo
+             el sistema EXCEPTO en las rutas excluidas. --}}
+        @unless ($wvExcluded)
             <link href="https://fonts.bunny.net/css?family=inter:wght@400;500;600;700&family=jetbrains-mono:wght@400;500;700&display=swap" rel="stylesheet">
-        @endif
+        @endunless
 
         @include('partials._pwa')
 
@@ -29,27 +39,31 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased">
-        {{-- WATTVISION: el dashboard usa bg dark (#121212) y texto blanco. Las
-             demas paginas (welcome, login, profile, scoreboard, box-score, live,
-             games, etc.) siguen con bg-gray-100 light. --}}
-        <div class="min-h-screen @if(request()->routeIs('dashboard')) bg-wv-bg text-wv-text @else bg-gray-100 @endif">
-            {{-- DISI-46: ocultar nav y header global en el scoreboard. El scoreboard --}}
-            {{-- ya tiene su propio header (con breadcrumb y botones de accion en --}}
-            {{-- DISI-39/41) y el nav global distrae del anotador en foco. --}}
-            @if (! request()->routeIs('games.scoreboard'))
+    <body class="font-sans antialiased @unless ($wvExcluded) font-inter text-wv-text @endunless">
+        {{--
+          WattVision: bg dark (#121212) + texto blanco por default.
+          Las vistas excluidas (scoreboard/box-score/live/public) siguen con
+          bg-gray-100 light + tipografia Figtree.
+        --}}
+        <div class="min-h-screen @unless ($wvExcluded) bg-wv-bg text-wv-text @else bg-gray-100 @endunless">
+            {{--
+              Nav global oculta en scoreboard/box-score/live (DISI-46) y ahora
+              tambien en el marcador publico para mantener consistencia: esas
+              vistas tienen su propio header/breadcrumb.
+            --}}
+            @unless ($wvExcluded)
                 @include('layouts.navigation')
-            @endif
+            @endunless
 
             <!-- Page Heading -->
             @isset($header)
-                @if (! request()->routeIs('games.scoreboard'))
-                    <header class="@if(request()->routeIs('dashboard')) bg-wv-bg border-b border-wv-border @else bg-white shadow @endif">
+                @unless ($wvExcluded)
+                    <header class="bg-wv-bg border-b border-wv-border">
                         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                             {{ $header }}
                         </div>
                     </header>
-                @endif
+                @endunless
             @endisset
 
             <!-- Page Content -->

@@ -21,18 +21,25 @@ export default {
 
             // WattVision palette (DESIGN.md §2).
             // Prefijo `wv-` para no chocar con defaults de Tailwind.
-            // Aplicada SOLO al dashboard via dashboard.blade.php.
+            // Aplicada globalmente en feature/style/wattvision EXCEPTO en las
+            // rutas excluidas (ver app/Support/WattVision.php).
             colors: {
                 wv: {
                     bg: '#121212',
                     surface: '#1E1E1E',
                     'surface-hover': '#252525',
+                    'surface-deep': '#0A0A0A',
                     border: '#2C2C2E',
+                    'border-strong': '#3A3A3C',
                     text: '#FFFFFF',
                     'text-secondary': '#98989D',
+                    'text-on-accent': '#0A0A0A',
+                    'text-on-alert': '#FFFFFF',
                     accent: '#00E5FF',
                     'accent-hover': '#00B8CC',
+                    'accent-soft': 'rgba(0, 229, 255, 0.12)',
                     alert: '#FF453A',
+                    'alert-hover': '#E63B30',
                     success: '#32D74B',
                     'alert-bg': '#3A1C1C',
                 },

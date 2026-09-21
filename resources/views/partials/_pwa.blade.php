@@ -1,6 +1,7 @@
 {{-- DISI-82: meta tags PWA + service worker. Incluir en layouts/app y layouts/guest. --}}
+{{-- WattVision: theme-color ahora es #121212 (oscuro) para casar con la barra del navegador en dark mode. --}}
 <link rel="manifest" href="{{ asset('manifest.json') }}">
-<meta name="theme-color" content="#3730a3">
+<meta name="theme-color" content="#121212">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Gameday">

@@ -1,3 +1,8 @@
-<button {{ $attributes->merge(['type' => 'submit', 'class' => 'inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150']) }}>
+{{--
+  WattVision: boton primario con acento cyan. Texto oscuro sobre fondo
+  brillante para max legibilidad. Usar para acciones principales (Guardar,
+  Crear, Confirmar).
+--}}
+<button {{ $attributes->merge(['type' => 'submit', 'class' => 'inline-flex items-center px-4 py-2 bg-wv-accent border border-transparent rounded-card font-semibold text-xs text-wv-text-on-accent uppercase tracking-widest hover:bg-wv-accent-hover focus:bg-wv-accent-hover active:bg-wv-accent-hover focus:outline-none focus:ring-2 focus:ring-wv-accent focus:ring-offset-2 focus:ring-offset-wv-bg disabled:opacity-50 transition ease-in-out duration-150']) }}>
     {{ $slot }}
 </button>

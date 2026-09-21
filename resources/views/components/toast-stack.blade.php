@@ -5,6 +5,9 @@
     Uso desde JS:
         window.dispatchEvent(new CustomEvent('toast', { detail: { level: 'success', message: 'Hecho' } }))
         o via Alpine: $store.toast.show('Hecho', 'success')
+
+    WattVision: variantes dark con borde lateral de 3px segun nivel (success/error/warning/info).
+    Cada toast usa bg-wv-surface + texto coherente con el palette.
 --}}
 @props([])
 
@@ -24,29 +27,29 @@
             x-transition:leave-start="opacity-100 translate-x-0"
             x-transition:leave-end="opacity-0 translate-x-4"
             :class="{
-                'bg-emerald-50 border-emerald-300 text-emerald-900': t.level === 'success',
-                'bg-rose-50 border-rose-300 text-rose-900': t.level === 'error',
-                'bg-amber-50 border-amber-300 text-amber-900': t.level === 'warning',
-                'bg-sky-50 border-sky-300 text-sky-900': t.level === 'info',
+                'bg-wv-surface border-wv-success text-wv-text border-l-[3px]': t.level === 'success',
+                'bg-wv-surface border-wv-alert text-wv-text border-l-[3px]': t.level === 'error',
+                'bg-wv-surface border-wv-accent text-wv-text border-l-[3px]': t.level === 'warning',
+                'bg-wv-surface border-wv-border-strong text-wv-text border-l-[3px]': t.level === 'info',
             }"
-            class="pointer-events-auto min-w-[280px] max-w-md border rounded-lg shadow-lg px-4 py-3 flex items-start gap-3"
+            class="pointer-events-auto min-w-[280px] max-w-md border rounded-card shadow-lg px-4 py-3 flex items-start gap-3"
         >
             <div class="flex-shrink-0 mt-0.5">
                 <template x-if="t.level === 'success'">
-                    <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span class="material-symbols-outlined text-wv-success text-[20px]">check_circle</span>
                 </template>
                 <template x-if="t.level === 'error'">
-                    <svg class="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <span class="material-symbols-outlined text-wv-alert text-[20px]">cancel</span>
                 </template>
                 <template x-if="t.level === 'warning'">
-                    <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M5.07 19h13.86a2 2 0 001.74-3L13.74 4a2 2 0 00-3.48 0L3.34 16a2 2 0 001.73 3z"/></svg>
+                    <span class="material-symbols-outlined text-wv-accent text-[20px]">warning</span>
                 </template>
                 <template x-if="t.level === 'info' || !['success','error','warning','info'].includes(t.level)">
-                    <svg class="w-5 h-5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span class="material-symbols-outlined text-wv-text-secondary text-[20px]">info</span>
                 </template>
             </div>
             <div class="flex-1 text-sm font-medium" x-text="t.message"></div>
-            <button type="button" @click="dismiss(t.id)" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+            <button type="button" @click="dismiss(t.id)" class="flex-shrink-0 text-wv-text-secondary hover:text-wv-text">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
