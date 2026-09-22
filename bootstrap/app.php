@@ -20,6 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
             // DISI-16b: alias para el challenge de 2FA tras login
             '2fa.challenge' => \App\Http\Middleware\EnsureTwoFactorChallenged::class,
         ]);
+
+        // DISI-X: auto-leave de impersonacion por timeout. Se ejecuta
+        // en TODAS las requests web (no hace nada si no hay
+        // impersonacion activa). Lee directo de la sesion, asi que
+        // no depende del orden respecto a auth.
+        $middleware->appendToGroup('web', \App\Http\Middleware\EnforceImpersonationTimeout::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -29,6 +29,11 @@ class LogImpersonation
         $impersonator = $event->impersonator;
         $target = $event->impersonated;
 
+        // DISI-X: marca de inicio para que el middleware
+        // EnforceImpersonationTimeout sepa cuando expira la sesion.
+        $startedKey = config('laravel-impersonate.session_started_key', 'impersonation_started_at');
+        session([$startedKey => now()->toDateTimeString()]);
+
         Log::info('Impersonation started', [
             'impersonator_id' => $impersonator?->getAuthIdentifier(),
             'impersonator_email' => $impersonator?->email,
@@ -42,6 +47,8 @@ class LogImpersonation
     public function handleLeave(LeaveImpersonation $event): void
     {
         $manager = app(\Lab404\Impersonate\Services\ImpersonateManager::class);
+        $startedKey = config('laravel-impersonate.session_started_key', 'impersonation_started_at');
+        session()->forget($startedKey);
 
         Log::info('Impersonation ended', [
             'impersonator_id' => $manager->getImpersonatorId(),
