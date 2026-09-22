@@ -12,8 +12,11 @@
         <link href="https://fonts.bunny.net/css?family=inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         {{-- Tailwind compilado de la app (incluye paleta WattVision). Para errores
-             del framework que se renderizan sin Vite, cargamos el css directo. --}}
-        <link rel="stylesheet" href="{{ asset('build/assets/app.css') }}">
+             del framework que se renderizan sin Vite, cargamos el css via el
+             helper Vite::asset() que SI lee el manifest y devuelve la URL
+             versionada (ej: app-4LULqBC8.css). Usar {{ asset('build/assets/
+             app.css') }} devuelve 404 porque el archivo siempre lleva hash. --}}
+        <link rel="stylesheet" href="{{ Vite::asset('resources/css/app.css') }}">
 
         <style>
             /* Tokens WattVision inline (en caso de que el CSS no haya compilado o el
