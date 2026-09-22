@@ -14,6 +14,13 @@ import Alpine from 'alpinejs';
 import '@fontsource/material-symbols-outlined/400.css';
 
 /*
+  SwalHelper: importar CSS de SweetAlert2 desde JS (no desde app.css).
+  Vite resuelve imports npm desde el pipeline JS de forma mas estable
+  que desde CSS con postcss-import. El CSS queda en el bundle final.
+*/
+import 'sweetalert2/dist/sweetalert2.min.css';
+
+/*
   SwalHelper: wrapper de SweetAlert2 con tema dark WattVision.
   Provee SwalHelper.alert / confirm / toast / loading / apiFetch /
   bindFormHandlers / overrideNativeDialogs.
