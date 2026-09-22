@@ -144,17 +144,23 @@ class AthleteController extends Controller
         }
         $filteredCount = $athletes->total();
 
-        $positions = Athlete::whereNotNull('position')->distinct()->orderBy('position')->pluck('position');
+        // Posiciones: gestor y delegado solo ven las posiciones disponibles
+        // en SU scope (atletas de su team). Admin ve todas las posiciones
+        // del sistema (util cuando filtra por team_id).
+        $positions = ($isGestor || $isDelegado)
+            ? Athlete::whereNotNull('position')->where('team_id', $user->team_id)->distinct()->orderBy('position')->pluck('position')
+            : Athlete::whereNotNull('position')->distinct()->orderBy('position')->pluck('position');
         // DISI-XXX + DISI-delegado: gestor y delegado solo ven su equipo
         // en el dropdown. Delegado ademas solo ve su categoria.
         $teams = ($isGestor || $isDelegado)
             ? Team::where('id', $user->team_id)->orderBy('name')->get()
             : Team::orderBy('name')->get();
+        // Las categorias son globales (team_id=NULL) en este modelo, por
+        // eso gestor y admin ven TODAS. Solo el delegado ve filtrada a
+        // su categoria (porque su scope incluye categoria).
         $categories = $isDelegado
             ? Category::where('id', $user->category_id)->orderBy('name')->get()
-            : ($isGestor
-                ? Category::where('team_id', $user->team_id)->orderBy('name')->get()
-                : Category::orderBy('name')->get());
+            : Category::orderBy('name')->get();
 
         return view('athletes.index', compact(
             'athletes', 'totalAthletes', 'filteredCount',
