@@ -139,11 +139,12 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-3 text-right text-sm font-medium">
-                                            <a href="{{ route('athletes.edit', $a) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('athletes.destroy', $a) }}" method="POST" class="inline" data-confirm="'¿Eliminar a «{{ $a->full_name }}»?'" data-confirm-danger="true" data-loader>
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
-                                            </form>
+                                            <x-action-buttons
+                                                :show="route('athletes.show', $a)"
+                                                :edit="route('athletes.edit', $a)"
+                                                :delete="route('athletes.destroy', $a)"
+                                                :deleteMessage="__('¿Eliminar a «:name»?', ['name' => $a->full_name])"
+                                            />
                                         </td>
                                     </tr>
                                 @endforeach
