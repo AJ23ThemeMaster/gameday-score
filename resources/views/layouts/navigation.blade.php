@@ -7,6 +7,14 @@
     Dashboard, Juegos, Ligas, Categorías, Torneos, Equipos, Atletas,
     Anotadores, Árbitros, Estadios, Usuarios (admin), Roles (admin),
     PWA Legacy (externo).
+
+  Visibilidad: cada modulo aparece solo si el usuario actual tiene
+  alguno de los permisos cualificativos listados en $can(). Si un grupo
+  completo queda sin items visibles, el titulo del grupo tambien se
+  oculta. Asi un anotador (que solo tiene view games / score assigned
+  games) sigue viendo "Juegos"; un gestor (manage assigned team /
+  manage assigned team athletes) sigue viendo "Equipos" y "Atletas"
+  aunque NO tenga manage teams / manage athletes.
 --}}
 
 {{-- Backdrop solo mobile, click cierra drawer --}}
@@ -48,88 +56,153 @@
     </div>
 
     {{-- Menu principal (scrollable) --}}
+    @php
+        // Visibilidad por modulo segun permisos del usuario actual.
+        // Regla: el modulo aparece si tiene AL MENOS UNO de los permisos
+        // listados. Spatie HasRoles hace que $user->can($perm) consulte
+        // la tabla permissions pivot. Items "admin-only" (sin permiso
+        // sembrado, como Estadios/Roles/Logs) caen en el caso isAdmin().
+        $u = auth()->user();
+        $can = function (string $module) use ($u): bool {
+            // Permisos por modulo. El closure match() se evalua una sola
+            // vez por item, no por cada usuario logueado.
+            return match ($module) {
+                'dashboard'   => true,
+                'pwa_legacy'  => true,
+                'games'       => ($u?->can('manage games')
+                                  || $u?->can('view games')
+                                  || $u?->can('score any game')
+                                  || $u?->can('score assigned games')) ?? false,
+                'leagues'     => $u?->can('manage leagues') ?? false,
+                'categories'  => $u?->can('manage categories') ?? false,
+                'tournaments' => $u?->can('manage tournaments') ?? false,
+                'teams'       => ($u?->can('manage teams')
+                                  || $u?->can('manage assigned team')) ?? false,
+                'athletes'    => ($u?->can('manage athletes')
+                                  || $u?->can('manage assigned team athletes')) ?? false,
+                'scorekeepers'=> $u?->can('manage scorekeepers') ?? false,
+                'referees'    => $u?->can('manage referees') ?? false,
+                'stadiums'    => $u?->isAdmin() ?? false, // sin permiso sembrado
+                'users'       => $u?->can('manage users') ?? false,
+                'roles'       => $u?->isAdmin() ?? false, // sin permiso sembrado
+                'log_viewer'  => $u?->isAdmin() ?? false, // sin permiso sembrado
+                default       => false,
+            };
+        };
+    @endphp
     <nav class="flex-1 overflow-y-auto nav-scroll py-3">
-        <div class="px-3 mb-2">
-            <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
-                {{ __('Principal') }}
-            </p>
-        </div>
-        <div class="px-3 space-y-1">
-            <x-sidebar-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" icon="dashboard">
-                {{ __('Dashboard') }}
-            </x-sidebar-link>
-            <x-sidebar-link :href="route('games.index')" :active="request()->routeIs('games.*')" icon="sports_baseball">
-                {{ __('Juegos') }}
-            </x-sidebar-link>
-            <x-sidebar-link :href="route('leagues.index')" :active="request()->routeIs('leagues.*')" icon="flag">
-                {{ __('Ligas') }}
-            </x-sidebar-link>
-            <x-sidebar-link :href="route('categories.index')" :active="request()->routeIs('categories.*')" icon="category">
-                {{ __('Categorías') }}
-            </x-sidebar-link>
-            <x-sidebar-link :href="route('tournaments.index')" :active="request()->routeIs('tournaments.*')" icon="emoji_events">
-                {{ __('Torneos') }}
-            </x-sidebar-link>
-        </div>
 
-        <div class="px-3 mt-5 mb-2">
-            <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
-                {{ __('Equipos & Personas') }}
-            </p>
-        </div>
-        <div class="px-3 space-y-1">
-            <x-sidebar-link :href="route('teams.index')" :active="request()->routeIs('teams.*')" icon="groups">
-                {{ __('Equipos') }}
-            </x-sidebar-link>
-            <x-sidebar-link :href="route('athletes.index')" :active="request()->routeIs('athletes.*')" icon="person">
-                {{ __('Atletas') }}
-            </x-sidebar-link>
-            <x-sidebar-link :href="route('scorekeepers.index')" :active="request()->routeIs('scorekeepers.*')" icon="edit_note">
-                {{ __('Anotadores') }}
-            </x-sidebar-link>
-            <x-sidebar-link :href="route('referees.index')" :active="request()->routeIs('referees.*')" icon="sports">
-                {{ __('Árbitros') }}
-            </x-sidebar-link>
-            <x-sidebar-link :href="route('stadiums.index')" :active="request()->routeIs('stadiums.*')" icon="stadium">
-                {{ __('Estadios') }}
-            </x-sidebar-link>
-        </div>
+        @if ($can('dashboard') || $can('games') || $can('leagues') || $can('categories') || $can('tournaments'))
+            <div class="px-3 mb-2">
+                <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
+                    {{ __('Principal') }}
+                </p>
+            </div>
+            <div class="px-3 space-y-1">
+                @if ($can('dashboard'))
+                    <x-sidebar-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" icon="dashboard">
+                        {{ __('Dashboard') }}
+                    </x-sidebar-link>
+                @endif
+                @if ($can('games'))
+                    <x-sidebar-link :href="route('games.index')" :active="request()->routeIs('games.*')" icon="sports_baseball">
+                        {{ __('Juegos') }}
+                    </x-sidebar-link>
+                @endif
+                @if ($can('leagues'))
+                    <x-sidebar-link :href="route('leagues.index')" :active="request()->routeIs('leagues.*')" icon="flag">
+                        {{ __('Ligas') }}
+                    </x-sidebar-link>
+                @endif
+                @if ($can('categories'))
+                    <x-sidebar-link :href="route('categories.index')" :active="request()->routeIs('categories.*')" icon="category">
+                        {{ __('Categorías') }}
+                    </x-sidebar-link>
+                @endif
+                @if ($can('tournaments'))
+                    <x-sidebar-link :href="route('tournaments.index')" :active="request()->routeIs('tournaments.*')" icon="emoji_events">
+                        {{ __('Torneos') }}
+                    </x-sidebar-link>
+                @endif
+            </div>
+        @endif
 
-        @auth
-            @if (auth()->user()->isAdmin())
-                <div class="px-3 mt-5 mb-2">
-                    <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
-                        {{ __('Administración') }}
-                    </p>
-                </div>
-                <div class="px-3 space-y-1">
+        @if ($can('teams') || $can('athletes') || $can('scorekeepers') || $can('referees') || $can('stadiums'))
+            <div class="px-3 mt-5 mb-2">
+                <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
+                    {{ __('Equipos & Personas') }}
+                </p>
+            </div>
+            <div class="px-3 space-y-1">
+                @if ($can('teams'))
+                    <x-sidebar-link :href="route('teams.index')" :active="request()->routeIs('teams.*')" icon="groups">
+                        {{ __('Equipos') }}
+                    </x-sidebar-link>
+                @endif
+                @if ($can('athletes'))
+                    <x-sidebar-link :href="route('athletes.index')" :active="request()->routeIs('athletes.*')" icon="person">
+                        {{ __('Atletas') }}
+                    </x-sidebar-link>
+                @endif
+                @if ($can('scorekeepers'))
+                    <x-sidebar-link :href="route('scorekeepers.index')" :active="request()->routeIs('scorekeepers.*')" icon="edit_note">
+                        {{ __('Anotadores') }}
+                    </x-sidebar-link>
+                @endif
+                @if ($can('referees'))
+                    <x-sidebar-link :href="route('referees.index')" :active="request()->routeIs('referees.*')" icon="sports">
+                        {{ __('Árbitros') }}
+                    </x-sidebar-link>
+                @endif
+                @if ($can('stadiums'))
+                    <x-sidebar-link :href="route('stadiums.index')" :active="request()->routeIs('stadiums.*')" icon="stadium">
+                        {{ __('Estadios') }}
+                    </x-sidebar-link>
+                @endif
+            </div>
+        @endif
+
+        @if ($can('users') || $can('roles') || $can('log_viewer'))
+            <div class="px-3 mt-5 mb-2">
+                <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
+                    {{ __('Administración') }}
+                </p>
+            </div>
+            <div class="px-3 space-y-1">
+                @if ($can('users'))
                     <x-sidebar-link :href="route('users.index')" :active="request()->routeIs('users.*')" icon="manage_accounts">
                         {{ __('Usuarios') }}
                     </x-sidebar-link>
+                @endif
+                @if ($can('roles'))
                     <x-sidebar-link :href="route('roles.index')" :active="request()->routeIs('roles.*')" icon="shield_person">
                         {{ __('Roles') }}
                     </x-sidebar-link>
-                    {{-- Log viewer de opcodesio. Restringido por 'admin'
-                         middleware en config/log-viewer.php (auth+admin en
-                         web y en api_middleware). Solo accesible desde aca. --}}
+                @endif
+                {{-- Log viewer de opcodesio. Restringido por 'admin'
+                     middleware en config/log-viewer.php (auth+admin en
+                     web y en api_middleware). Solo accesible desde aca. --}}
+                @if ($can('log_viewer'))
                     <x-sidebar-link href="/log-viewer" :active="request()->is('log-viewer*')" icon="terminal">
                         {{ __('Visor de logs') }}
                     </x-sidebar-link>
-                </div>
-            @endif
-        @endauth
+                @endif
+            </div>
+        @endif
 
-        <div class="px-3 mt-5 mb-2">
-            <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
-                {{ __('Otros') }}
-            </p>
-        </div>
-        <div class="px-3 space-y-1">
-            {{-- PWA Legacy: link externo al sitio v1.1.12 (DISI-82) --}}
-            <x-sidebar-link href="/legacy/" icon="smartphone" external>
-                {{ __('PWA Legacy') }}
-            </x-sidebar-link>
-        </div>
+        @if ($can('pwa_legacy'))
+            <div class="px-3 mt-5 mb-2">
+                <p class="px-3 text-[10px] font-bold uppercase tracking-widest text-wv-text-secondary">
+                    {{ __('Otros') }}
+                </p>
+            </div>
+            <div class="px-3 space-y-1">
+                {{-- PWA Legacy: link externo al sitio v1.1.12 (DISI-82) --}}
+                <x-sidebar-link href="/legacy/" icon="smartphone" external>
+                    {{ __('PWA Legacy') }}
+                </x-sidebar-link>
+            </div>
+        @endif
     </nav>
 
     {{-- Footer: usuario + logout --}}
