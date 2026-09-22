@@ -22,13 +22,13 @@
 <div class="inline-flex items-center gap-1">
     @if ($show)
         <a href="{{ $show }}" title="{{ __('Ver') }}" aria-label="{{ __('Ver') }}" class="{{ $verBtn }}">
-            <span class="material-symbols-outlined text-[16px]">visibility</span>
+            <span class="material-symbols-outlined !text-[16px]">visibility</span>
         </a>
     @endif
 
     @if ($edit)
         <a href="{{ $edit }}" title="{{ __('Editar') }}" aria-label="{{ __('Editar') }}" class="{{ $editBtn }}">
-            <span class="material-symbols-outlined text-[16px]">edit</span>
+            <span class="material-symbols-outlined !text-[16px]">edit</span>
         </a>
     @endif
 
@@ -38,7 +38,7 @@
             @csrf
             @method('DELETE')
             <button type="submit" title="{{ __('Eliminar') }}" aria-label="{{ __('Eliminar') }}" class="{{ $delBtn }}">
-                <span class="material-symbols-outlined text-[16px]">delete_forever</span>
+                <span class="material-symbols-outlined !text-[16px]">delete_forever</span>
             </button>
         </form>
     @endif
