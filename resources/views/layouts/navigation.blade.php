@@ -109,6 +109,12 @@
                     <x-sidebar-link :href="route('roles.index')" :active="request()->routeIs('roles.*')" icon="shield_person">
                         {{ __('Roles') }}
                     </x-sidebar-link>
+                    {{-- Log viewer de opcodesio. Restringido por 'admin'
+                         middleware en config/log-viewer.php (auth+admin en
+                         web y en api_middleware). Solo accesible desde aca. --}}
+                    <x-sidebar-link href="/log-viewer" :active="request()->is('log-viewer*')" icon="terminal">
+                        {{ __('Visor de logs') }}
+                    </x-sidebar-link>
                 </div>
             @endif
         @endauth
