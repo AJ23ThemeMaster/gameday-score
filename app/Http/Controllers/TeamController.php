@@ -20,16 +20,17 @@ class TeamController extends Controller
 {
     public function __construct()
     {
-        // DISI-81 + DISI-XXX: gestor puede editar solo SU equipo.
+        // DISI-81 + DISI-XXX: gestor puede editar y ver SU equipo.
         // El chequeo fino se hace dentro de cada metodo.
         // - index: admin_or_gestor (gestor solo ve su equipo, filtrado en el metodo)
-        // - create/store: admin-only (el gestor no crea equipos nuevos;
+        // - create/store: admin-only (gestor NO crea equipos nuevos;
         //   admin es quien crea y luego asigna via User::team_id)
         // - edit/update: admin_or_gestor + authorizeGestorOnTeam
-        // - destroy: admin_or_gestor + authorizeGestorOnTeam (gestor puede
-        //   borrar su equipo si admin se lo permite)
+        // - destroy: admin-only (decision del usuario: borrar equipo es
+        //   atribucion exclusiva del admin porque tiene implicaciones
+        //   de integridad referencial con juegos, atletas y cascadas).
         $this->middleware('admin_or_gestor')->except(['show']);
-        $this->middleware('admin')->only(['create', 'store']);
+        $this->middleware('admin')->only(['create', 'store', 'destroy']);
     }
 
     /**
@@ -212,7 +213,12 @@ class TeamController extends Controller
 
     public function destroy(Team $team): RedirectResponse
     {
+        // DISI-XXX: destroy es admin-only (decision del usuario). El chequeo
+        // authorizeGestorOnTeam queda como defense-in-depth: si en el
+        // futuro alguien relaja el middleware, el chequeo interno sigue
+        // bloqueando al gestor.
         $this->authorizeGestorOnTeam($team);
+
         if ($team->homeGames()->exists() || $team->awayGames()->exists()) {
             return redirect()
                 ->route('teams.index')
