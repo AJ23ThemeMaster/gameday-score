@@ -20,6 +20,10 @@ class RoleSeeder extends Seeder
         // DISI-81: rol gestor — solo puede administrar SU equipo asociado
         // y los atletas de ese equipo. El team_id del usuario define el scope.
         $gestor = Role::firstOrCreate(['name' => 'gestor', 'guard_name' => 'web']);
+        // DISI-delegado: rol delegado — solo puede ver/editar atletas
+        // de UN equipo Y UNA categoria especifica (scope = team_id +
+        // category_id del usuario). NO crea, NO elimina.
+        $delegado = Role::firstOrCreate(['name' => 'delegado', 'guard_name' => 'web']);
 
         // Permisos granulares para admin (gestiona todo)
         $adminPermissions = [
@@ -57,6 +61,17 @@ class RoleSeeder extends Seeder
         foreach ($gestorPermissions as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
             $gestor->givePermissionTo($perm);
+        }
+
+        // DISI-delegado: permiso para que el sidebar pueda mostrar el modulo
+        // Atletas. El scope fino (team_id + category_id) lo hace User::isDelegadoOf()
+        // en cada controlador.
+        $delegadoPermissions = [
+            'manage assigned category athletes',
+        ];
+        foreach ($delegadoPermissions as $perm) {
+            Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
+            $delegado->givePermissionTo($perm);
         }
 
         // Asignar rol admin al usuario frank@gameday.test (owner actual)

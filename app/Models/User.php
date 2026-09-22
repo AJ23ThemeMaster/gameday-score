@@ -68,6 +68,7 @@ class User extends Authenticatable
         'password',
         'avatar_path',
         'team_id',
+        'category_id',
     ];
 
     protected $hidden = [
@@ -135,6 +136,40 @@ class User extends Authenticatable
     public function isGestor(): bool
     {
         return $this->hasRole('gestor') && $this->team_id !== null;
+    }
+
+    /**
+     * DISI-delegado: el usuario tiene el rol delegado Y esta asociado
+     * a un equipo Y a una categoria especifica. Si falta cualquiera
+     * de los dos FK, no cuenta como delegado activo (seria un
+     * delegado sin scope, mejor bloquear que dejarlo "flotar").
+     */
+    public function isDelegado(): bool
+    {
+        return $this->hasRole('delegado')
+            && $this->team_id !== null
+            && $this->category_id !== null;
+    }
+
+    /**
+     * DISI-delegado: el atleta dado pertenece al equipo Y a la
+     * categoria del delegado. Es la version "stricter" de
+     * isGestorOwning (que solo chequea team_id).
+     *
+     * Nota: como el rol delegado no tiene create/destroy, este check
+     * se usa principalmente en edit/update de atletas.
+     */
+    public function isDelegadoOf($athlete): bool
+    {
+        if (! $this->isDelegado()) {
+            return false;
+        }
+        if (! $athlete instanceof \App\Models\Athlete) {
+            return false;
+        }
+
+        return (int) $athlete->team_id === (int) $this->team_id
+            && (int) $athlete->category_id === (int) $this->category_id;
     }
 
     /**
