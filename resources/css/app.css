@@ -1,3 +1,12 @@
+﻿/*
+  SwalHelper: importar CSS de SweetAlert2 + tema dark WattVision custom.
+  El tema custom (clases .wv-swal-*) se aplica via customClass en
+  resources/js/swal-helper.js.
+  Los @import deben ir ANTES de @tailwind por la regla de PostCSS.
+*/
+@import 'sweetalert2/dist/sweetalert2.min.css';
+@import './swal-wattvision.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

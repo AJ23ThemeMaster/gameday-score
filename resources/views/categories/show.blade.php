@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-h-wv text-wv-text leading-tight">{{ __('Categoría') }}: {{ $category->name }}</h2>
+            <h2 class="font-semibold text-h-wv text-wv-text leading-tight">{{ __('CategorÃ�a') }}: {{ $category->name }}</h2>
             <div class="flex gap-2">
                 <a href="{{ route('categories.index') }}" class="text-sm text-wv-text-secondary hover:text-wv-text">{{ __('Listado') }}</a>
                 <a href="{{ route('categories.edit', $category) }}" class="inline-flex items-center px-3 py-1.5 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-xs font-semibold rounded-card">{{ __('Editar') }}</a>
@@ -33,8 +33,8 @@
                         <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $category->innings_count }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Límite de lanzamientos') }}</dt>
-                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $category->pitch_limit ?? '—' }}</dd>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('LÃ�mite de lanzamientos') }}</dt>
+                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $category->pitch_limit ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Regla del Nocaut') }}</dt>
@@ -58,7 +58,7 @@
                             <span class="font-semibold">{{ $category->team->name }}</span>
                         </a>
                         @if ($category->team->league)
-                            <span class="text-wv-text-secondary mx-1">·</span>
+                            <span class="text-wv-text-secondary mx-1">Â·</span>
                             <a href="{{ route('leagues.show', $category->team->league) }}" class="text-sm text-wv-text-secondary hover:text-wv-accent">{{ $category->team->league->name }}</a>
                         @endif
                     </div>
@@ -111,7 +111,7 @@
                                 <tbody class="divide-y divide-wv-border">
                                     @foreach ($category->games as $g)
                                         <tr class="hover:bg-wv-surface-hover">
-                                            <td class="px-3 py-2 whitespace-nowrap text-wv-text-secondary">{{ $g->scheduled_at?->format('d/m/Y H:i') ?? '—' }}</td>
+                                            <td class="px-3 py-2 whitespace-nowrap text-wv-text-secondary">{{ $g->scheduled_at?->format('d/m/Y H:i') ?? 'â€”' }}</td>
                                             <td class="px-3 py-2 whitespace-nowrap font-medium text-wv-text">{{ $g->homeTeam->short_name ?? $g->homeTeam->name }}</td>
                                             <td class="px-3 py-2 whitespace-nowrap text-center font-bold">
                                                 <a href="{{ route('games.scoreboard', $g) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $g->home_score ?? 0 }} - {{ $g->away_score ?? 0 }}</a>
@@ -129,14 +129,14 @@
                 </div>
 
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
-                    {{ __('Creada') }}: {{ $category->created_at->format('d/m/Y H:i') }} ·
+                    {{ __('Creada') }}: {{ $category->created_at->format('d/m/Y H:i') }} Â·
                     {{ __('Actualizada') }}: {{ $category->updated_at->format('d/m/Y H:i') }}
                 </div>
             </div>
 
-            <form action="{{ route('categories.destroy', $category) }}" method="POST" class="mt-4 text-right" onsubmit="return confirm('¿Eliminar la categoría «{{ $category->name }}»?');">
+            <form action="{{ route('categories.destroy', $category) }}" method="POST" class="mt-4 text-right" data-confirm="'�Eliminar la categorÃ�a �{{ $category->name }}�?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
-                <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar categoría') }}</button>
+                <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar categorÃ�a') }}</button>
             </form>
         </div>
     </div>

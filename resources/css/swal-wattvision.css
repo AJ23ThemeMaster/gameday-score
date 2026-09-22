@@ -1,0 +1,132 @@
+﻿/*
+  SwalHelper: tema dark WattVision para SweetAlert2.
+  Aplicado via customClass en swal-helper.js (clases wv-swal-*).
+
+  Colores tomados del palette WattVision:
+    - bg-wv-bg      #121212 (background)
+    - bg-wv-surface #1c1c1c (superficie elevada)
+    - wv-border     #2C2C2E
+    - wv-text       #ffffff
+    - wv-text-sec   #9ca3af (gris claro secundario)
+    - wv-accent     #00E5FF (cyan)
+    - wv-success    #10b981 (verde)
+    - wv-alert      #ef4444 (rojo)
+    - wv-warning    #f59e0b (ambar)
+*/
+
+.wv-swal-popup {
+    background: #1c1c1c !important;
+    border: 1px solid #2C2C2E !important;
+    border-radius: 12px !important;
+    color: #ffffff !important;
+}
+
+.wv-swal-title {
+    color: #ffffff !important;
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+}
+
+.wv-swal-html {
+    color: #d1d5db !important;
+}
+
+.wv-swal-confirm {
+    background: #00E5FF !important;
+    color: #121212 !important;
+    font-weight: 600 !important;
+    padding: 0.625rem 1.25rem !important;
+    border-radius: 8px !important;
+    transition: background 150ms ease;
+    box-shadow: none !important;
+}
+
+.wv-swal-confirm:hover,
+.wv-swal-confirm:focus {
+    background: #00b8d4 !important;
+    box-shadow: none !important;
+}
+
+.wv-swal-confirm--danger {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+}
+
+.wv-swal-confirm--danger:hover,
+.wv-swal-confirm--danger:focus {
+    background: #dc2626 !important;
+}
+
+.wv-swal-cancel {
+    background: transparent !important;
+    color: #9ca3af !important;
+    font-weight: 500 !important;
+    padding: 0.625rem 1.25rem !important;
+    border-radius: 8px !important;
+    border: 1px solid #2C2C2E !important;
+    margin-right: 0.5rem !important;
+    box-shadow: none !important;
+}
+
+.wv-swal-cancel:hover,
+.wv-swal-cancel:focus {
+    background: #2C2C2E !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+}
+
+.wv-swal-deny {
+    background: #2C2C2E !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+}
+
+.wv-swal-icon {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.wv-swal-actions {
+    margin-top: 1.5rem !important;
+}
+
+.wv-swal-input {
+    background: #121212 !important;
+    border: 1px solid #2C2C2E !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+}
+
+.wv-swal-input:focus {
+    border-color: #00E5FF !important;
+    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.2) !important;
+}
+
+.wv-swal-validation {
+    background: #2C2C2E !important;
+    color: #ef4444 !important;
+}
+
+/* Toast variant: mas compacto, sin padding extra, sin header. */
+.wv-swal-toast {
+    background: #1c1c1c !important;
+    border: 1px solid #2C2C2E !important;
+    border-radius: 8px !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+    padding: 0.75rem 1rem !important;
+}
+
+.wv-swal-toast .swal2-title {
+    color: #ffffff !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Loading: spinner heredado de swal2 con color wv-accent. */
+.wv-swal-popup .swal2-loader {
+    border-left-color: #00E5FF !important;
+    border-right-color: #00E5FF !important;
+    border-top-color: #00E5FF !important;
+}

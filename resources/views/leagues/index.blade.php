@@ -24,7 +24,7 @@
             <div class="bg-wv-surface border border-wv-border rounded-card overflow-hidden">
                 @if ($leagues->isEmpty())
                     <div class="p-10 text-center">
-                        <p class="mb-4 text-wv-text-secondary">{{ __('Aún no hay ligas registradas.') }}</p>
+                        <p class="mb-4 text-wv-text-secondary">{{ __('AÃºn no hay ligas registradas.') }}</p>
                         <a href="{{ route('leagues.create') }}"
                            class="text-wv-accent hover:text-wv-accent-hover underline">
                             {{ __('Crear la primera liga') }}
@@ -49,7 +49,7 @@
                                             {{ $league->name }}
                                         </a>
                                         @if ($league->short_name)
-                                            <p class="text-xs text-wv-text-secondary">{{ $league->short_name }}@if ($league->country) · {{ $league->country }}@endif</p>
+                                            <p class="text-xs text-wv-text-secondary">{{ $league->short_name }}@if ($league->country) Â· {{ $league->country }}@endif</p>
                                         @endif
                                         <div class="mt-2 flex gap-2 text-xs flex-wrap">
                                             <span class="inline-flex items-center px-2 py-0.5 rounded bg-wv-accent-soft text-wv-accent">
@@ -76,7 +76,7 @@
                                         {{ __('Editar') }}
                                     </a>
                                     <form action="{{ route('leagues.destroy', $league) }}" method="POST" class="inline"
-                                          onsubmit="return confirm('¿Eliminar la liga «{{ $league->name }}»? Si tiene torneos o juegos asociados, no se podrá eliminar.');">
+                                          data-confirm="'�Eliminar la liga �{{ $league->name }}�? Si tiene torneos o juegos asociados, no se podrÃ� eliminar.'" data-confirm-danger="true" data-loader>
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-wv-alert hover:text-wv-alert-hover font-medium">

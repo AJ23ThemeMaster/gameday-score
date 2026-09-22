@@ -14,7 +14,7 @@
 
             {{-- Stats --}}
             @php
-                $statLabels = ['total' => __('Total'), 'scheduled' => __('Programados'), 'in_progress' => __('En vivo'), 'completed' => __('Finalizados'), 'public' => __('Públicos')];
+                $statLabels = ['total' => __('Total'), 'scheduled' => __('Programados'), 'in_progress' => __('En vivo'), 'completed' => __('Finalizados'), 'public' => __('PÃºblicos')];
             @endphp
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
                 @foreach ($statLabels as $key => $label)
@@ -30,7 +30,7 @@
             <div class="bg-wv-surface border border-wv-border rounded-card overflow-hidden">
                 @if ($games->isEmpty())
                     <div class="p-10 text-center">
-                        <p class="mb-4 text-wv-text-secondary">{{ __('Aún no has creado juegos.') }}</p>
+                        <p class="mb-4 text-wv-text-secondary">{{ __('AÃºn no has creado juegos.') }}</p>
                         <a href="{{ route('games.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Crear el primer juego') }}</a>
                     </div>
                 @else
@@ -40,9 +40,9 @@
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Fecha') }}</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Enfrentamiento') }}</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Categoría / Estadio') }}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('CategorÃ�a / Estadio') }}</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Estado') }}</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Público') }}</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('PÃºblico') }}</th>
                                     <th class="px-6 py-3 text-right text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Acciones') }}</th>
                                 </tr>
                             </thead>
@@ -72,8 +72,8 @@
                                             </a>
                                         </td>
                                         <td class="px-6 py-3 text-xs text-wv-text-secondary">
-                                            <div>{{ $g->category->name ?? '—' }}</div>
-                                            <div>{{ $g->stadium->name ?? '—' }}</div>
+                                            <div>{{ $g->category->name ?? 'â€”' }}</div>
+                                            <div>{{ $g->stadium->name ?? 'â€”' }}</div>
                                         </td>
                                         <td class="px-6 py-3 text-center">
                                             <span class="inline-flex px-2 text-xs leading-5 font-semibold rounded-full border {{ $statusColors[$g->status] ?? 'bg-wv-surface-hover text-wv-text-secondary border-wv-border' }}">
@@ -82,11 +82,11 @@
                                         </td>
                                         <td class="px-6 py-3 text-center">
                                             @if ($g->is_public)
-                                                <span class="inline-flex items-center text-wv-success" title="{{ __('Juego público') }}">
+                                                <span class="inline-flex items-center text-wv-success" title="{{ __('Juego pÃºblico') }}">
                                                     <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
                                                 </span>
                                             @else
-                                                <span class="text-wv-text-secondary">—</span>
+                                                <span class="text-wv-text-secondary">â€”</span>
                                             @endif
                                         </td>
                                         <td class="px-6 py-3 text-right text-sm font-medium">
@@ -94,7 +94,7 @@
                                                 <a href="{{ route('games.scoreboard', $g) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('En vivo') }}</a>
                                             @endif
                                             <a href="{{ route('games.edit', $g) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('games.destroy', $g) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar el juego?');">
+                                            <form action="{{ route('games.destroy', $g) }}" method="POST" class="inline" data-confirm="'�Eliminar el juego?'" data-confirm-danger="true" data-loader>
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                             </form>

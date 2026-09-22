@@ -35,7 +35,7 @@
 
                 <h3 class="text-sm font-bold text-wv-text mb-3">{{ __('Permisos asignados') }}</h3>
                 @if ($role->permissions->isEmpty())
-                    <p class="text-sm text-wv-text-secondary italic">{{ __('Este rol no tiene permisos asignados aún.') }}</p>
+                    <p class="text-sm text-wv-text-secondary italic">{{ __('Este rol no tiene permisos asignados aÃºn.') }}</p>
                 @else
                     <div class="flex flex-wrap gap-1.5">
                         @foreach ($role->permissions->sortBy('name') as $perm)
@@ -77,7 +77,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="mt-4 text-right" onsubmit="return confirm('¿Eliminar el rol «{{ $role->name }}»?');">
+            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="mt-4 text-right" data-confirm="'�Eliminar el rol �{{ $role->name }}�?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
                 <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar rol') }}</button>
             </form>

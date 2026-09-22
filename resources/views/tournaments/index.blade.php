@@ -24,7 +24,7 @@
             <div class="bg-wv-surface border border-wv-border rounded-card overflow-hidden">
                 @if ($tournaments->isEmpty())
                     <div class="p-10 text-center">
-                        <p class="mb-4 text-wv-text-secondary">{{ __('Aún no hay torneos registrados.') }}</p>
+                        <p class="mb-4 text-wv-text-secondary">{{ __('AÃºn no hay torneos registrados.') }}</p>
                         <a href="{{ route('tournaments.create') }}"
                            class="text-wv-accent hover:text-wv-accent-hover underline">
                             {{ __('Crear el primer torneo') }}
@@ -37,7 +37,7 @@
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Torneo') }}</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Liga') }}</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Categoría') }}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('CategorÃ�a') }}</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Temporada') }}</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Juegos') }}</th>
                                     <th class="px-6 py-3 text-right text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Acciones') }}</th>
@@ -61,13 +61,13 @@
                                                 {{ $t->league->short_name ?? $t->league->name }}
                                             </a>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $t->category ?? '—' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $t->season ?? '—' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $t->category ?? 'â€”' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $t->season ?? 'â€”' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $t->games_count }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <a href="{{ route('tournaments.edit', $t) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
                                             <form action="{{ route('tournaments.destroy', $t) }}" method="POST" class="inline"
-                                                  onsubmit="return confirm('¿Eliminar el torneo «{{ $t->name }}»?');">
+                                                  data-confirm="'�Eliminar el torneo �{{ $t->name }}�?'" data-confirm-danger="true" data-loader>
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>

@@ -140,11 +140,17 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        // Confirm remove athlete from roster
-        confirmRemove(btn) {
+        // Confirm remove athlete from roster (SweetAlert2 via SwalHelper)
+        async confirmRemove(btn) {
             const name = btn.dataset.athleteName;
             const id = btn.dataset.athleteId;
-            if (!confirm(`¿Quitar a «${name}» del roster?`)) return;
+            const ok = await window.SwalHelper.confirm({
+                title: `¿Quitar a «${name}» del roster?`,
+                icon: 'warning',
+                danger: true,
+                confirmText: 'Sí, quitar',
+            });
+            if (!ok) return;
             this.removeAthlete(id);
         },
 

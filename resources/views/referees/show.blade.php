@@ -5,7 +5,7 @@
                 @if ($referee->photoUrl)
                     <img src="{{ $referee->photoUrl }}" class="h-10 w-10 rounded-full object-cover bg-wv-surface border border-wv-border p-0.5">
                 @endif
-                {{ __('Árbitro') }}: {{ $referee->full_name }}
+                {{ __('Ãrbitro') }}: {{ $referee->full_name }}
             </h2>
             <div class="flex gap-2">
                 <a href="{{ route('referees.index') }}" class="text-sm text-wv-text-secondary hover:text-wv-text">{{ __('Listado') }}</a>
@@ -28,20 +28,20 @@
 
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Cédula / Documento') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $referee->document_id ?? '—' }}</dd>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('CÃ�dula / Documento') }}</dt>
+                        <dd class="text-base font-medium text-wv-text">{{ $referee->document_id ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Teléfono') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $referee->phone ?? '—' }}</dd>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('TelÃ�fono') }}</dt>
+                        <dd class="text-base font-medium text-wv-text">{{ $referee->phone ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Certificación') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $referee->certification ?? '—' }}</dd>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('CertificaciÃ³n') }}</dt>
+                        <dd class="text-base font-medium text-wv-text">{{ $referee->certification ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Años de experiencia') }}</dt>
-                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $referee->experience_years ?? '—' }}</dd>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('AÃ±os de experiencia') }}</dt>
+                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $referee->experience_years ?? 'â€”' }}</dd>
                     </div>
                 </dl>
 
@@ -53,14 +53,14 @@
                 @endif
 
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
-                    {{ __('Creado') }}: {{ $referee->created_at->format('d/m/Y H:i') }} ·
+                    {{ __('Creado') }}: {{ $referee->created_at->format('d/m/Y H:i') }} Â·
                     {{ __('Actualizado') }}: {{ $referee->updated_at->format('d/m/Y H:i') }}
                 </div>
             </div>
 
-            <form action="{{ route('referees.destroy', $referee) }}" method="POST" class="mt-4 text-right" onsubmit="return confirm('¿Eliminar al árbitro «{{ $referee->full_name }}»?');">
+            <form action="{{ route('referees.destroy', $referee) }}" method="POST" class="mt-4 text-right" data-confirm="'�Eliminar al Ã�rbitro �{{ $referee->full_name }}�?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
-                <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar árbitro') }}</button>
+                <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar Ã�rbitro') }}</button>
             </form>
         </div>
     </div>

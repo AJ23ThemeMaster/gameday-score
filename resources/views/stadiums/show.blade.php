@@ -24,19 +24,19 @@
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Ciudad') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $stadium->city ?? '—' }}</dd>
+                        <dd class="text-base font-medium text-wv-text">{{ $stadium->city ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Estado / Provincia') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $stadium->state ?? '—' }}</dd>
+                        <dd class="text-base font-medium text-wv-text">{{ $stadium->state ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3 sm:col-span-2">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Dirección') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $stadium->address ?? '—' }}</dd>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('DirecciÃ³n') }}</dt>
+                        <dd class="text-base font-medium text-wv-text">{{ $stadium->address ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Capacidad') }}</dt>
-                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $stadium->capacity ? number_format($stadium->capacity, 0, ',', '.') : '—' }}</dd>
+                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $stadium->capacity ? number_format($stadium->capacity, 0, ',', '.') : 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Juegos asociados') }}</dt>
@@ -52,12 +52,12 @@
                 @endif
 
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
-                    {{ __('Creado') }}: {{ $stadium->created_at->format('d/m/Y H:i') }} ·
+                    {{ __('Creado') }}: {{ $stadium->created_at->format('d/m/Y H:i') }} Â·
                     {{ __('Actualizado') }}: {{ $stadium->updated_at->format('d/m/Y H:i') }}
                 </div>
             </div>
 
-            <form action="{{ route('stadiums.destroy', $stadium) }}" method="POST" class="mt-4 text-right" onsubmit="return confirm('¿Eliminar el estadio «{{ $stadium->name }}»?');">
+            <form action="{{ route('stadiums.destroy', $stadium) }}" method="POST" class="mt-4 text-right" data-confirm="'�Eliminar el estadio �{{ $stadium->name }}�?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
                 <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar estadio') }}</button>
             </form>

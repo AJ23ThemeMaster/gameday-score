@@ -31,7 +31,7 @@
             <div class="bg-wv-surface border border-wv-border rounded-card overflow-hidden">
                 @if ($scorekeepers->isEmpty())
                     <div class="p-10 text-center text-wv-text-secondary">
-                        <p class="mb-4">{{ __('Aún no hay anotadores registrados.') }}</p>
+                        <p class="mb-4">{{ __('AÃºn no hay anotadores registrados.') }}</p>
                         <a href="{{ route('scorekeepers.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Registrar el primer anotador') }}</a>
                     </div>
                 @else
@@ -42,7 +42,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Foto') }}</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Nombre') }}</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Documento') }}</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Teléfono') }}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('TelÃ�fono') }}</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Juegos') }}</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Estado') }}</th>
                                     <th class="px-6 py-3 text-right text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Acciones') }}</th>
@@ -63,8 +63,8 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <a href="{{ route('scorekeepers.show', $sk) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">{{ $sk->full_name }}</a>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $sk->document_id ?? '—' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $sk->phone ?? '—' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $sk->document_id ?? 'â€”' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $sk->phone ?? 'â€”' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $sk->games_count ?? 0 }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center">
                                             @if ($sk->active)
@@ -75,7 +75,7 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <a href="{{ route('scorekeepers.edit', $sk) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('scorekeepers.destroy', $sk) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar al anotador «{{ $sk->full_name }}»?');">
+                                            <form action="{{ route('scorekeepers.destroy', $sk) }}" method="POST" class="inline" data-confirm="'�Eliminar al anotador �{{ $sk->full_name }}�?'" data-confirm-danger="true" data-loader>
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                             </form>

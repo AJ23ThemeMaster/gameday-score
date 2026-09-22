@@ -485,7 +485,7 @@
                         link.href = canvas.toDataURL('image/png');
                         link.click();
                     } catch (e) {
-                        alert('No se pudo generar la imagen: ' + e.message);
+                        SwalHelper.error('No se pudo generar la imagen: ' + e.message);
                     } finally {
                         downloadBtn.disabled = false;
                         downloadBtn.textContent = '⬇ {{ __('Descargar PNG') }}';
@@ -512,7 +512,7 @@
                                     });
                                 } catch (e) {
                                     if (e.name !== 'AbortError') {
-                                        alert('No se pudo compartir: ' + e.message);
+                                        SwalHelper.error('No se pudo compartir: ' + e.message);
                                     }
                                 }
                             } else {
@@ -520,11 +520,11 @@
                                 link.download = 'boxscore-{{ $game->id }}.png';
                                 link.href = canvas.toDataURL('image/png');
                                 link.click();
-                                alert('Tu navegador no soporta Web Share API. Se descargo la imagen.');
+                                SwalHelper.warning('Tu navegador no soporta Web Share API. Se descargo la imagen.');
                             }
                         }, 'image/png');
                     } catch (e) {
-                        alert('No se pudo generar la imagen: ' + e.message);
+                        SwalHelper.error('No se pudo generar la imagen: ' + e.message);
                     } finally {
                         shareBtn.disabled = false;
                         shareBtn.textContent = '📤 {{ __('Compartir como imagen') }}';

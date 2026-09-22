@@ -38,7 +38,7 @@
             <div class="bg-wv-surface border border-wv-border rounded-card overflow-hidden">
                 @if ($users->isEmpty())
                     <div class="p-10 text-center text-wv-text-secondary">
-                        <p>{{ __('Aún no hay otros usuarios en el sistema.') }}</p>
+                        <p>{{ __('AÃºn no hay otros usuarios en el sistema.') }}</p>
                     </div>
                 @else
                     <div class="overflow-x-auto">
@@ -75,14 +75,14 @@
                                             @if ($primaryRole)
                                                 <a href="{{ route('roles.show', $primaryRole) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $primaryRole->name }}</a>
                                             @else
-                                                <span class="text-wv-text-secondary italic">—</span>
+                                                <span class="text-wv-text-secondary italic">â€”</span>
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">
                                             @if ($u->team)
                                                 <a href="{{ route('teams.show', $u->team) }}" class="hover:text-wv-accent">{{ $u->team->short_name ?? $u->team->name }}</a>
                                             @else
-                                                <span class="italic">—</span>
+                                                <span class="italic">â€”</span>
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center">
@@ -95,7 +95,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <a href="{{ route('users.edit', $u) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
                                             @if ($u->id !== auth()->id())
-                                                <form action="{{ route('users.destroy', $u) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar al usuario «{{ $u->name }}»?');">
+                                                <form action="{{ route('users.destroy', $u) }}" method="POST" class="inline" data-confirm="'�Eliminar al usuario �{{ $u->name }}�?'" data-confirm-danger="true" data-loader>
                                                     @csrf @method('DELETE')
                                                     <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                                 </form>

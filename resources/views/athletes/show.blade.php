@@ -28,12 +28,12 @@
                 </div>
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Cédula') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $athlete->document_id ?? '—' }}</dd>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('CÃ�dula') }}</dt>
+                        <dd class="text-base font-medium text-wv-text">{{ $athlete->document_id ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Fecha de nacimiento') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $athlete->birth_date?->format('d/m/Y') ?? '—' }}</dd>
+                        <dd class="text-base font-medium text-wv-text">{{ $athlete->birth_date?->format('d/m/Y') ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Equipo') }}</dt>
@@ -41,29 +41,29 @@
                             @if ($athlete->team)
                                 <a href="{{ route('teams.show', $athlete->team) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $athlete->team->name }}</a>
                                 @if ($athlete->team->league)
-                                    <span class="text-wv-text-secondary mx-1">·</span>
+                                    <span class="text-wv-text-secondary mx-1">Â·</span>
                                     <a href="{{ route('leagues.show', $athlete->team->league) }}" class="text-sm text-wv-text-secondary hover:text-wv-accent">{{ $athlete->team->league->name }}</a>
                                 @endif
-                            @else —
+                            @else â€”
                             @endif
                         </dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Categoría') }}</dt>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('CategorÃ�a') }}</dt>
                         <dd class="text-base font-medium text-wv-text">
                             @if ($athlete->category)
                                 <a href="{{ route('categories.show', $athlete->category) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $athlete->category->name }}</a>
-                            @else —
+                            @else â€”
                             @endif
                         </dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Número') }}</dt>
-                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $athlete->number ?? '—' }}</dd>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('NÃºmero') }}</dt>
+                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $athlete->number ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Posición') }}</dt>
-                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $athlete->position ?? '—' }}</dd>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('PosiciÃ³n') }}</dt>
+                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $athlete->position ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Batea / Lanza') }}</dt>
@@ -71,7 +71,7 @@
                     </div>
                 </dl>
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
-                    {{ __('Creado') }}: {{ $athlete->created_at->format('d/m/Y H:i') }} · {{ __('Actualizado') }}: {{ $athlete->updated_at->format('d/m/Y H:i') }}
+                    {{ __('Creado') }}: {{ $athlete->created_at->format('d/m/Y H:i') }} Â· {{ __('Actualizado') }}: {{ $athlete->updated_at->format('d/m/Y H:i') }}
                 </div>
             </div>
 
@@ -124,7 +124,7 @@
                 @else
                     <div class="flex items-center gap-3 text-sm text-wv-text-secondary">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-wv-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        <span>{{ __('No hay documento cargado. Puedes subir la cédula o acta de nacimiento al editar el atleta.') }}</span>
+                        <span>{{ __('No hay documento cargado. Puedes subir la cÃ�dula o acta de nacimiento al editar el atleta.') }}</span>
                     </div>
                 @endif
             </div>
@@ -134,7 +134,7 @@
                 <div class="bg-wv-surface border border-wv-border rounded-card p-5">
                     <h3 class="text-sm font-bold text-wv-text mb-3 flex items-center gap-2">
                         <span class="inline-block w-2 h-2 bg-wv-accent rounded-full"></span>
-                        {{ __('Estadísticas como bateador') }}
+                        {{ __('EstadÃ�sticas como bateador') }}
                     </h3>
                     @if ($careerBatting['at_bats'] > 0 || $careerBatting['hits'] > 0)
                         <dl class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
@@ -146,14 +146,14 @@
                             @endforeach
                         </dl>
                     @else
-                        <p class="text-sm text-wv-text-secondary italic">{{ __('Aún no tiene turnos al bate registrados.') }}</p>
+                        <p class="text-sm text-wv-text-secondary italic">{{ __('AÃºn no tiene turnos al bate registrados.') }}</p>
                     @endif
                 </div>
 
                 <div class="bg-wv-surface border border-wv-border rounded-card p-5">
                     <h3 class="text-sm font-bold text-wv-text mb-3 flex items-center gap-2">
                         <span class="inline-block w-2 h-2 bg-wv-accent rounded-full"></span>
-                        {{ __('Estadísticas como lanzador') }}
+                        {{ __('EstadÃ�sticas como lanzador') }}
                     </h3>
                     @if ($careerPitching['pitches'] > 0 || $careerPitching['strikeouts'] > 0)
                         <dl class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
@@ -173,7 +173,7 @@
                             @endforeach
                         </dl>
                     @else
-                        <p class="text-sm text-wv-text-secondary italic">{{ __('Aún no tiene lanzamientos registrados.') }}</p>
+                        <p class="text-sm text-wv-text-secondary italic">{{ __('AÃºn no tiene lanzamientos registrados.') }}</p>
                     @endif
                 </div>
             </div>
@@ -181,7 +181,7 @@
             {{-- DISI-79: stats por torneo --}}
             <div class="mt-6 bg-wv-surface border border-wv-border rounded-card">
                 <div class="p-5 border-b border-wv-border flex justify-between items-center">
-                    <h3 class="text-base font-bold text-wv-text">{{ __('Estadísticas por torneo') }}</h3>
+                    <h3 class="text-base font-bold text-wv-text">{{ __('EstadÃ�sticas por torneo') }}</h3>
                     <span class="text-sm text-wv-text-secondary">{{ $perTournament->count() }} {{ \Illuminate\Support\Str::plural('torneo', $perTournament->count()) }}</span>
                 </div>
                 @if ($perTournament->count() > 0)
@@ -241,14 +241,14 @@
                         {{ __('AVG = H/AB del propio torneo. JJ = juegos jugados como bateador o pitcher en el torneo. Los juegos sin torneo asignado (amistosos) se agrupan en "Sin torneo".') }}
                     </p>
                 @else
-                    <div class="p-8 text-center text-wv-text-secondary text-sm">{{ __('Aún no hay jugadas registradas para agrupar por torneo.') }}</div>
+                    <div class="p-8 text-center text-wv-text-secondary text-sm">{{ __('AÃºn no hay jugadas registradas para agrupar por torneo.') }}</div>
                 @endif
             </div>
 
             {{-- DISI-62: stats per game --}}
             <div class="mt-6 bg-wv-surface border border-wv-border rounded-card">
                 <div class="p-5 border-b border-wv-border flex justify-between items-center">
-                    <h3 class="text-base font-bold text-wv-text">{{ __('Estadísticas por juego') }}</h3>
+                    <h3 class="text-base font-bold text-wv-text">{{ __('EstadÃ�sticas por juego') }}</h3>
                     <span class="text-sm text-wv-text-secondary">{{ $games->count() }} {{ \Illuminate\Support\Str::plural('juego', $games->count()) }}</span>
                 </div>
                 @if ($perGame)
@@ -285,7 +285,7 @@
                                         $opponent = $g->home_team_id === $athlete->team_id ? $g->awayTeam : $g->homeTeam;
                                     @endphp
                                     <tr>
-                                        <td class="px-3 py-2 whitespace-nowrap text-wv-text-secondary">{{ $g->scheduled_at?->format('d/m/Y') ?? '—' }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-wv-text-secondary">{{ $g->scheduled_at?->format('d/m/Y') ?? 'â€”' }}</td>
                                         <td class="px-3 py-2 whitespace-nowrap text-wv-text">
                                             <a href="{{ route('games.scoreboard', $g) }}" class="hover:text-wv-accent">
                                                 @if ($g->home_team_id === $athlete->team_id)
@@ -314,11 +314,11 @@
                         {{ __('AVG por juego se calcula como H/AB del propio juego. S/B: strikes/balls lanzados.') }}
                     </p>
                 @else
-                    <p class="p-6 text-wv-text-secondary text-sm">{{ __('Este atleta aún no ha participado en juegos registrados.') }}</p>
+                    <p class="p-6 text-wv-text-secondary text-sm">{{ __('Este atleta aÃºn no ha participado en juegos registrados.') }}</p>
                 @endif
             </div>
 
-            <form action="{{ route('athletes.destroy', $athlete) }}" method="POST" class="mt-4 text-right" onsubmit="return confirm('¿Eliminar a «{{ $athlete->full_name }}»?');">
+            <form action="{{ route('athletes.destroy', $athlete) }}" method="POST" class="mt-4 text-right" data-confirm="'�Eliminar a �{{ $athlete->full_name }}�?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
                 <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar atleta') }}</button>
             </form>

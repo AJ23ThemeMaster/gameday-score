@@ -28,16 +28,16 @@
 
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Cédula / Documento') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->document_id ?? '—' }}</dd>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('CÃ�dula / Documento') }}</dt>
+                        <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->document_id ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Teléfono') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->phone ?? '—' }}</dd>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('TelÃ�fono') }}</dt>
+                        <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->phone ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3 sm:col-span-2">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Correo electrónico') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->email ?? '—' }}</dd>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Correo electrÃ³nico') }}</dt>
+                        <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->email ?? 'â€”' }}</dd>
                     </div>
                 </dl>
 
@@ -49,7 +49,7 @@
                 @endif
 
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
-                    {{ __('Creado') }}: {{ $scorekeeper->created_at->format('d/m/Y H:i') }} ·
+                    {{ __('Creado') }}: {{ $scorekeeper->created_at->format('d/m/Y H:i') }} Â·
                     {{ __('Actualizado') }}: {{ $scorekeeper->updated_at->format('d/m/Y H:i') }}
                 </div>
             </div>
@@ -57,7 +57,7 @@
             {{-- DISI-67: juegos recientes donde participo --}}
             @if (isset($recentGames) && $recentGames->count())
                 <div class="mt-4 bg-wv-surface border border-wv-border rounded-card p-6">
-                    <h3 class="text-sm font-bold text-wv-text mb-3">{{ __('Últimos juegos anotados') }} ({{ $recentGames->count() }})</h3>
+                    <h3 class="text-sm font-bold text-wv-text mb-3">{{ __('Ãšltimos juegos anotados') }} ({{ $recentGames->count() }})</h3>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-wv-border text-sm">
                             <thead class="bg-wv-surface-hover">
@@ -85,7 +85,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('scorekeepers.destroy', $scorekeeper) }}" method="POST" class="mt-4 text-right" onsubmit="return confirm('¿Eliminar al anotador «{{ $scorekeeper->full_name }}»?');">
+            <form action="{{ route('scorekeepers.destroy', $scorekeeper) }}" method="POST" class="mt-4 text-right" data-confirm="'�Eliminar al anotador �{{ $scorekeeper->full_name }}�?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
                 <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar anotador') }}</button>
             </form>

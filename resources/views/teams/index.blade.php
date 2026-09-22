@@ -27,7 +27,7 @@
                             @if (auth()->user()->isGestor())
                                 <p>{{ __('No tienes un equipo asignado. Contacta al administrador del sistema.') }}</p>
                             @else
-                                <p class="mb-4">{{ __('Aún no hay equipos registrados.') }}</p>
+                                <p class="mb-4">{{ __('AÃºn no hay equipos registrados.') }}</p>
                                 <a href="{{ route('teams.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Crear el primer equipo') }}</a>
                             @endif
                         @endauth
@@ -66,7 +66,7 @@
                                             @if ($team->league)
                                                 <a href="{{ route('leagues.show', $team->league) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $team->league->short_name ?? $team->league->name }}</a>
                                             @else
-                                                <span class="italic">—</span>
+                                                <span class="italic">â€”</span>
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $team->athletes_count }}</td>
@@ -84,7 +84,7 @@
                                                  el boton deshabilitado con tooltip explicativo. --}}
                                             @auth
                                                 @if (auth()->user()->isAdmin())
-                                                    <form action="{{ route('teams.destroy', $team) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar el equipo «{{ $team->name }}»?');">
+                                                    <form action="{{ route('teams.destroy', $team) }}" method="POST" class="inline" data-confirm="'�Eliminar el equipo �{{ $team->name }}�?'" data-confirm-danger="true" data-loader>
                                                         @csrf @method('DELETE')
                                                         <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                                     </form>

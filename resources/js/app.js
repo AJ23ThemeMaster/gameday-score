@@ -13,6 +13,15 @@ import Alpine from 'alpinejs';
 */
 import '@fontsource/material-symbols-outlined/400.css';
 
+/*
+  SwalHelper: wrapper de SweetAlert2 con tema dark WattVision.
+  Provee SwalHelper.alert / confirm / toast / loading / apiFetch /
+  bindFormHandlers / overrideNativeDialogs.
+  Importar el modulo ejecuta el bootstrap (bindFormHandlers + override
+  window.alert/confirm) cuando el DOM esta listo.
+*/
+import './swal-helper.js';
+
 window.Alpine = Alpine;
 
 Alpine.start();

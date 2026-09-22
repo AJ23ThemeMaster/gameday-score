@@ -17,7 +17,7 @@
             <div class="bg-wv-surface border border-wv-border rounded-card overflow-hidden">
                 @if ($stadiums->isEmpty())
                     <div class="p-10 text-center text-wv-text-secondary">
-                        <p class="mb-4">{{ __('Aún no hay estadios registrados.') }}</p>
+                        <p class="mb-4">{{ __('AÃºn no hay estadios registrados.') }}</p>
                         <a href="{{ route('stadiums.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Crear el primer estadio') }}</a>
                     </div>
                 @else
@@ -39,8 +39,8 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <a href="{{ route('stadiums.show', $st) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">{{ $st->name }}</a>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ trim(($st->city ?? '') . (($st->city && $st->state) ? ', ' : '') . ($st->state ?? ''), ', ') ?: '—' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text text-right">{{ $st->capacity ? number_format($st->capacity, 0, ',', '.') : '—' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ trim(($st->city ?? '') . (($st->city && $st->state) ? ', ' : '') . ($st->state ?? ''), ', ') ?: 'â€”' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text text-right">{{ $st->capacity ? number_format($st->capacity, 0, ',', '.') : 'â€”' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $st->games_count }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center">
                                             @if ($st->active)
@@ -51,7 +51,7 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <a href="{{ route('stadiums.edit', $st) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('stadiums.destroy', $st) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar el estadio «{{ $st->name }}»?');">
+                                            <form action="{{ route('stadiums.destroy', $st) }}" method="POST" class="inline" data-confirm="'�Eliminar el estadio �{{ $st->name }}�?'" data-confirm-danger="true" data-loader>
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                             </form>

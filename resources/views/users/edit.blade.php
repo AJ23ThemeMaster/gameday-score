@@ -13,7 +13,7 @@
                 @auth
                     @if (auth()->user()->canImpersonate() && $user->canBeImpersonated() && auth()->id() !== $user->id)
                         <a href="{{ route('impersonate', $user->id) }}"
-                           onclick="return confirm('{{ __('Vas a iniciar sesion como') }} «{{ $user->name }}». {{ __('Tus acciones quedaran registradas. Continuar?') }}');"
+                           onclick="event.preventDefault(); SwalHelper.confirm({ title: '{{ __('Vas a iniciar sesion como') }} «{{ $user->name }}». {{ __('Tus acciones quedaran registradas. Continuar?') }}', icon: 'warning', confirmText: '{{ __('Sí, continuar') }}' }).then(ok => { if (ok) window.location.href = this.href; }); return false;"
                            class="inline-flex items-center gap-2 px-4 py-2 border border-wv-accent text-wv-accent hover:bg-wv-accent hover:text-wv-text-on-accent text-sm font-semibold rounded-card transition">
                             <span class="material-symbols-outlined text-[18px]">switch_account</span>
                             {{ __('Iniciar sesion como') }}
