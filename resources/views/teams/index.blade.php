@@ -79,18 +79,16 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ route('teams.edit', $team) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            {{-- DISI-XXX: eliminar equipo es admin-only. Gestor ve
-                                                 el boton deshabilitado con tooltip explicativo. --}}
                                             @auth
-                                                @if (auth()->user()->isAdmin())
-                                                    <form action="{{ route('teams.destroy', $team) }}" method="POST" class="inline" data-confirm="'¿Eliminar el equipo «{{ $team->name }}»?'" data-confirm-danger="true" data-loader>
-                                                        @csrf @method('DELETE')
-                                                        <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
-                                                    </form>
-                                                @else
-                                                    <span class="text-wv-text-secondary cursor-not-allowed" title="{{ __('Solo el administrador puede eliminar un equipo.') }}">{{ __('Eliminar') }}</span>
-                                                @endif
+                                                {{-- DISI-XXX: eliminar equipo es admin-only. Para gestores
+                                                     se omite el boton (delete=null) en vez de mostrarlo
+                                                     deshabilitado. --}}
+                                                <x-action-buttons
+                                                    :show="route('teams.show', $team)"
+                                                    :edit="route('teams.edit', $team)"
+                                                    :delete="auth()->user()->isAdmin() ? route('teams.destroy', $team) : null"
+                                                    :deleteMessage="auth()->user()->isAdmin() ? __('¿Eliminar el equipo «:name»?', ['name' => $team->name]) : null"
+                                                />
                                             @endauth
                                         </td>
                                     </tr>
