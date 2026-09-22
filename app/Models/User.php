@@ -12,13 +12,54 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
+use Lab404\Impersonate\Models\Impersonate;
 use PragmaRX\Google2FA\Google2FA;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles, Impersonate;
+
+    /**
+     * Solo los administradores pueden iniciar una impersonacion.
+     * Bloquea tambien si ya esta impersonando (no se puede impersonar
+     * encadenado, lo haria el middleware ProtectFromImpersonation).
+     */
+    public function canImpersonate(): bool
+    {
+        return $this->isAdmin() && ! $this->isImpersonated();
+    }
+
+    /**
+     * Solo pueden ser impersonados los usuarios que:
+     *  - no son el mismo admin que inicia (no auto-impersonarse, lo bloquea
+     *    tambien ProtectFromImpersonation middleware)
+     *  - no son administradores (no escalada de privilegios: un admin nunca
+     *    entra como otro admin porque entonces no podriamos distinguir quien
+     *    hizo la accion)
+     */
+    public function canBeImpersonated(): bool
+    {
+        if ($this->isImpersonated()) {
+            return false; // un impersonado no puede ser objetivo de otra impersonacion
+        }
+        return ! $this->isAdmin();
+    }
+
+    /**
+     * Devuelve el admin original que inicio la impersonacion, o null.
+     * Helper de Blade: {{ auth()->user()->getImpersonator()->name }}.
+     * El trait del paquete NO expone este metodo; lo sacamos del manager.
+     */
+    public function getImpersonator(): ?\App\Models\User
+    {
+        $manager = app(\Lab404\Impersonate\Services\ImpersonateManager::class);
+        if (! $manager->isImpersonating()) {
+            return null;
+        }
+        return \App\Models\User::find($manager->getImpersonatorId());
+    }
 
     protected $fillable = [
         'name',

@@ -104,6 +104,19 @@ Route::middleware(['auth', '2fa.challenge'])->group(function () {
     Route::post('games/{game}/runs', [GameController::class, 'addRun'])->name('games.runs.add');
     Route::post('games/{game}/end-inning', [GameController::class, 'endInning'])->name('games.end-inning');
 
+    // DISI-X: lab404/laravel-impersonate. Solo accesible para usuarios con
+    // rol admin (controlado en User::canImpersonate / canBeImpersonated).
+    //
+    // No usamos Route::impersonate() (macro del paquete) porque mete las
+    // dos rutas en el mismo grupo de middleware. Aqui queremos:
+    //   - take: requiere admin (solo admins pueden INICIAR impersonacion)
+    //   - leave: requiere solo auth (un admin impersonando puede SALIR
+    //     aunque el usuario impersonado no sea admin)
+    // El controlador ya hace el resto de validaciones (canImpersonate,
+    // canBeImpersonated, no auto-impersonar, no encadenar).
+    Route::get('impersonate/take/{id}/{guardName?}', [\Lab404\Impersonate\Controllers\ImpersonateController::class, 'take'])->name('impersonate')->middleware(['auth:web', 'admin']);
+    Route::get('impersonate/leave', [\Lab404\Impersonate\Controllers\ImpersonateController::class, 'leave'])->name('impersonate.leave')->middleware(['auth:web']);
+
     // DISI-12: Nuevo scoreboard moderno (Fase 1: layout + live AJAX sin recargar)
     Route::get('games/{game}/scoreboard', [ScoreboardController::class, 'show'])->name('games.scoreboard');
     Route::get('games/{game}/scoreboard/poll', [ScoreboardController::class, 'poll'])->name('games.scoreboard.poll');

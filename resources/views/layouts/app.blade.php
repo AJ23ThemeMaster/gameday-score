@@ -50,6 +50,40 @@
         <div class="@unless ($wvExcluded) bg-wv-bg text-wv-text @else bg-gray-100 @endunless min-h-screen">
 
             {{--
+              Banner de impersonacion (lab404/laravel-impersonate).
+              Solo visible cuando el usuario actual esta impersonando a otro
+              (auth()->user()->isImpersonated()). Sticky arriba para que
+              siempre se vea mientras el admin opera como otro usuario.
+              Excluido de vistas WattVision excluidas (live/scoreboard/...)
+              porque esas usan layout propio; alli no hay sesion admin
+              porque los middlewares admin + 2fa.challenge ya bloquean
+              el acceso desde impersonacion.
+            --}}
+            @auth
+                @if (auth()->user()->isImpersonated())
+                    @php $impersonator = auth()->user()->getImpersonator(); @endphp
+                    <div class="sticky top-0 z-50 bg-wv-alert text-wv-text-on-alert">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="material-symbols-outlined text-[20px]">switch_account</span>
+                                <span class="font-semibold">
+                                    {{ __('Estás impersonando a') }} <strong>{{ auth()->user()->name }}</strong>
+                                    @if ($impersonator)
+                                        ({{ __('como') }} {{ $impersonator->name }})
+                                    @endif
+                                </span>
+                            </div>
+                            <a href="{{ route('impersonate.leave') }}"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-card bg-wv-bg/20 hover:bg-wv-bg/40 text-wv-text-on-alert text-xs font-semibold transition">
+                                <span class="material-symbols-outlined text-[16px]">logout</span>
+                                {{ __('Salir de impersonación') }}
+                            </a>
+                        </div>
+                    </div>
+                @endif
+            @endauth
+
+            {{--
               Nav global oculta en scoreboard/box-score/live (DISI-46) y tambien
               en el marcador publico para mantener consistencia: esas vistas
               tienen su propio header/breadcrumb.

@@ -2,7 +2,25 @@
     <x-slot name="header"><h2 class="font-semibold text-h-wv text-wv-text leading-tight">{{ __('Editar usuario') }}: {{ $user->name }}</h2></x-slot>
     <div class="py-8">
         <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
-            <div class="mb-4"><a href="{{ route('users.index') }}" class="text-sm text-wv-accent hover:text-wv-accent-hover">← {{ __('Volver al listado') }}</a></div>
+            <div class="mb-4 flex justify-between items-center">
+                <a href="{{ route('users.index') }}" class="text-sm text-wv-accent hover:text-wv-accent-hover">← {{ __('Volver al listado') }}</a>
+
+                {{-- Boton "Iniciar sesion como" solo para admins, cuando:
+                     - el usuario actual es admin y NO esta impersonando
+                     - el target NO es el mismo admin (no auto-impersonar)
+                     - el target NO es admin (sin escalada de privilegios)
+                     Lo expone el trait Lab404\Impersonate\Models\Impersonate. --}}
+                @auth
+                    @if (auth()->user()->canImpersonate() && $user->canBeImpersonated() && auth()->id() !== $user->id)
+                        <a href="{{ route('impersonate', $user->id) }}"
+                           onclick="return confirm('{{ __('Vas a iniciar sesion como') }} «{{ $user->name }}». {{ __('Tus acciones quedaran registradas. Continuar?') }}');"
+                           class="inline-flex items-center gap-2 px-4 py-2 border border-wv-accent text-wv-accent hover:bg-wv-accent hover:text-wv-text-on-accent text-sm font-semibold rounded-card transition">
+                            <span class="material-symbols-outlined text-[18px]">switch_account</span>
+                            {{ __('Iniciar sesion como') }}
+                        </a>
+                    @endif
+                @endauth
+            </div>
             @include('partials._flash')
 
             <div class="bg-wv-surface border border-wv-border rounded-card">
