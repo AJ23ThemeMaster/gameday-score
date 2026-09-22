@@ -44,11 +44,12 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $role->permissions_count ?? $role->permissions->count() }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $role->users_count ?? $role->users->count() }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ route('roles.edit', $role) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="inline" data-confirm="'¿Eliminar el rol «{{ $role->name }}»? Los usuarios con este rol quedarán sin rol asignado.'" data-confirm-danger="true" data-loader>
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
-                                            </form>
+                                            <x-action-buttons
+                                                :show="route('roles.show', $role)"
+                                                :edit="route('roles.edit', $role)"
+                                                :delete="route('roles.destroy', $role)"
+                                                :deleteMessage="__('¿Eliminar el rol «:name»? Los usuarios con este rol quedarán sin rol asignado.', ['name' => $role->name])"
+                                            />
                                         </td>
                                     </tr>
                                 @endforeach

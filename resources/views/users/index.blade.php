@@ -93,13 +93,14 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ route('users.edit', $u) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            @if ($u->id !== auth()->id())
-                                                <form action="{{ route('users.destroy', $u) }}" method="POST" class="inline" data-confirm="'¿Eliminar al usuario «{{ $u->name }}»?'" data-confirm-danger="true" data-loader>
-                                                    @csrf @method('DELETE')
-                                                    <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
-                                                </form>
-                                            @endif
+                                            {{-- DISI-XXX: no se permite eliminarse a si mismo.
+                                                 No hay vista users.show (solo edit), asi que
+                                                 omitimos el boton Ver. --}}
+                                            <x-action-buttons
+                                                :edit="route('users.edit', $u)"
+                                                :delete="$u->id !== auth()->id() ? route('users.destroy', $u) : null"
+                                                :deleteMessage="$u->id !== auth()->id() ? __('¿Eliminar al usuario «:name»?', ['name' => $u->name]) : null"
+                                            />
                                         </td>
                                     </tr>
                                 @endforeach
