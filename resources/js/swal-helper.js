@@ -221,37 +221,24 @@ class SwalHelperClass {
     }
 
     /**
-     * Adjunta listeners globales para forms con data-confirm / data-loader.
-     * Llamar una sola vez en el bootstrap de la app.
+     * Adjunta un listener global unificado para forms con data-confirm /
+     * data-loader / data-confirm + data-loader.
+     *
+     * Bug fix 2026-09-22: antes habia DOS listeners (uno para confirm,
+     * otro para loader) que se disparaban ambos al hacer submit. El de
+     * loader cambiaba el boton a "Guardando..." antes de que el usuario
+     * confirmara, y si cancelaba el swal el boton quedaba stuck.
+     *
+     * Ahora es un solo listener que:
+     *  - Si data-confirm: previene submit, muestra swal2, y SOLO si el
+     *    usuario confirma aplica el loader (si data-loader) y reenvia.
+     *  - Si solo data-loader (sin confirm): aplica el loader directo.
+     *  - Si re-envio (flag _confirmed=1): no hace nada (deja pasar).
+     *
+     * Llamar una sola vez en el bootstrap.
      */
     bindFormHandlers() {
-        // data-confirm: pide confirmacion antes de submit
-        document.addEventListener('submit', (e) => {
-            const form = e.target;
-            if (!(form instanceof HTMLFormElement)) return;
-            const msg = form.dataset.confirm;
-            if (!msg) return;
-            e.preventDefault();
-            this.confirm({
-                title: msg,
-                icon: 'warning',
-                danger: form.dataset.confirmDanger === 'true',
-                confirmText: form.dataset.confirmText || 'Sí, continuar',
-            }).then((ok) => {
-                if (ok) {
-                    // Re-disparar submit omitiendo el handler (flag).
-                    form.dataset._confirmed = '1';
-                    form.submit();
-                }
-            });
-        }, true);
-
-        // data-loader: deshabilita boton submit + cambia texto
-        document.addEventListener('submit', (e) => {
-            const form = e.target;
-            if (!(form instanceof HTMLFormElement)) return;
-            if (!form.dataset.loader && !form.hasAttribute('data-loader')) return;
-            if (form.dataset._confirmed === '1') return;
+        const applyLoader = (form) => {
             const full = form.dataset.loader === 'full';
             const btn = form.querySelector('button[type="submit"], input[type="submit"]');
             if (btn) {
@@ -260,7 +247,35 @@ class SwalHelperClass {
                 btn.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin me-2"></span>' + (btn.dataset.loadingText || 'Guardando...');
             }
             if (full) this.loading('Guardando...');
-        });
+        };
+
+        document.addEventListener('submit', (e) => {
+            const form = e.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            if (form.dataset._confirmed === '1') return;
+
+            const msg = form.dataset.confirm;
+            const hasLoader = form.dataset.loader !== undefined || form.hasAttribute('data-loader');
+
+            if (msg) {
+                // Confirm + (opcional) loader: solo loader si confirma.
+                e.preventDefault();
+                this.confirm({
+                    title: msg,
+                    icon: 'warning',
+                    danger: form.dataset.confirmDanger === 'true',
+                    confirmText: form.dataset.confirmText || 'Sí, continuar',
+                }).then((ok) => {
+                    if (!ok) return; // usuario cancelo: no tocamos el boton
+                    if (hasLoader) applyLoader(form);
+                    form.dataset._confirmed = '1';
+                    form.submit();
+                });
+            } else if (hasLoader) {
+                // Solo loader (sin confirm): aplicar y dejar pasar.
+                applyLoader(form);
+            }
+        }, true);
     }
 
     /**
