@@ -96,6 +96,7 @@ Route::middleware(['auth', '2fa.challenge'])->group(function () {
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
     // DISI-9: Scoreboard en vivo (control del juego por el owner)
     Route::get('games/{game}/live', [GameController::class, 'live'])->name('games.live');

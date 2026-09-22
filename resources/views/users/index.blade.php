@@ -60,8 +60,9 @@
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            @if ($u->role)
-                                                <a href="{{ route('roles.show', $u->role) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $u->role->display_name ?? $u->role->name }}</a>
+                                            @php $primaryRole = $u->roles->first(); @endphp
+                                            @if ($primaryRole)
+                                                <a href="{{ route('roles.show', $primaryRole) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $primaryRole->name }}</a>
                                             @else
                                                 <span class="text-wv-text-secondary italic">—</span>
                                             @endif

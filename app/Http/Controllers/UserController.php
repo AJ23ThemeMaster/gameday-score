@@ -61,4 +61,39 @@ class UserController extends Controller
             ->route('users.edit', $user)
             ->with('status', "Usuario «{$user->name}» actualizado correctamente.");
     }
+
+    /**
+     * Eliminar un usuario del sistema.
+     *
+     * Guardas de seguridad:
+     *  - No se permite eliminarse a si mismo (boton oculto en la UI ademas).
+     *  - No se permite eliminar al ultimo administrador del sistema,
+     *    para no dejar el sistema sin owner.
+     */
+    public function destroy(User $user): RedirectResponse
+    {
+        // 1. Evitar auto-eliminacion
+        if ($user->id === auth()->id()) {
+            return redirect()
+                ->route('users.index')
+                ->with('error', 'No puedes eliminar tu propio usuario desde esta pantalla.');
+        }
+
+        // 2. Evitar eliminar al ultimo admin
+        if ($user->isAdmin()) {
+            $adminsCount = User::role('admin')->count();
+            if ($adminsCount <= 1) {
+                return redirect()
+                    ->route('users.index')
+                    ->with('error', "No puedes eliminar al único administrador del sistema.");
+            }
+        }
+
+        $name = $user->name;
+        $user->delete();
+
+        return redirect()
+            ->route('users.index')
+            ->with('status', "Usuario «{$name}» eliminado correctamente.");
+    }
 }

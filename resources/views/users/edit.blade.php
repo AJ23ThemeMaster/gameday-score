@@ -31,7 +31,7 @@
                                 <option value="">— {{ __('Sin rol') }} —</option>
                                 @foreach ($roles as $r)
                                     <option value="{{ $r->id }}" {{ (string) old('role_id', $user->role_id ?? '') === (string) $r->id ? 'selected' : '' }}>
-                                        {{ $r->display_name ?? $r->name }}
+                                        {{ $r->name }}
                                     </option>
                                 @endforeach
                             </select>
