@@ -223,6 +223,54 @@
                     </div>
                 @endif
 
+                {{-- Entrenadores del equipo --}}
+                <div class="mt-6 pt-6 border-t border-wv-border">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-sm font-semibold text-wv-text">
+                            {{ __('Entrenadores') }}
+                            <span class="text-wv-text-secondary font-normal">({{ $team->coaches_count ?? 0 }})</span>
+                        </h4>
+                        <a href="{{ route('teams.coaches.index', $team) }}"
+                           class="text-xs text-wv-accent hover:text-wv-accent-hover font-semibold">
+                            {{ __('Gestionar entrenadores') }} →
+                        </a>
+                    </div>
+
+                    @php
+                        $coachesList = $team->coaches()->orderBy('last_name')->orderBy('first_name')->limit(5)->get();
+                    @endphp
+
+                    @if ($coachesList->isEmpty())
+                        <p class="text-sm text-wv-text-secondary italic">{{ __('Aún no hay entrenadores registrados.') }}</p>
+                    @else
+                        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            @foreach ($coachesList as $c)
+                                <li class="bg-wv-bg border border-wv-border rounded-card p-3 flex items-center gap-3">
+                                    <div class="flex-1 min-w-0">
+                                        <a href="{{ route('teams.coaches.show', [$team, $c]) }}" class="text-sm font-medium text-wv-text hover:text-wv-accent truncate block">
+                                            {{ $c->full_name }}
+                                        </a>
+                                        @if ($c->role)
+                                            <p class="text-xs text-wv-text-secondary">{{ $c->role }}</p>
+                                        @endif
+                                    </div>
+                                    @if ($c->active)
+                                        <span class="inline-block w-2 h-2 rounded-full bg-wv-success flex-shrink-0" title="{{ __('Activo') }}"></span>
+                                    @else
+                                        <span class="inline-block w-2 h-2 rounded-full bg-wv-text-secondary flex-shrink-0" title="{{ __('Inactivo') }}"></span>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ul>
+                        @if (($team->coaches_count ?? 0) > 5)
+                            <p class="text-xs text-wv-text-secondary mt-2">
+                                {{ __('Mostrando 5 de :total. Ver todos en', ['total' => $team->coaches_count]) }}
+                                <a href="{{ route('teams.coaches.index', $team) }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Entrenadores') }}</a>.
+                            </p>
+                        @endif
+                    @endif
+                </div>
+
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
                     {{ __('Creado') }}: {{ $team->created_at->format('d/m/Y H:i') }} Â·
                     {{ __('Actualizado') }}: {{ $team->updated_at->format('d/m/Y H:i') }}

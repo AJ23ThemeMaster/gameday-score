@@ -99,7 +99,7 @@ class TeamController extends Controller
             'league',
             'tournaments' => fn ($q) => $q->orderBy('name'),
         ]);
-        $team->loadCount(['athletes', 'homeGames', 'awayGames', 'categories', 'tournaments']);
+        $team->loadCount(['athletes', 'homeGames', 'awayGames', 'categories', 'tournaments', 'coaches']);
 
         // Filtros del roster (todos opcionales)
         $filters = [

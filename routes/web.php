@@ -84,6 +84,11 @@ Route::middleware(['auth', '2fa.challenge'])->group(function () {
     Route::resource('categories', CategoryController::class);
     Route::resource('stadiums', StadiumController::class);
     Route::resource('teams', TeamController::class);
+    // CRUD de entrenadores anidado por equipo: teams/{team}/coaches/...
+    // Usamos el FQCN con \\ inicial para que Laravel NO aplique el
+    // prefijo App\Http\Controllers (que haria que la ruta se registre
+    // como 'CoachController@index' en vez de 'App\Http\Controllers\CoachController@index').
+    Route::resource('teams.coaches', \App\Http\Controllers\CoachController::class);
     Route::resource('athletes', AthleteController::class);
     Route::resource('scorekeepers', ScorekeeperController::class);
     Route::resource('referees', RefereeController::class);

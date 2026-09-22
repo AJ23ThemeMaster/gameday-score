@@ -44,6 +44,11 @@ class Team extends Model
         return $this->hasMany(Athlete::class);
     }
 
+    public function coaches(): HasMany
+    {
+        return $this->hasMany(Coach::class);
+    }
+
     public function categories(): HasMany
     {
         return $this->hasMany(Category::class);
