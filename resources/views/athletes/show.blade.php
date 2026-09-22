@@ -28,7 +28,7 @@
                 </div>
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('CÃ�dula') }}</dt>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Cédula') }}</dt>
                         <dd class="text-base font-medium text-wv-text">{{ $athlete->document_id ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
@@ -49,7 +49,7 @@
                         </dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('CategorÃ�a') }}</dt>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Categoría') }}</dt>
                         <dd class="text-base font-medium text-wv-text">
                             @if ($athlete->category)
                                 <a href="{{ route('categories.show', $athlete->category) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $athlete->category->name }}</a>
@@ -124,7 +124,7 @@
                 @else
                     <div class="flex items-center gap-3 text-sm text-wv-text-secondary">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-wv-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        <span>{{ __('No hay documento cargado. Puedes subir la cÃ�dula o acta de nacimiento al editar el atleta.') }}</span>
+                        <span>{{ __('No hay documento cargado. Puedes subir la cédula o acta de nacimiento al editar el atleta.') }}</span>
                     </div>
                 @endif
             </div>
@@ -134,7 +134,7 @@
                 <div class="bg-wv-surface border border-wv-border rounded-card p-5">
                     <h3 class="text-sm font-bold text-wv-text mb-3 flex items-center gap-2">
                         <span class="inline-block w-2 h-2 bg-wv-accent rounded-full"></span>
-                        {{ __('EstadÃ�sticas como bateador') }}
+                        {{ __('Estadísticas como bateador') }}
                     </h3>
                     @if ($careerBatting['at_bats'] > 0 || $careerBatting['hits'] > 0)
                         <dl class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
@@ -153,7 +153,7 @@
                 <div class="bg-wv-surface border border-wv-border rounded-card p-5">
                     <h3 class="text-sm font-bold text-wv-text mb-3 flex items-center gap-2">
                         <span class="inline-block w-2 h-2 bg-wv-accent rounded-full"></span>
-                        {{ __('EstadÃ�sticas como lanzador') }}
+                        {{ __('Estadísticas como lanzador') }}
                     </h3>
                     @if ($careerPitching['pitches'] > 0 || $careerPitching['strikeouts'] > 0)
                         <dl class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
@@ -181,7 +181,7 @@
             {{-- DISI-79: stats por torneo --}}
             <div class="mt-6 bg-wv-surface border border-wv-border rounded-card">
                 <div class="p-5 border-b border-wv-border flex justify-between items-center">
-                    <h3 class="text-base font-bold text-wv-text">{{ __('EstadÃ�sticas por torneo') }}</h3>
+                    <h3 class="text-base font-bold text-wv-text">{{ __('Estadísticas por torneo') }}</h3>
                     <span class="text-sm text-wv-text-secondary">{{ $perTournament->count() }} {{ \Illuminate\Support\Str::plural('torneo', $perTournament->count()) }}</span>
                 </div>
                 @if ($perTournament->count() > 0)
@@ -248,7 +248,7 @@
             {{-- DISI-62: stats per game --}}
             <div class="mt-6 bg-wv-surface border border-wv-border rounded-card">
                 <div class="p-5 border-b border-wv-border flex justify-between items-center">
-                    <h3 class="text-base font-bold text-wv-text">{{ __('EstadÃ�sticas por juego') }}</h3>
+                    <h3 class="text-base font-bold text-wv-text">{{ __('Estadísticas por juego') }}</h3>
                     <span class="text-sm text-wv-text-secondary">{{ $games->count() }} {{ \Illuminate\Support\Str::plural('juego', $games->count()) }}</span>
                 </div>
                 @if ($perGame)
@@ -318,7 +318,7 @@
                 @endif
             </div>
 
-            <form action="{{ route('athletes.destroy', $athlete) }}" method="POST" class="mt-4 text-right" data-confirm="'�Eliminar a �{{ $athlete->full_name }}�?'" data-confirm-danger="true" data-loader>
+            <form action="{{ route('athletes.destroy', $athlete) }}" method="POST" class="mt-4 text-right" data-confirm="'¿Eliminar a «{{ $athlete->full_name }}»?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
                 <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar atleta') }}</button>
             </form>

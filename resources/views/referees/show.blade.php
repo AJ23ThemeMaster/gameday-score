@@ -28,11 +28,11 @@
 
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('CÃ�dula / Documento') }}</dt>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Cédula / Documento') }}</dt>
                         <dd class="text-base font-medium text-wv-text">{{ $referee->document_id ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('TelÃ�fono') }}</dt>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Teléfono') }}</dt>
                         <dd class="text-base font-medium text-wv-text">{{ $referee->phone ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
@@ -58,9 +58,9 @@
                 </div>
             </div>
 
-            <form action="{{ route('referees.destroy', $referee) }}" method="POST" class="mt-4 text-right" data-confirm="'�Eliminar al Ã�rbitro �{{ $referee->full_name }}�?'" data-confirm-danger="true" data-loader>
+            <form action="{{ route('referees.destroy', $referee) }}" method="POST" class="mt-4 text-right" data-confirm="'¿Eliminar al árbitro «{{ $referee->full_name }}»?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
-                <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar Ã�rbitro') }}</button>
+                <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar árbitro') }}</button>
             </form>
         </div>
     </div>

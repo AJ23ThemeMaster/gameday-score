@@ -37,7 +37,7 @@
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Torneo') }}</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Liga') }}</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Categor√É≠a') }}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Categor√≠a') }}</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Temporada') }}</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Juegos') }}</th>
                                     <th class="px-6 py-3 text-right text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Acciones') }}</th>
@@ -67,7 +67,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <a href="{{ route('tournaments.edit', $t) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
                                             <form action="{{ route('tournaments.destroy', $t) }}" method="POST" class="inline"
-                                                  data-confirm="'øEliminar el torneo ´{{ $t->name }}ª?'" data-confirm-danger="true" data-loader>
+                                                  data-confirm="'¬øEliminar el torneo ¬´{{ $t->name }}¬ª?'" data-confirm-danger="true" data-loader>
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>

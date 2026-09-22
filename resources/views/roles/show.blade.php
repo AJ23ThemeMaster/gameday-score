@@ -77,7 +77,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="mt-4 text-right" data-confirm="'¿Eliminar el rol «{{ $role->name }}»?'" data-confirm-danger="true" data-loader>
+            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="mt-4 text-right" data-confirm="'Â¿Eliminar el rol Â«{{ $role->name }}Â»?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
                 <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar rol') }}</button>
             </form>

@@ -28,11 +28,11 @@
 
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('CÃ�dula / Documento') }}</dt>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Cédula / Documento') }}</dt>
                         <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->document_id ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('TelÃ�fono') }}</dt>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Teléfono') }}</dt>
                         <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->phone ?? 'â€”' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3 sm:col-span-2">
@@ -85,7 +85,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('scorekeepers.destroy', $scorekeeper) }}" method="POST" class="mt-4 text-right" data-confirm="'�Eliminar al anotador �{{ $scorekeeper->full_name }}�?'" data-confirm-danger="true" data-loader>
+            <form action="{{ route('scorekeepers.destroy', $scorekeeper) }}" method="POST" class="mt-4 text-right" data-confirm="'¿Eliminar al anotador «{{ $scorekeeper->full_name }}»?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
                 <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar anotador') }}</button>
             </form>

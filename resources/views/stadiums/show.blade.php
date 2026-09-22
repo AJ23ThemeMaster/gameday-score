@@ -57,7 +57,7 @@
                 </div>
             </div>
 
-            <form action="{{ route('stadiums.destroy', $stadium) }}" method="POST" class="mt-4 text-right" data-confirm="'¿Eliminar el estadio «{{ $stadium->name }}»?'" data-confirm-danger="true" data-loader>
+            <form action="{{ route('stadiums.destroy', $stadium) }}" method="POST" class="mt-4 text-right" data-confirm="'Â¿Eliminar el estadio Â«{{ $stadium->name }}Â»?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
                 <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar estadio') }}</button>
             </form>

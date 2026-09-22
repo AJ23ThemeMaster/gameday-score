@@ -84,7 +84,7 @@
                                                  el boton deshabilitado con tooltip explicativo. --}}
                                             @auth
                                                 @if (auth()->user()->isAdmin())
-                                                    <form action="{{ route('teams.destroy', $team) }}" method="POST" class="inline" data-confirm="'¿Eliminar el equipo «{{ $team->name }}»?'" data-confirm-danger="true" data-loader>
+                                                    <form action="{{ route('teams.destroy', $team) }}" method="POST" class="inline" data-confirm="'Â¿Eliminar el equipo Â«{{ $team->name }}Â»?'" data-confirm-danger="true" data-loader>
                                                         @csrf @method('DELETE')
                                                         <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                                     </form>

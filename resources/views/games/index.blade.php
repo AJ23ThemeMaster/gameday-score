@@ -40,7 +40,7 @@
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Fecha') }}</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Enfrentamiento') }}</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('CategorÃ�a / Estadio') }}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Categoría / Estadio') }}</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Estado') }}</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('PÃºblico') }}</th>
                                     <th class="px-6 py-3 text-right text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Acciones') }}</th>
@@ -94,7 +94,7 @@
                                                 <a href="{{ route('games.scoreboard', $g) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('En vivo') }}</a>
                                             @endif
                                             <a href="{{ route('games.edit', $g) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('games.destroy', $g) }}" method="POST" class="inline" data-confirm="'�Eliminar el juego?'" data-confirm-danger="true" data-loader>
+                                            <form action="{{ route('games.destroy', $g) }}" method="POST" class="inline" data-confirm="'¿Eliminar el juego?'" data-confirm-danger="true" data-loader>
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                             </form>

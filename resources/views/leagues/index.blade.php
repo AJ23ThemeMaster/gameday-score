@@ -76,7 +76,7 @@
                                         {{ __('Editar') }}
                                     </a>
                                     <form action="{{ route('leagues.destroy', $league) }}" method="POST" class="inline"
-                                          data-confirm="'¿Eliminar la liga «{{ $league->name }}»? Si tiene torneos o juegos asociados, no se podrÃƒ¡ eliminar.'" data-confirm-danger="true" data-loader>
+                                          data-confirm="'Â¿Eliminar la liga Â«{{ $league->name }}Â»? Si tiene torneos o juegos asociados, no se podrÃ¡ eliminar.'" data-confirm-danger="true" data-loader>
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-wv-alert hover:text-wv-alert-hover font-medium">

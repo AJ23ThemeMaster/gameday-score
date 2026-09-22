@@ -95,7 +95,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <a href="{{ route('users.edit', $u) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
                                             @if ($u->id !== auth()->id())
-                                                <form action="{{ route('users.destroy', $u) }}" method="POST" class="inline" data-confirm="'¿Eliminar al usuario «{{ $u->name }}»?'" data-confirm-danger="true" data-loader>
+                                                <form action="{{ route('users.destroy', $u) }}" method="POST" class="inline" data-confirm="'Â¿Eliminar al usuario Â«{{ $u->name }}Â»?'" data-confirm-danger="true" data-loader>
                                                     @csrf @method('DELETE')
                                                     <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                                 </form>

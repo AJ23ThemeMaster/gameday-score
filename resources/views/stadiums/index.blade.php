@@ -51,7 +51,7 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <a href="{{ route('stadiums.edit', $st) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('stadiums.destroy', $st) }}" method="POST" class="inline" data-confirm="'¿Eliminar el estadio «{{ $st->name }}»?'" data-confirm-danger="true" data-loader>
+                                            <form action="{{ route('stadiums.destroy', $st) }}" method="POST" class="inline" data-confirm="'Â¿Eliminar el estadio Â«{{ $st->name }}Â»?'" data-confirm-danger="true" data-loader>
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                             </form>

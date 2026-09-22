@@ -229,7 +229,7 @@
                 </div>
             </div>
 
-            <form action="{{ route('teams.destroy', $team) }}" method="POST" class="mt-4 text-right" data-confirm="'¿Eliminar el equipo «{{ $team->name }}»?'" data-confirm-danger="true" data-loader>
+            <form action="{{ route('teams.destroy', $team) }}" method="POST" class="mt-4 text-right" data-confirm="'Â¿Eliminar el equipo Â«{{ $team->name }}Â»?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
                 <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar equipo') }}</button>
             </form>

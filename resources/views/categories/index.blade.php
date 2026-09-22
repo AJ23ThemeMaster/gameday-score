@@ -2,11 +2,11 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <div>
-                <h2 class="font-semibold text-h-wv text-wv-text leading-tight">{{ __('CategorÃ�as') }}</h2>
-                <p class="text-sm text-wv-text-secondary mt-1">{{ __('Reglas por categorÃ�a (innings, nocaut, pitch limit).') }}</p>
+                <h2 class="font-semibold text-h-wv text-wv-text leading-tight">{{ __('Categorías') }}</h2>
+                <p class="text-sm text-wv-text-secondary mt-1">{{ __('Reglas por categoría (innings, nocaut, pitch limit).') }}</p>
             </div>
             <a href="{{ route('categories.create') }}" class="inline-flex items-center px-4 py-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-sm font-semibold rounded-card transition">
-                + {{ __('Nueva categorÃ�a') }}
+                + {{ __('Nueva categoría') }}
             </a>
         </div>
     </x-slot>
@@ -17,8 +17,8 @@
             <div class="bg-wv-surface border border-wv-border rounded-card overflow-hidden">
                 @if ($categories->isEmpty())
                     <div class="p-10 text-center text-wv-text-secondary">
-                        <p class="mb-4">{{ __('AÃºn no hay categorÃ�as registradas.') }}</p>
-                        <a href="{{ route('categories.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Crear la primera categorÃ�a') }}</a>
+                        <p class="mb-4">{{ __('AÃºn no hay categorías registradas.') }}</p>
+                        <a href="{{ route('categories.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Crear la primera categoría') }}</a>
                     </div>
                 @else
                     <div class="overflow-x-auto">
@@ -57,7 +57,7 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <a href="{{ route('categories.edit', $cat) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('categories.destroy', $cat) }}" method="POST" class="inline" data-confirm="'�Eliminar la categorÃ�a �{{ $cat->name }}�?'" data-confirm-danger="true" data-loader>
+                                            <form action="{{ route('categories.destroy', $cat) }}" method="POST" class="inline" data-confirm="'¿Eliminar la categoría «{{ $cat->name }}»?'" data-confirm-danger="true" data-loader>
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                             </form>

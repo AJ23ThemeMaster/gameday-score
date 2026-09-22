@@ -77,7 +77,7 @@
                                     class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-card bg-wv-accent-soft text-wv-accent hover:bg-wv-accent hover:text-wv-text-on-accent transition">
                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V7a2 2 0 012-2m-2 8h2m-2 0v2a2 2 0 002 2h2a2 2 0 002-2v-2"/></svg>
                                 <span x-show="!copied">{{ __('Copiar enlace') }}</span>
-                                <span x-show="copied" x-cloak>{{ __('�Copiado!') }}</span>
+                                <span x-show="copied" x-cloak>{{ __('¡Copiado!') }}</span>
                             </button>
                             <a href="{{ $game->public_url }}" target="_blank" class="text-xs text-wv-accent hover:text-wv-accent-hover underline">
                                 {{ __('Ver enlace pÃºblico') }} â†—
@@ -89,7 +89,7 @@
                 {{-- Datos --}}
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3"><dt class="text-wv-text-secondary text-xs uppercase">{{ __('Fecha y hora') }}</dt><dd class="text-base font-medium text-wv-text">{{ $game->scheduled_at->format('d/m/Y H:i') }}</dd></div>
-                    <div class="bg-wv-bg border border-wv-border rounded-card p-3"><dt class="text-wv-text-secondary text-xs uppercase">{{ __('CategorÃ�a') }}</dt><dd class="text-base font-medium text-wv-text">{{ $game->category->name ?? 'â€”' }}</dd></div>
+                    <div class="bg-wv-bg border border-wv-border rounded-card p-3"><dt class="text-wv-text-secondary text-xs uppercase">{{ __('Categoría') }}</dt><dd class="text-base font-medium text-wv-text">{{ $game->category->name ?? 'â€”' }}</dd></div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3"><dt class="text-wv-text-secondary text-xs uppercase">{{ __('Estadio') }}</dt><dd class="text-base font-medium text-wv-text">{{ $game->stadium->name ?? 'â€”' }}</dd></div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3"><dt class="text-wv-text-secondary text-xs uppercase">{{ __('Innings / Mercy') }}</dt><dd class="text-base font-medium text-wv-text">{{ $game->innings_count }} innings, -{{ $game->mercy_rule_difference }} en in. {{ $game->mercy_rule_inning }}</dd></div>
                 </dl>
@@ -138,7 +138,7 @@
                 </div>
             </div>
 
-            <form action="{{ route('games.destroy', $game) }}" method="POST" class="mt-4 text-right" data-confirm="'�Eliminar este juego?'" data-confirm-danger="true" data-loader>
+            <form action="{{ route('games.destroy', $game) }}" method="POST" class="mt-4 text-right" data-confirm="'¿Eliminar este juego?'" data-confirm-danger="true" data-loader>
                 @csrf @method('DELETE')
                 <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar juego') }}</button>
             </form>

@@ -3,10 +3,10 @@
         <div class="flex justify-between items-center">
             <div>
                 <h2 class="font-semibold text-h-wv text-wv-text leading-tight">{{ __('Ãrbitros') }}</h2>
-                <p class="text-sm text-wv-text-secondary mt-1">{{ __('Lista de Ã�rbitros disponibles para asignar a juegos.') }}</p>
+                <p class="text-sm text-wv-text-secondary mt-1">{{ __('Lista de árbitros disponibles para asignar a juegos.') }}</p>
             </div>
             <a href="{{ route('referees.create') }}" class="inline-flex items-center px-4 py-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-sm font-semibold rounded-card transition">
-                + {{ __('Nuevo Ã�rbitro') }}
+                + {{ __('Nuevo árbitro') }}
             </a>
         </div>
     </x-slot>
@@ -30,8 +30,8 @@
             <div class="bg-wv-surface border border-wv-border rounded-card overflow-hidden">
                 @if ($referees->isEmpty())
                     <div class="p-10 text-center text-wv-text-secondary">
-                        <p class="mb-4">{{ __('AÃºn no hay Ã�rbitros registrados.') }}</p>
-                        <a href="{{ route('referees.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Registrar el primer Ã�rbitro') }}</a>
+                        <p class="mb-4">{{ __('AÃºn no hay árbitros registrados.') }}</p>
+                        <a href="{{ route('referees.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Registrar el primer árbitro') }}</a>
                     </div>
                 @else
                     <div class="overflow-x-auto">
@@ -74,7 +74,7 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <a href="{{ route('referees.edit', $rf) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('referees.destroy', $rf) }}" method="POST" class="inline" data-confirm="'�Eliminar al Ã�rbitro �{{ $rf->full_name }}�?'" data-confirm-danger="true" data-loader>
+                                            <form action="{{ route('referees.destroy', $rf) }}" method="POST" class="inline" data-confirm="'¿Eliminar al árbitro «{{ $rf->full_name }}»?'" data-confirm-danger="true" data-loader>
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                             </form>

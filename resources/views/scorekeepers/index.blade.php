@@ -42,7 +42,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Foto') }}</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Nombre') }}</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Documento') }}</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Tel√É©fono') }}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Tel√©fono') }}</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Juegos') }}</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Estado') }}</th>
                                     <th class="px-6 py-3 text-right text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Acciones') }}</th>
@@ -75,7 +75,7 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <a href="{{ route('scorekeepers.edit', $sk) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('scorekeepers.destroy', $sk) }}" method="POST" class="inline" data-confirm="'øEliminar al anotador ´{{ $sk->full_name }}ª?'" data-confirm-danger="true" data-loader>
+                                            <form action="{{ route('scorekeepers.destroy', $sk) }}" method="POST" class="inline" data-confirm="'¬øEliminar al anotador ¬´{{ $sk->full_name }}¬ª?'" data-confirm-danger="true" data-loader>
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                             </form>
