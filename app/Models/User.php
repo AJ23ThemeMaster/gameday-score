@@ -32,19 +32,20 @@ class User extends Authenticatable
     }
 
     /**
-     * Solo pueden ser impersonados los usuarios que:
-     *  - no son el mismo admin que inicia (no auto-impersonarse, lo bloquea
-     *    tambien ProtectFromImpersonation middleware)
-     *  - no son administradores (no escalada de privilegios: un admin nunca
-     *    entra como otro admin porque entonces no podriamos distinguir quien
-     *    hizo la accion)
+     * Cualquier usuario (incluso otro admin) puede ser impersonado,
+     * excepto:
+     *  - si ya esta impersonando (no objetivo de doble impersonacion)
+     *  - si es el mismo admin que inicia (lo bloquea el paquete via
+     *    identificador de auth en ImpersonateController::take)
+     *
+     * Aunque admins pueden impersonarse entre si, el listener
+     * LogImpersonation escribe a log cada TakeImpersonation / Leave
+     * con impersonator_id + target_id + ip, para mantener trazabilidad
+     * de quien origino la accion.
      */
     public function canBeImpersonated(): bool
     {
-        if ($this->isImpersonated()) {
-            return false; // un impersonado no puede ser objetivo de otra impersonacion
-        }
-        return ! $this->isAdmin();
+        return ! $this->isImpersonated();
     }
 
     /**

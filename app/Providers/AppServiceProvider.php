@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Lab404\Impersonate\Events\LeaveImpersonation;
+use Lab404\Impersonate\Events\TakeImpersonation;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -51,5 +54,11 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('score any game', function (User $user) {
             return $user->hasRole('admin');
         });
+
+        // DISI-X: audit log de impersonaciones. Cada Take / Leave queda
+        // registrado con impersonator + target + ip en storage/logs/.
+        // Importante porque se permite admin->admin desde este commit.
+        Event::listen(TakeImpersonation::class, [\App\Listeners\LogImpersonation::class, 'handleTake']);
+        Event::listen(LeaveImpersonation::class, [\App\Listeners\LogImpersonation::class, 'handleLeave']);
     }
 }
