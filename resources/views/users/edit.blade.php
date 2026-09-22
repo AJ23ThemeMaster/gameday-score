@@ -24,18 +24,43 @@
                             <x-input-error :messages="$errors->get('email')" class="mt-2" />
                         </div>
 
+                        {{-- Roles del usuario.
+                             Enviamos `roles[]` como array de NOMBRES (no ids).
+                             El UserController::update hace syncRoles($roles) y la
+                             validacion UpdateUserRolesRequest::rules exige que cada
+                             valor exista en la tabla roles por name. El original
+                             af28aee ya usaba este patron (commit d24384d lo
+                             reescribio con un <select name="role_id"> que no
+                             encajaba con el controller -> se quitaban todos los
+                             roles en silencio al guardar). --}}
                         <div>
-                            <x-input-label for="role_id" :value="__('Rol')" />
-                            <select id="role_id" name="role_id"
-                                    class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
-                                <option value="">— {{ __('Sin rol') }} —</option>
-                                @foreach ($roles as $r)
-                                    <option value="{{ $r->id }}" {{ (string) old('role_id', $user->role_id ?? '') === (string) $r->id ? 'selected' : '' }}>
-                                        {{ $r->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <x-input-error :messages="$errors->get('role_id')" class="mt-2" />
+                            <x-input-label :value="__('Roles del usuario')" />
+                            <p class="mt-1 text-xs text-wv-text-secondary mb-2">
+                                {{ __('Marca los roles que tendrá este usuario. Los permisos se heredan de los roles asignados.') }}
+                            </p>
+
+                            @if ($roles->isEmpty())
+                                <div class="text-sm text-wv-alert border border-wv-alert/40 bg-wv-alert/10 rounded-md p-3">
+                                    {{ __('No hay roles registrados. Crea al menos uno desde') }}
+                                    <a href="{{ route('roles.index') }}" class="underline text-wv-accent">{{ __('Roles y permisos') }}</a>.
+                                </div>
+                            @else
+                                <div class="space-y-2 border border-wv-border rounded-md p-3 bg-wv-bg">
+                                    @foreach ($roles as $r)
+                                        <label class="flex items-center gap-3 bg-wv-surface px-3 py-2 rounded border border-wv-border hover:border-wv-accent/60 cursor-pointer transition">
+                                            <input type="checkbox" name="roles[]" value="{{ $r->name }}"
+                                                   {{ in_array($r->name, old('roles', $assigned), true) ? 'checked' : '' }}
+                                                   class="rounded border-wv-border bg-wv-surface text-wv-accent focus:ring-wv-accent focus:ring-offset-wv-bg">
+                                            <span class="text-sm text-wv-text font-medium">{{ $r->name }}</span>
+                                            <span class="text-xs text-wv-text-secondary ms-auto">
+                                                {{ trans_choice(':count permiso|:count permisos', $r->permissions->count(), ['count' => $r->permissions->count()]) }}
+                                            </span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                <x-input-error :messages="$errors->get('roles')" class="mt-2" />
+                                <x-input-error :messages="$errors->get('roles.*')" class="mt-2" />
+                            @endif
                         </div>
 
                         <div>
