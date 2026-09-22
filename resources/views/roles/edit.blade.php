@@ -3,7 +3,7 @@
         <div class="flex justify-between items-center">
             <div>
                 <h2 class="font-semibold text-h-wv text-wv-text leading-tight">
-                    {{ __('Editar rol') }}: <span class="text-wv-accent">{{ $role->display_name ?? $role->name }}</span>
+                    {{ __('Editar rol') }}: <span class="text-wv-accent">{{ $role->name }}</span>
                 </h2>
                 <p class="text-sm text-wv-text-secondary mt-1"><code>{{ $role->name }}</code></p>
             </div>

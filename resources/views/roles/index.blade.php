@@ -36,8 +36,7 @@
                                 @foreach ($roles as $role)
                                     <tr class="hover:bg-wv-surface-hover transition">
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <a href="{{ route('roles.show', $role) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">{{ $role->display_name ?? $role->name }}</a>
-                                            @if ($role->description)<p class="text-xs text-wv-text-secondary">{{ \Illuminate\Support\Str::limit($role->description, 80) }}</p>@endif
+                                            <a href="{{ route('roles.show', $role) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">{{ $role->name }}</a>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">
                                             <code>{{ $role->name }}</code>
@@ -46,7 +45,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $role->users_count ?? $role->users->count() }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <a href="{{ route('roles.edit', $role) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar el rol «{{ $role->display_name ?? $role->name }}»? Los usuarios con este rol quedarán sin rol asignado.');">
+                                            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar el rol «{{ $role->name }}»? Los usuarios con este rol quedarán sin rol asignado.');">
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
                                             </form>

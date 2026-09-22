@@ -3,7 +3,7 @@
         <div class="flex justify-between items-center">
             <div>
                 <h2 class="font-semibold text-h-wv text-wv-text leading-tight">
-                    {{ __('Rol') }}: <span class="text-wv-accent">{{ $role->display_name ?? $role->name }}</span>
+                    {{ __('Rol') }}: <span class="text-wv-accent">{{ $role->name }}</span>
                 </h2>
                 <p class="text-sm text-wv-text-secondary mt-1"><code>{{ $role->name }}</code></p>
             </div>
@@ -18,10 +18,6 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             @include('partials._flash')
             <div class="bg-wv-surface border border-wv-border rounded-card p-6">
-                @if ($role->description)
-                    <p class="text-wv-text-secondary mb-6">{{ $role->description }}</p>
-                @endif
-
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-4 text-center">
                         <div class="font-mono text-kpi text-wv-text">{{ $role->permissions->count() }}</div>
@@ -41,19 +37,11 @@
                 @if ($role->permissions->isEmpty())
                     <p class="text-sm text-wv-text-secondary italic">{{ __('Este rol no tiene permisos asignados aún.') }}</p>
                 @else
-                    @php $grouped = $role->permissions->groupBy('group'); @endphp
-                    <div class="space-y-4">
-                        @foreach ($grouped as $groupName => $perms)
-                            <div>
-                                <p class="text-xs font-semibold text-wv-text-secondary uppercase tracking-wider mb-1">{{ ucfirst($groupName) }}</p>
-                                <div class="flex flex-wrap gap-1.5">
-                                    @foreach ($perms as $perm)
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-wv-accent-soft text-wv-accent border border-wv-accent/40">
-                                            {{ $perm->display_name ?? $perm->name }}
-                                        </span>
-                                    @endforeach
-                                </div>
-                            </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        @foreach ($role->permissions->sortBy('name') as $perm)
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-wv-accent-soft text-wv-accent border border-wv-accent/40">
+                                {{ $perm->name }}
+                            </span>
                         @endforeach
                     </div>
                 @endif
@@ -89,7 +77,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="mt-4 text-right" onsubmit="return confirm('¿Eliminar el rol «{{ $role->display_name ?? $role->name }}»?');">
+            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="mt-4 text-right" onsubmit="return confirm('¿Eliminar el rol «{{ $role->name }}»?');">
                 @csrf @method('DELETE')
                 <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar rol') }}</button>
             </form>
