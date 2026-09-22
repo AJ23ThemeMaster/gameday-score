@@ -18,14 +18,14 @@ class AthleteController extends Controller
 {
     public function __construct()
     {
-        // DISI-81 + DISI-XXX: gestor ve y gestiona atletas de SU equipo.
-        // - index: admin_or_gestor (gestor solo ve atletas de su equipo,
-        //   filtrado en el metodo)
-        // - destroy: admin_or_gestor + authorizeGestorOnAthlete
-        // - edit/update: admin_or_gestor + authorizeGestorOnAthlete
-        // - create/store: admin_or_gestor (gestor crea para su equipo
-        //   automaticamente, ver create() y store())
-        $this->middleware('admin_or_gestor')->except(['show']);
+        // DISI-81 + DISI-delegado:
+        //   index/show/edit/update: admin + gestor + delegado (con scope fino)
+        //   create/store: admin + gestor (delegado NO crea)
+        //   destroy: admin + gestor (delegado NO elimina)
+        $this->middleware('admin_or_gestor_or_delegado')->except(['show', 'create', 'store', 'destroy']);
+        // destroy va SOLO con admin_or_gestor: el delegado NO puede
+        // eliminar atletas aunque el atleta sea de su (equipo, categoria).
+        $this->middleware('admin_or_gestor')->only(['create', 'store', 'destroy']);
     }
 
     /**
@@ -40,10 +40,34 @@ class AthleteController extends Controller
         }
     }
 
+    /**
+     * DISI-delegado: chequeo combinado para gestor O delegado.
+     * - Gestor: el atleta pertenece a SU equipo (sin importar la categoria).
+     * - Delegado: el atleta pertenece a SU equipo Y SU categoria.
+     * - Admin: pasa sin chequeo.
+     */
+    private function authorizeGestorOrDelegadoOnAthlete(Athlete $athlete): void
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if (! $user) {
+            abort(403, 'Necesitas iniciar sesión para acceder a esta sección.');
+        }
+        if ($user->isAdmin()) {
+            return;
+        }
+        if ($user->isGestor() && ! $user->isGestorOwning($athlete)) {
+            abort(403, 'Solo puedes administrar atletas del equipo al que estás asociado.');
+        }
+        if ($user->isDelegado() && ! $user->isDelegadoOf($athlete)) {
+            abort(403, 'Solo puedes administrar atletas del equipo y la categoría a los que estás asociado.');
+        }
+    }
+
     public function index(Request $request): View
     {
         $user = \Illuminate\Support\Facades\Auth::user();
         $isGestor = $user && $user->isGestor();
+        $isDelegado = $user && $user->isDelegado();
 
         // DISI-65: index filtrable (Nombre | Doc | N° | Pos. | Estado | Equipo | Categoria).
         $filters = [
@@ -61,14 +85,19 @@ class AthleteController extends Controller
 
         $q = Athlete::with(['team', 'category']);
 
-        // DISI-XXX: gestor ve SOLO atletas de su equipo asociado (scope
+        // DISI-XXX + DISI-delegado: gestor ve SOLO atletas de su equipo;
+        // delegado ve SOLO atletas de SU equipo Y SU categoria (scope
         // automatico, no anulable por filtros). Admin ve todos y puede
         // filtrar por team_id libremente.
         if ($isGestor) {
             $q->where('team_id', $user->team_id);
-            // Forzamos tambien el filtro del dropdown para que el select
-            // muestre solo el equipo del gestor y no se confunda.
             $filters['team_id'] = (int) $user->team_id;
+        } elseif ($isDelegado) {
+            // Scope doble para delegado: team_id Y category_id del usuario.
+            $q->where('team_id', $user->team_id);
+            $q->where('category_id', $user->category_id);
+            $filters['team_id'] = (int) $user->team_id;
+            $filters['category_id'] = (int) $user->category_id;
         }
 
         if ($filters['name'] !== '') {
@@ -104,27 +133,32 @@ class AthleteController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        // DISI-XXX: el contador total refleja lo que el usuario realmente
-        // puede ver. Para gestor es el total de su equipo; para admin es
-        // el total global.
-        $totalAthletes = $isGestor
-            ? (clone $q)->toBase()->getCountForPagination()
-            : Athlete::count();
+        // DISI-XXX + DISI-delegado: el contador total refleja lo que el usuario
+        // realmente puede ver. Para gestor es el total de su equipo;
+        // para delegado es el total de su (equipo, categoria); para
+        // admin es el total global.
+        if ($isGestor || $isDelegado) {
+            $totalAthletes = (clone $q)->toBase()->getCountForPagination();
+        } else {
+            $totalAthletes = Athlete::count();
+        }
         $filteredCount = $athletes->total();
 
         $positions = Athlete::whereNotNull('position')->distinct()->orderBy('position')->pluck('position');
-        // DISI-XXX: gestor solo ve su equipo en el dropdown y las categorias
-        // de ese equipo; admin ve todo.
-        $teams = $isGestor
+        // DISI-XXX + DISI-delegado: gestor y delegado solo ven su equipo
+        // en el dropdown. Delegado ademas solo ve su categoria.
+        $teams = ($isGestor || $isDelegado)
             ? Team::where('id', $user->team_id)->orderBy('name')->get()
             : Team::orderBy('name')->get();
-        $categories = $isGestor
-            ? Category::where('team_id', $user->team_id)->orderBy('name')->get()
-            : Category::orderBy('name')->get();
+        $categories = $isDelegado
+            ? Category::where('id', $user->category_id)->orderBy('name')->get()
+            : ($isGestor
+                ? Category::where('team_id', $user->team_id)->orderBy('name')->get()
+                : Category::orderBy('name')->get());
 
         return view('athletes.index', compact(
             'athletes', 'totalAthletes', 'filteredCount',
-            'filters', 'positions', 'teams', 'categories', 'isGestor'
+            'filters', 'positions', 'teams', 'categories', 'isGestor', 'isDelegado'
         ));
     }
 
@@ -171,6 +205,11 @@ class AthleteController extends Controller
 
     public function show(Athlete $athlete): View
     {
+        // DISI-delegado: gestor y delegado solo pueden ver atletas de su
+        // scope. Admin pasa sin chequeo. La ruta show no tiene middleware
+        // por lo que el chequeo fino lo hacemos aca.
+        $this->authorizeGestorOrDelegadoOnAthlete($athlete);
+
         // DISI-62: cargamos team + category + juegos del atleta (via game_athlete
         // pivot) y computamos stats agregadas + per-game en una sola pasada.
         $athlete->load(['team', 'category', 'team.league']);
@@ -381,20 +420,25 @@ class AthleteController extends Controller
 
     public function edit(Athlete $athlete): View
     {
-        $this->authorizeGestorOnAthlete($athlete);
+        $this->authorizeGestorOrDelegadoOnAthlete($athlete);
         $user = \Illuminate\Support\Facades\Auth::user();
-        // DISI-81: gestor solo puede ver atletas de su equipo.
-        $teams = ($user && $user->isGestor())
+        // DISI-81 + DISI-delegado: gestor y delegado solo ven su equipo
+        // en el dropdown. Delegado ademas solo ve su categoria.
+        $teams = ($user && ($user->isGestor() || $user->isDelegado()))
             ? Team::where('id', $user->team_id)->get()
             : Team::orderBy('name')->get();
-        $categories = Category::orderBy('name')->get();
+        $categories = ($user && $user->isDelegado())
+            ? Category::where('id', $user->category_id)->orderBy('name')->get()
+            : (($user && $user->isGestor())
+                ? Category::where('team_id', $user->team_id)->orderBy('name')->get()
+                : Category::orderBy('name')->get());
 
         return view('athletes.edit', compact('athlete', 'teams', 'categories'));
     }
 
     public function update(UpdateAthleteRequest $request, Athlete $athlete): RedirectResponse
     {
-        $this->authorizeGestorOnAthlete($athlete);
+        $this->authorizeGestorOrDelegadoOnAthlete($athlete);
         $data = $request->validated();
         $data['active'] = $request->boolean('active', $athlete->active);
         $data['team_id'] = isset($data['team_id']) && $data['team_id'] !== null ? (int) $data['team_id'] : null;
@@ -432,7 +476,15 @@ class AthleteController extends Controller
 
     public function destroy(Athlete $athlete): RedirectResponse
     {
-        // DISI-XXX: gestor solo puede eliminar atletas de SU equipo.
+        // DISI-XXX + DISI-delegado: gestor solo puede eliminar atletas
+        // de SU equipo. Delegado NO puede eliminar (su rol es solo ver
+        // y editar). El middleware 'admin_or_gestor' ya bloquea al
+        // delegado en la ruta; este check explicito queda como
+        // defense-in-depth por si el middleware se relaja en el futuro.
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user && $user->isDelegado()) {
+            abort(403, 'No tienes permiso para eliminar atletas.');
+        }
         $this->authorizeGestorOnAthlete($athlete);
 
         $name = $athlete->full_name;

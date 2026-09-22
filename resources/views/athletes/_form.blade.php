@@ -30,11 +30,12 @@
 
     <div>
         <x-input-label for="team_id" :value="__('Equipo actual')" />
-        {{-- DISI-XXX: gestor solo puede asignar atletas a SU equipo
-             asociado, asi que el select se pre-selecciona con ese unico
+        {{-- DISI-XXX + DISI-delegado: gestor y delegado solo pueden asignar
+             atletas a SU equipo asociado (delegado ademas queda restringido
+             a SU categoria). El select se pre-selecciona con ese unico
              equipo y se deshabilita. Admin sigue viendo la lista completa. --}}
         @auth
-            @if (auth()->user()->isGestor())
+            @if (auth()->user()->isGestor() || auth()->user()->isDelegado())
                 <select id="team_id" name="team_id" disabled
                         class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text rounded-md shadow-sm opacity-70 cursor-not-allowed">
                     @foreach ($teams as $team)
@@ -46,7 +47,11 @@
                 {{-- Campo hidden para que el POST envie el team_id aunque el
                      select este disabled (los campos disabled no se envian). --}}
                 <input type="hidden" name="team_id" value="{{ $teams->first()?->id }}">
-                <p class="mt-1 text-xs text-wv-text-secondary">{{ __('Como gestor, los atletas que crees quedaran asignados automaticamente a tu equipo.') }}</p>
+                @if (auth()->user()->isDelegado())
+                    <p class="mt-1 text-xs text-wv-text-secondary">{{ __('Como delegado, los atletas que edites quedaran asignados automaticamente a tu equipo y a tu categoria.') }}</p>
+                @else
+                    <p class="mt-1 text-xs text-wv-text-secondary">{{ __('Como gestor, los atletas que crees quedaran asignados automaticamente a tu equipo.') }}</p>
+                @endif
             @else
                 <select id="team_id" name="team_id" class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
                     <option value="">— {{ __('Sin equipo') }} —</option>
@@ -63,16 +68,30 @@
 
     <div>
         <x-input-label for="category_id" :value="__('Categoría')" />
-        <select id="category_id" name="category_id" class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
-            <option value="">— {{ __('Sin categoría') }} —</option>
-            @foreach ($categories as $cat)
-                <option value="{{ $cat->id }}" {{ (string) old('category_id', $athlete->category_id ?? request('category_id', '')) === (string) $cat->id ? 'selected' : '' }}>
-                    {{ $cat->name }}@if ($cat->team) ({{ $cat->team->short_name ?? $cat->team->name }})@endif
-                </option>
-            @endforeach
-        </select>
+        {{-- DISI-delegado: delegado solo puede editar atletas de SU categoria;
+             el select se pre-selecciona con esa unica categoria y se deshabilita. --}}
+        @auth
+            @if (auth()->user()->isDelegado())
+                <select id="category_id" name="category_id" disabled
+                        class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text rounded-md shadow-sm opacity-70 cursor-not-allowed">
+                    @foreach ($categories as $cat)
+                        <option value="{{ $cat->id }}" selected>{{ $cat->name }}</option>
+                    @endforeach
+                </select>
+                <input type="hidden" name="category_id" value="{{ $categories->first()?->id }}">
+            @else
+                <select id="category_id" name="category_id" class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
+                    <option value="">— {{ __('Sin categoría') }} —</option>
+                    @foreach ($categories as $cat)
+                        <option value="{{ $cat->id }}" {{ (string) old('category_id', $athlete->category_id ?? request('category_id', '')) === (string) $cat->id ? 'selected' : '' }}>
+                            {{ $cat->name }}@if ($cat->team) ({{ $cat->team->short_name ?? $cat->team->name }})@endif
+                        </option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-wv-text-secondary">{{ __('DISI-14: 1 atleta pertenece a 1 equipo Y 1 categoría.') }}</p>
+            @endif
+        @endauth
         <x-input-error :messages="$errors->get('category_id')" class="mt-2" />
-        <p class="mt-1 text-xs text-wv-text-secondary">{{ __('DISI-14: 1 atleta pertenece a 1 equipo Y 1 categoría.') }}</p>
     </div>
 
     <div>

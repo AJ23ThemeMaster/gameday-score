@@ -79,7 +79,8 @@
                 'teams'       => ($u?->can('manage teams')
                                   || $u?->can('manage assigned team')) ?? false,
                 'athletes'    => ($u?->can('manage athletes')
-                                  || $u?->can('manage assigned team athletes')) ?? false,
+                                  || $u?->can('manage assigned team athletes')
+                                  || $u?->can('manage assigned category athletes')) ?? false,
                 'scorekeepers'=> $u?->can('manage scorekeepers') ?? false,
                 'referees'    => $u?->can('manage referees') ?? false,
                 'stadiums'    => $u?->isAdmin() ?? false, // sin permiso sembrado

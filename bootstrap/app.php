@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             // DISI-81: alias para acciones permitidas a admin o gestor
             'admin_or_gestor' => \App\Http\Middleware\EnsureAdminOrGestor::class,
+            // DISI-delegado: admin, gestor (con team) o delegado (con team + categoria).
+            // Usado para endpoints donde las tres figuras pueden leer/editar
+            // atletas pero con scope distinto segun el rol.
+            'admin_or_gestor_or_delegado' => \App\Http\Middleware\EnsureAdminOrGestorOrDelegado::class,
             // DISI-16b: alias para el challenge de 2FA tras login
             '2fa.challenge' => \App\Http\Middleware\EnsureTwoFactorChallenged::class,
         ]);
