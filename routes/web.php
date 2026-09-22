@@ -94,6 +94,11 @@ Route::middleware(['auth', '2fa.challenge'])->group(function () {
     // DISI-16: CRUD de Roles y gestion de Usuarios
     Route::resource('roles', RoleController::class);
     Route::get('users', [UserController::class, 'index'])->name('users.index');
+    // DISI-delegado: registro publico deshabilitado; el admin crea usuarios
+    // desde el panel. Rutas individuales (no resource) porque el modelo
+    // no tiene show y el parametro de ruta es {user} (no create/store).
+    Route::get('users/create', [UserController::class, 'create'])->name('users.create');
+    Route::post('users', [UserController::class, 'store'])->name('users.store');
     Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');

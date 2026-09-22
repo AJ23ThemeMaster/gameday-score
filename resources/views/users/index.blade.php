@@ -5,6 +5,17 @@
                 <h2 class="font-semibold text-h-wv text-wv-text leading-tight">{{ __('Usuarios') }}</h2>
                 <p class="text-sm text-wv-text-secondary mt-1">{{ __('Usuarios con acceso al sistema y su rol.') }}</p>
             </div>
+            {{-- DISI-delegado: registro publico deshabilitado; el admin crea
+                 usuarios desde aqui. --}}
+            @auth
+                @if (auth()->user()->isAdmin())
+                    <a href="{{ route('users.create') }}"
+                       class="inline-flex items-center gap-2 px-4 py-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-sm font-semibold rounded-card transition">
+                        <span class="material-symbols-outlined text-[18px]">person_add</span>
+                        {{ __('Nuevo usuario') }}
+                    </a>
+                @endif
+            @endauth
         </div>
     </x-slot>
 

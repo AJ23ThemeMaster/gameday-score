@@ -48,16 +48,12 @@
                                 {{ __('Panel de control') }}
                             </a>
                         @else
+                            {{-- DISI-delegado: registro publico deshabilitado.
+                                 Solo el admin crea usuarios desde el panel. --}}
                             <a href="{{ route('login') }}"
-                               class="px-4 py-2 text-sm font-semibold text-wv-text-secondary hover:text-wv-text transition">
+                               class="px-4 py-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent rounded-card text-sm font-semibold transition">
                                 {{ __('Iniciar sesión') }}
                             </a>
-                            @if (Route::has('register'))
-                                <a href="{{ route('register') }}"
-                                   class="px-4 py-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent rounded-card text-sm font-semibold transition">
-                                    {{ __('Registrarse') }}
-                                </a>
-                            @endif
                         @endauth
                     @endif
                 </nav>
@@ -85,13 +81,11 @@
                             {{ __('Ir a mi panel') }}
                         </a>
                     @else
-                        <a href="{{ route('register') }}"
-                           class="px-6 py-3 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent rounded-card text-base font-semibold transition">
-                            {{ __('Crear cuenta gratis') }}
-                        </a>
+                        {{-- DISI-delegado: registro publico deshabilitado.
+                             Los usuarios los crea el admin desde el panel. --}}
                         <a href="{{ route('login') }}"
-                           class="px-6 py-3 border border-wv-border hover:bg-wv-surface-hover text-wv-text rounded-card text-base font-semibold transition">
-                            {{ __('Ya tengo cuenta') }}
+                           class="px-6 py-3 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent rounded-card text-base font-semibold transition">
+                            {{ __('Iniciar sesión') }}
                         </a>
                     @endauth
                     <a href="/legacy/" target="_blank"

@@ -23,6 +23,9 @@ class UpdateUserRolesRequest extends FormRequest
             // DISI-80: equipo asociado (opcional). Validamos exists solo si se
             // envia un valor no nulo.
             'team_id' => ['nullable', 'integer', Rule::exists(\App\Models\Team::class, 'id')],
+            // DISI-delegado: categoria asociada (opcional). Requerida solo si el
+            // usuario tiene el rol delegado. Validamos exists si se envia valor.
+            'category_id' => ['nullable', 'integer', Rule::exists(\App\Models\Category::class, 'id')],
         ];
     }
 
