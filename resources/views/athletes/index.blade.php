@@ -3,7 +3,15 @@
         <div class="flex justify-between items-center">
             <div>
                 <h2 class="font-semibold text-h-wv text-wv-text leading-tight">{{ __('Atletas') }}</h2>
-                <p class="text-sm text-wv-text-secondary mt-1">{{ __('Listado completo de atletas registrados en el sistema.') }}</p>
+                <p class="text-sm text-wv-text-secondary mt-1">
+                    @auth
+                        @if (auth()->user()->isGestor())
+                            {{ __('Mostrando solo atletas de tu equipo asociado.') }}
+                        @else
+                            {{ __('Listado completo de atletas registrados en el sistema.') }}
+                        @endif
+                    @endauth
+                </p>
             </div>
             <a href="{{ route('athletes.create') }}" class="inline-flex items-center px-4 py-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-sm font-semibold rounded-card">
                 + {{ __('Nuevo atleta') }}

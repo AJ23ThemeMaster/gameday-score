@@ -5,9 +5,15 @@
                 <h2 class="font-semibold text-h-wv text-wv-text leading-tight">{{ __('Equipos') }}</h2>
                 <p class="text-sm text-wv-text-secondary mt-1">{{ __('Lista de equipos registrados en el sistema.') }}</p>
             </div>
-            <a href="{{ route('teams.create') }}" class="inline-flex items-center px-4 py-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-sm font-semibold rounded-card transition">
-                + {{ __('Nuevo equipo') }}
-            </a>
+            {{-- DISI-XXX: gestor no crea equipos nuevos. Solo admin (que es
+                 quien asigna usuarios a equipos) puede crear. --}}
+            @auth
+                @if (! auth()->user()->isGestor())
+                    <a href="{{ route('teams.create') }}" class="inline-flex items-center px-4 py-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-sm font-semibold rounded-card transition">
+                        + {{ __('Nuevo equipo') }}
+                    </a>
+                @endif
+            @endauth
         </div>
     </x-slot>
 
@@ -17,8 +23,14 @@
             <div class="bg-wv-surface border border-wv-border rounded-card overflow-hidden">
                 @if ($teams->isEmpty())
                     <div class="p-10 text-center text-wv-text-secondary">
-                        <p class="mb-4">{{ __('Aún no hay equipos registrados.') }}</p>
-                        <a href="{{ route('teams.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Crear el primer equipo') }}</a>
+                        @auth
+                            @if (auth()->user()->isGestor())
+                                <p>{{ __('No tienes un equipo asignado. Contacta al administrador del sistema.') }}</p>
+                            @else
+                                <p class="mb-4">{{ __('Aún no hay equipos registrados.') }}</p>
+                                <a href="{{ route('teams.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Crear el primer equipo') }}</a>
+                            @endif
+                        @endauth
                     </div>
                 @else
                     <div class="overflow-x-auto">

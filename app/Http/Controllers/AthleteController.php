@@ -18,10 +18,14 @@ class AthleteController extends Controller
 {
     public function __construct()
     {
-        // DISI-81: gestor puede crear/editar atletas pero solo de su equipo.
-        // Index y destroy siguen siendo admin-only para no exponer la lista completa.
-        $this->middleware('admin_or_gestor')->except(['show', 'destroy']);
-        $this->middleware('admin')->only(['index', 'destroy']);
+        // DISI-81 + DISI-XXX: gestor ve y gestiona atletas de SU equipo.
+        // - index: admin_or_gestor (gestor solo ve atletas de su equipo,
+        //   filtrado en el metodo)
+        // - destroy: admin_or_gestor + authorizeGestorOnAthlete
+        // - edit/update: admin_or_gestor + authorizeGestorOnAthlete
+        // - create/store: admin_or_gestor (gestor crea para su equipo
+        //   automaticamente, ver create() y store())
+        $this->middleware('admin_or_gestor')->except(['show']);
     }
 
     /**
@@ -38,6 +42,9 @@ class AthleteController extends Controller
 
     public function index(Request $request): View
     {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $isGestor = $user && $user->isGestor();
+
         // DISI-65: index filtrable (Nombre | Doc | N° | Pos. | Estado | Equipo | Categoria).
         $filters = [
             'name' => trim((string) $request->query('name', '')),
@@ -53,6 +60,16 @@ class AthleteController extends Controller
         $filters['category_id'] = is_numeric($filters['category_id']) ? (int) $filters['category_id'] : null;
 
         $q = Athlete::with(['team', 'category']);
+
+        // DISI-XXX: gestor ve SOLO atletas de su equipo asociado (scope
+        // automatico, no anulable por filtros). Admin ve todos y puede
+        // filtrar por team_id libremente.
+        if ($isGestor) {
+            $q->where('team_id', $user->team_id);
+            // Forzamos tambien el filtro del dropdown para que el select
+            // muestre solo el equipo del gestor y no se confunda.
+            $filters['team_id'] = (int) $user->team_id;
+        }
 
         if ($filters['name'] !== '') {
             $like = '%'.$filters['name'].'%';
@@ -87,16 +104,27 @@ class AthleteController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $totalAthletes = Athlete::count();
+        // DISI-XXX: el contador total refleja lo que el usuario realmente
+        // puede ver. Para gestor es el total de su equipo; para admin es
+        // el total global.
+        $totalAthletes = $isGestor
+            ? (clone $q)->toBase()->getCountForPagination()
+            : Athlete::count();
         $filteredCount = $athletes->total();
 
         $positions = Athlete::whereNotNull('position')->distinct()->orderBy('position')->pluck('position');
-        $teams = Team::orderBy('name')->get();
-        $categories = Category::orderBy('name')->get();
+        // DISI-XXX: gestor solo ve su equipo en el dropdown y las categorias
+        // de ese equipo; admin ve todo.
+        $teams = $isGestor
+            ? Team::where('id', $user->team_id)->orderBy('name')->get()
+            : Team::orderBy('name')->get();
+        $categories = $isGestor
+            ? Category::where('team_id', $user->team_id)->orderBy('name')->get()
+            : Category::orderBy('name')->get();
 
         return view('athletes.index', compact(
             'athletes', 'totalAthletes', 'filteredCount',
-            'filters', 'positions', 'teams', 'categories'
+            'filters', 'positions', 'teams', 'categories', 'isGestor'
         ));
     }
 
@@ -404,6 +432,9 @@ class AthleteController extends Controller
 
     public function destroy(Athlete $athlete): RedirectResponse
     {
+        // DISI-XXX: gestor solo puede eliminar atletas de SU equipo.
+        $this->authorizeGestorOnAthlete($athlete);
+
         $name = $athlete->full_name;
         $this->deletePhoto($athlete);
         $this->deleteDocument($athlete);

@@ -20,10 +20,16 @@ class TeamController extends Controller
 {
     public function __construct()
     {
-        // DISI-81: gestor puede editar solo SU equipo. El chequeo fino se hace
-        // dentro de cada metodo (index/create/store/destroy siguen siendo admin-only).
+        // DISI-81 + DISI-XXX: gestor puede editar solo SU equipo.
+        // El chequeo fino se hace dentro de cada metodo.
+        // - index: admin_or_gestor (gestor solo ve su equipo, filtrado en el metodo)
+        // - create/store: admin-only (el gestor no crea equipos nuevos;
+        //   admin es quien crea y luego asigna via User::team_id)
+        // - edit/update: admin_or_gestor + authorizeGestorOnTeam
+        // - destroy: admin_or_gestor + authorizeGestorOnTeam (gestor puede
+        //   borrar su equipo si admin se lo permite)
         $this->middleware('admin_or_gestor')->except(['show']);
-        $this->middleware('admin')->only(['index', 'create', 'store', 'destroy']);
+        $this->middleware('admin')->only(['create', 'store']);
     }
 
     /**
@@ -39,10 +45,18 @@ class TeamController extends Controller
 
     public function index(): View
     {
-        $teams = Team::with('league')
+        $user = Auth::user();
+
+        // DISI-XXX: gestor solo ve SU equipo asociado. Admin ve todos.
+        $query = Team::with('league')
             ->orderBy('name')
-            ->withCount(['athletes', 'homeGames', 'awayGames', 'categories'])
-            ->paginate(15);
+            ->withCount(['athletes', 'homeGames', 'awayGames', 'categories']);
+
+        if ($user && $user->isGestor()) {
+            $query->where('id', $user->team_id);
+        }
+
+        $teams = $query->paginate(15)->withQueryString();
 
         return view('teams.index', compact('teams'));
     }

@@ -30,14 +30,34 @@
 
     <div>
         <x-input-label for="team_id" :value="__('Equipo actual')" />
-        <select id="team_id" name="team_id" class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
-            <option value="">— {{ __('Sin equipo') }} —</option>
-            @foreach ($teams as $team)
-                <option value="{{ $team->id }}" {{ (string) old('team_id', $athlete->team_id ?? request('team_id', '')) === (string) $team->id ? 'selected' : '' }}>
-                    {{ $team->name }}@if ($team->league) ({{ $team->league->short_name ?? $team->league->name }})@endif
-                </option>
-            @endforeach
-        </select>
+        {{-- DISI-XXX: gestor solo puede asignar atletas a SU equipo
+             asociado, asi que el select se pre-selecciona con ese unico
+             equipo y se deshabilita. Admin sigue viendo la lista completa. --}}
+        @auth
+            @if (auth()->user()->isGestor())
+                <select id="team_id" name="team_id" disabled
+                        class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text rounded-md shadow-sm opacity-70 cursor-not-allowed">
+                    @foreach ($teams as $team)
+                        <option value="{{ $team->id }}" selected>
+                            {{ $team->name }}@if ($team->league) ({{ $team->league->short_name ?? $team->league->name }})@endif
+                        </option>
+                    @endforeach
+                </select>
+                {{-- Campo hidden para que el POST envie el team_id aunque el
+                     select este disabled (los campos disabled no se envian). --}}
+                <input type="hidden" name="team_id" value="{{ $teams->first()?->id }}">
+                <p class="mt-1 text-xs text-wv-text-secondary">{{ __('Como gestor, los atletas que crees quedaran asignados automaticamente a tu equipo.') }}</p>
+            @else
+                <select id="team_id" name="team_id" class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
+                    <option value="">— {{ __('Sin equipo') }} —</option>
+                    @foreach ($teams as $team)
+                        <option value="{{ $team->id }}" {{ (string) old('team_id', $athlete->team_id ?? request('team_id', '')) === (string) $team->id ? 'selected' : '' }}>
+                            {{ $team->name }}@if ($team->league) ({{ $team->league->short_name ?? $team->league->name }})@endif
+                        </option>
+                    @endforeach
+                </select>
+            @endif
+        @endauth
         <x-input-error :messages="$errors->get('team_id')" class="mt-2" />
     </div>
 
