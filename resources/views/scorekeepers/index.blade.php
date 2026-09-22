@@ -74,11 +74,12 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ route('scorekeepers.edit', $sk) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('scorekeepers.destroy', $sk) }}" method="POST" class="inline" data-confirm="'¿Eliminar al anotador «{{ $sk->full_name }}»?'" data-confirm-danger="true" data-loader>
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
-                                            </form>
+                                            <x-action-buttons
+                                                :show="route('scorekeepers.show', $sk)"
+                                                :edit="route('scorekeepers.edit', $sk)"
+                                                :delete="route('scorekeepers.destroy', $sk)"
+                                                :deleteMessage="__('¿Eliminar al anotador «:name»?', ['name' => $sk->full_name])"
+                                            />
                                         </td>
                                     </tr>
                                 @endforeach

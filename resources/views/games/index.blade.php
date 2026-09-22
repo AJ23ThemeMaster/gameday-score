@@ -93,11 +93,12 @@
                                             @if (in_array($g->status, ['scheduled', 'in_progress', 'paused']))
                                                 <a href="{{ route('games.scoreboard', $g) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('En vivo') }}</a>
                                             @endif
-                                            <a href="{{ route('games.edit', $g) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('games.destroy', $g) }}" method="POST" class="inline" data-confirm="'¿Eliminar el juego?'" data-confirm-danger="true" data-loader>
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
-                                            </form>
+                                            <x-action-buttons
+                                                :show="route('games.show', $g)"
+                                                :edit="route('games.edit', $g)"
+                                                :delete="route('games.destroy', $g)"
+                                                :deleteMessage="__('¿Eliminar el juego «:title»?', ['title' => $g->title ?? '#' . $g->id])"
+                                            />
                                         </td>
                                     </tr>
                                 @endforeach

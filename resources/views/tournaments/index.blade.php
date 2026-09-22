@@ -65,13 +65,12 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $t->season ?? 'â€”' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $t->games_count }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ route('tournaments.edit', $t) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('tournaments.destroy', $t) }}" method="POST" class="inline"
-                                                  data-confirm="'¿Eliminar el torneo «{{ $t->name }}»?'" data-confirm-danger="true" data-loader>
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
-                                            </form>
+                                            <x-action-buttons
+                                                :show="route('tournaments.show', $t)"
+                                                :edit="route('tournaments.edit', $t)"
+                                                :delete="route('tournaments.destroy', $t)"
+                                                :deleteMessage="__('¿Eliminar el torneo «:name»?', ['name' => $t->name])"
+                                            />
                                         </td>
                                     </tr>
                                 @endforeach

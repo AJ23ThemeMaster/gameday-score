@@ -56,11 +56,13 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ route('categories.edit', $cat) }}" class="text-wv-accent hover:text-wv-accent-hover mr-3">{{ __('Editar') }}</a>
-                                            <form action="{{ route('categories.destroy', $cat) }}" method="POST" class="inline" data-confirm="'¿Eliminar la categoría «{{ $cat->name }}»?'" data-confirm-danger="true" data-loader>
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar') }}</button>
-                                            </form>
+                                            <x-action-buttons
+                                                :show="route('categories.show', $cat)"
+                                                :edit="route('categories.edit', $cat)"
+                                                :delete="route('categories.destroy', $cat)"
+                                                :deleteMessage="__('¿Eliminar la categoría «:name»?', ['name' => $cat->name])"
+                                            />
+                                        </td>
                                         </td>
                                     </tr>
                                 @endforeach
