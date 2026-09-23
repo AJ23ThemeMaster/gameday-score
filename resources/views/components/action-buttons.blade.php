@@ -34,7 +34,8 @@
 
     @if ($delete)
         <form action="{{ $delete }}" method="POST" class="inline"
-              data-confirm="'{{ $msg }}'" data-confirm-danger="true" data-loader>
+              data-confirm="'{{ $msg }}'" data-confirm-danger="true" data-loader
+              data-loader-icon-only="true">
             @csrf
             @method('DELETE')
             <button type="submit" title="{{ __('Eliminar') }}" aria-label="{{ __('Eliminar') }}" class="{{ $delBtn }}">

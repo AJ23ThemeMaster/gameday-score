@@ -240,11 +240,18 @@ class SwalHelperClass {
     bindFormHandlers() {
         const applyLoader = (form) => {
             const full = form.dataset.loader === 'full';
+            const iconOnly = form.dataset.loaderIconOnly !== undefined;
             const btn = form.querySelector('button[type="submit"], input[type="submit"]');
             if (btn) {
                 btn.disabled = true;
                 btn.dataset._originalText = btn.innerHTML;
-                btn.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin me-2"></span>' + (btn.dataset.loadingText || 'Guardando...');
+                if (iconOnly) {
+                    // Action-buttons (cuadrados 32x32): solo spinner para no
+                    // expandir el boton ni desplazar los iconos vecinos.
+                    btn.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>';
+                } else {
+                    btn.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin me-2"></span>' + (btn.dataset.loadingText || 'Guardando...');
+                }
             }
             if (full) this.loading('Guardando...');
         };
