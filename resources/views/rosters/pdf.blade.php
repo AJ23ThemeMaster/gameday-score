@@ -95,11 +95,12 @@
         table.roster td.center { text-align: center; }
         table.roster td.left { text-align: left; }
 
-        /* Filas de seccion (MANAGER:, TECNICOS:, DELEGADO:) usan la
-           segunda columna (ATLETAS) con texto centrado y bold. */
+        /* Filas de seccion (MANAGER, TECNICOS, DELEGADO): ocupan las 4
+           columnas (colspan=4), fondo gris y texto centrado. */
         .section-label {
             font-weight: bold;
             text-align: center;
+            background: #d0d0d0;
         }
 
         /* Sin bordes dobles entre secciones: el navegador/PDF une
@@ -133,7 +134,7 @@
         </table>
     </div>
 
-    <div class="title">ROSTER.</div>
+    <div class="title">ROSTER</div>
     <div class="subtitle">CATEGORÍA: {{ mb_strtoupper($category->name ?? '—') }}</div>
 
     {{-- Tabla unificada --}}
@@ -170,10 +171,7 @@
 
             {{-- MANAGER --}}
             <tr>
-                <td class="center">&nbsp;</td>
-                <td class="section-label">MANAGER:</td>
-                <td class="center">&nbsp;</td>
-                <td class="center">&nbsp;</td>
+                <td colspan="4" class="section-label">MANAGER</td>
             </tr>
             <tr>
                 <td class="center">1</td>
@@ -188,10 +186,7 @@
 
             {{-- TECNICOS --}}
             <tr>
-                <td class="center">&nbsp;</td>
-                <td class="section-label">TECNICOS:</td>
-                <td class="center">&nbsp;</td>
-                <td class="center">&nbsp;</td>
+                <td colspan="4" class="section-label">TECNICOS</td>
             </tr>
             @php $maxCoaches = 4; @endphp
             @for ($i = 1; $i <= $maxCoaches; $i++)
@@ -210,10 +205,7 @@
 
             {{-- DELEGADO --}}
             <tr>
-                <td class="center">&nbsp;</td>
-                <td class="section-label">DELEGADO:</td>
-                <td class="center">&nbsp;</td>
-                <td class="center">&nbsp;</td>
+                <td colspan="4" class="section-label">DELEGADO</td>
             </tr>
             <tr>
                 <td class="center">1</td>
