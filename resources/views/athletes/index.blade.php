@@ -31,7 +31,7 @@
                                class="sm:col-span-2 border-wv-border bg-wv-surface text-wv-text placeholder-wv-text-secondary focus:border-wv-accent focus:ring-wv-accent rounded-md text-sm">
                         <input type="text" name="document_id" value="{{ $filters['document_id'] }}" placeholder="{{ __('Doc.') }}"
                                class="border-wv-border bg-wv-surface text-wv-text placeholder-wv-text-secondary focus:border-wv-accent focus:ring-wv-accent rounded-md text-sm">
-                        <input type="text" name="number" value="{{ $filters['number'] }}" placeholder="{{ __('NÂ°') }}"
+                        <input type="text" name="number" value="{{ $filters['number'] }}" placeholder="{{ __('N°') }}"
                                class="border-wv-border bg-wv-surface text-wv-text placeholder-wv-text-secondary focus:border-wv-accent focus:ring-wv-accent rounded-md text-sm">
                         <select name="position" class="border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md text-sm">
                             <option value="">{{ __('Pos. (todas)') }}</option>
@@ -97,7 +97,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Nombre') }}</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Equipo') }}</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Categoria') }}</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('NÂ°') }}</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('N°') }}</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Pos.') }}</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('B/T') }}</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-wv-text-secondary uppercase tracking-wider">{{ __('Estado') }}</th>
@@ -120,16 +120,16 @@
                                             <a href="{{ route('athletes.show', $a) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">{{ $a->full_name }}</a>
                                             @if ($a->document_id)<p class="text-xs text-wv-text-secondary">{{ $a->document_id }}</p>@endif
                                         </td>
-                                        <td class="px-6 py-3 text-sm text-wv-text-secondary">{{ $a->team->name ?? 'â€”' }}</td>
+                                        <td class="px-6 py-3 text-sm text-wv-text-secondary">{{ $a->team->name ?? '—' }}</td>
                                         <td class="px-6 py-3 text-sm">
                                             @if ($a->category)
                                                 <a href="{{ route('categories.show', $a->category) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $a->category->name }}</a>
                                             @else
-                                                <span class="text-wv-text-secondary">â€”</span>
+                                                <span class="text-wv-text-secondary">—</span>
                                             @endif
                                         </td>
-                                        <td class="px-6 py-3 text-center text-sm text-wv-text">{{ $a->number ?? 'â€”' }}</td>
-                                        <td class="px-6 py-3 text-center text-sm font-mono text-wv-text">{{ $a->position ?? 'â€”' }}</td>
+                                        <td class="px-6 py-3 text-center text-sm text-wv-text">{{ $a->number ?? '—' }}</td>
+                                        <td class="px-6 py-3 text-center text-sm font-mono text-wv-text">{{ $a->position ?? '—' }}</td>
                                         <td class="px-6 py-3 text-center text-xs text-wv-text-secondary">{{ $a->bats }}/{{ $a->throws }}</td>
                                         <td class="px-6 py-3 text-center">
                                             @if ($a->active)

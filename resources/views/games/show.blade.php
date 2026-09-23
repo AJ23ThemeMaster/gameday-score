@@ -37,7 +37,7 @@
                             {{ $game->home_score }} - {{ $game->away_score }}
                         </div>
                         <div class="text-xs text-wv-text-secondary mt-1">
-                            {{ __('Inning') }} {{ $game->current_inning }} {{ $game->inning_half === 'top' ? 'â–²' : 'â–¼' }}
+                            {{ __('Inning') }} {{ $game->current_inning }} {{ $game->inning_half === 'top' ? '–²' : '–¼' }}
                         </div>
                     </div>
                     <div class="flex-1 text-center">
@@ -89,8 +89,8 @@
                 {{-- Datos --}}
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3"><dt class="text-wv-text-secondary text-xs uppercase">{{ __('Fecha y hora') }}</dt><dd class="text-base font-medium text-wv-text">{{ $game->scheduled_at->format('d/m/Y H:i') }}</dd></div>
-                    <div class="bg-wv-bg border border-wv-border rounded-card p-3"><dt class="text-wv-text-secondary text-xs uppercase">{{ __('Categoría') }}</dt><dd class="text-base font-medium text-wv-text">{{ $game->category->name ?? 'â€”' }}</dd></div>
-                    <div class="bg-wv-bg border border-wv-border rounded-card p-3"><dt class="text-wv-text-secondary text-xs uppercase">{{ __('Estadio') }}</dt><dd class="text-base font-medium text-wv-text">{{ $game->stadium->name ?? 'â€”' }}</dd></div>
+                    <div class="bg-wv-bg border border-wv-border rounded-card p-3"><dt class="text-wv-text-secondary text-xs uppercase">{{ __('Categoría') }}</dt><dd class="text-base font-medium text-wv-text">{{ $game->category->name ?? '—' }}</dd></div>
+                    <div class="bg-wv-bg border border-wv-border rounded-card p-3"><dt class="text-wv-text-secondary text-xs uppercase">{{ __('Estadio') }}</dt><dd class="text-base font-medium text-wv-text">{{ $game->stadium->name ?? '—' }}</dd></div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3"><dt class="text-wv-text-secondary text-xs uppercase">{{ __('Innings / Mercy') }}</dt><dd class="text-base font-medium text-wv-text">{{ $game->innings_count }} innings, -{{ $game->mercy_rule_difference }} en in. {{ $game->mercy_rule_inning }}</dd></div>
                 </dl>
 
@@ -134,7 +134,7 @@
                 @endif
 
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
-                    {{ __('Creado') }}: {{ $game->created_at->format('d/m/Y H:i') }} Â· {{ __('Actualizado') }}: {{ $game->updated_at->format('d/m/Y H:i') }}
+                    {{ __('Creado') }}: {{ $game->created_at->format('d/m/Y H:i') }} · {{ __('Actualizado') }}: {{ $game->updated_at->format('d/m/Y H:i') }}
                 </div>
             </div>
 

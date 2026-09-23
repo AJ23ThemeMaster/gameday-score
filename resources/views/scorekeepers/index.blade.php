@@ -63,8 +63,8 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <a href="{{ route('scorekeepers.show', $sk) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">{{ $sk->full_name }}</a>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $sk->document_id ?? 'â€”' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $sk->phone ?? 'â€”' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $sk->document_id ?? '—' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $sk->phone ?? '—' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $sk->games_count ?? 0 }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center">
                                             @if ($sk->active)

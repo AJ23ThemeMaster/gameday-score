@@ -34,7 +34,7 @@
                 <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Ciudad') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $team->city ?? 'â€”' }}</dd>
+                        <dd class="text-base font-medium text-wv-text">{{ $team->city ?? '—' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Atletas') }}</dt>
@@ -55,14 +55,14 @@
                         <div class="flex items-center gap-2">
                             <span class="inline-block w-8 h-8 rounded border border-wv-border-strong"
                                   style="background-color: {{ $team->home_color ?? '#1a3d6e' }}"></span>
-                            <span class="text-sm text-wv-text-secondary">{{ __('Color local') }}: <code class="text-wv-text">{{ $team->home_color ?? 'â€”' }}</code></span>
+                            <span class="text-sm text-wv-text-secondary">{{ __('Color local') }}: <code class="text-wv-text">{{ $team->home_color ?? '—' }}</code></span>
                         </div>
                     </div>
                     <div class="rounded-card p-4 border border-wv-border bg-wv-bg">
                         <div class="flex items-center gap-2">
                             <span class="inline-block w-8 h-8 rounded border border-wv-border-strong"
                                   style="background-color: {{ $team->away_color ?? '#ffffff' }}"></span>
-                            <span class="text-sm text-wv-text-secondary">{{ __('Color visitante') }}: <code class="text-wv-text">{{ $team->away_color ?? 'â€”' }}</code></span>
+                            <span class="text-sm text-wv-text-secondary">{{ __('Color visitante') }}: <code class="text-wv-text">{{ $team->away_color ?? '—' }}</code></span>
                         </div>
                     </div>
                 </div>
@@ -86,7 +86,7 @@
                     <form method="GET" action="{{ route('teams.show', $team) }}" class="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-3">
                         <input type="text" name="name" value="{{ $filters['name'] }}" placeholder="{{ __('Nombre') }}"
                                class="sm:col-span-2 border-wv-border bg-wv-surface text-wv-text placeholder-wv-text-secondary focus:border-wv-accent focus:ring-wv-accent rounded-md text-sm">
-                        <input type="text" name="number" value="{{ $filters['number'] }}" placeholder="{{ __('NÂ°') }}"
+                        <input type="text" name="number" value="{{ $filters['number'] }}" placeholder="{{ __('N°') }}"
                                class="border-wv-border bg-wv-surface text-wv-text placeholder-wv-text-secondary focus:border-wv-accent focus:ring-wv-accent rounded-md text-sm">
                         <select name="position" class="border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md text-sm">
                             <option value="">{{ __('Pos. (todas)') }}</option>
@@ -148,7 +148,7 @@
                         <table class="min-w-full divide-y divide-wv-border text-sm">
                             <thead class="bg-wv-surface-hover">
                                 <tr>
-                                    <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">NÂ°</th>
+                                    <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">N°</th>
                                     <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Nombre') }}</th>
                                     <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Pos.') }}</th>
                                     <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Estado') }}</th>
@@ -159,14 +159,14 @@
                             <tbody class="divide-y divide-wv-border">
                                 @forelse ($athletes as $a)
                                     <tr class="hover:bg-wv-surface-hover">
-                                        <td class="px-3 py-2 whitespace-nowrap font-mono text-wv-text">{{ $a->number ?? 'â€”' }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap font-mono text-wv-text">{{ $a->number ?? '—' }}</td>
                                         <td class="px-3 py-2 whitespace-nowrap">
                                             <a href="{{ route('athletes.show', $a) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">{{ $a->full_name }}</a>
                                         </td>
                                         <td class="px-3 py-2 text-center">
                                             @if ($a->position)
                                                 <span class="inline-block px-1.5 py-0.5 text-xs bg-wv-surface-hover text-wv-text rounded font-mono">{{ $a->position }}</span>
-                                            @else â€”
+                                            @else —
                                             @endif
                                         </td>
                                         <td class="px-3 py-2 text-center">
@@ -180,7 +180,7 @@
                                             @if ($a->category)
                                                 <a href="{{ route('categories.show', $a->category) }}" class="text-wv-accent hover:text-wv-accent-hover text-xs">{{ $a->category->name }}</a>
                                             @else
-                                                <span class="text-wv-text-secondary text-xs">â€”</span>
+                                                <span class="text-wv-text-secondary text-xs">—</span>
                                             @endif
                                         </td>
                                         <td class="px-3 py-2 text-center font-mono text-xs text-wv-text-secondary">{{ $a->bats }}/{{ $a->throws }}</td>
@@ -272,7 +272,7 @@
                 </div>
 
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
-                    {{ __('Creado') }}: {{ $team->created_at->format('d/m/Y H:i') }} Â·
+                    {{ __('Creado') }}: {{ $team->created_at->format('d/m/Y H:i') }} ·
                     {{ __('Actualizado') }}: {{ $team->updated_at->format('d/m/Y H:i') }}
                 </div>
             </div>

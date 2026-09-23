@@ -75,14 +75,14 @@
                                             @if ($primaryRole)
                                                 <a href="{{ route('roles.show', $primaryRole) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $primaryRole->name }}</a>
                                             @else
-                                                <span class="text-wv-text-secondary italic">â€”</span>
+                                                <span class="text-wv-text-secondary italic">—</span>
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">
                                             @if ($u->team)
                                                 <a href="{{ route('teams.show', $u->team) }}" class="hover:text-wv-accent">{{ $u->team->short_name ?? $u->team->name }}</a>
                                             @else
-                                                <span class="italic">â€”</span>
+                                                <span class="italic">—</span>
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center">

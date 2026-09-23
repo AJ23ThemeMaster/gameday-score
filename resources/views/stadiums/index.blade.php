@@ -39,8 +39,8 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <a href="{{ route('stadiums.show', $st) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">{{ $st->name }}</a>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ trim(($st->city ?? '') . (($st->city && $st->state) ? ', ' : '') . ($st->state ?? ''), ', ') ?: 'â€”' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text text-right">{{ $st->capacity ? number_format($st->capacity, 0, ',', '.') : 'â€”' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ trim(($st->city ?? '') . (($st->city && $st->state) ? ', ' : '') . ($st->state ?? ''), ', ') ?: '—' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text text-right">{{ $st->capacity ? number_format($st->capacity, 0, ',', '.') : '—' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $st->games_count }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center">
                                             @if ($st->active)

@@ -46,7 +46,7 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $cat->innings_count }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">-{{ $cat->mercy_rule_difference }} / in. {{ $cat->mercy_rule_inning }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $cat->pitch_limit ?? 'â€”' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $cat->pitch_limit ?? '—' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $cat->games_count }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center">
                                             @if ($cat->active)

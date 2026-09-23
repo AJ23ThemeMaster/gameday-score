@@ -29,15 +29,15 @@
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Cédula / Documento') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->document_id ?? 'â€”' }}</dd>
+                        <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->document_id ?? '—' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Teléfono') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->phone ?? 'â€”' }}</dd>
+                        <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->phone ?? '—' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3 sm:col-span-2">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Correo electrÃ³nico') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->email ?? 'â€”' }}</dd>
+                        <dd class="text-base font-medium text-wv-text">{{ $scorekeeper->email ?? '—' }}</dd>
                     </div>
                 </dl>
 
@@ -49,7 +49,7 @@
                 @endif
 
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
-                    {{ __('Creado') }}: {{ $scorekeeper->created_at->format('d/m/Y H:i') }} Â·
+                    {{ __('Creado') }}: {{ $scorekeeper->created_at->format('d/m/Y H:i') }} ·
                     {{ __('Actualizado') }}: {{ $scorekeeper->updated_at->format('d/m/Y H:i') }}
                 </div>
             </div>

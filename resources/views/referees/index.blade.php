@@ -62,8 +62,8 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <a href="{{ route('referees.show', $rf) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">{{ $rf->full_name }}</a>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $rf->document_id ?? 'â€”' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $rf->certification ?? 'â€”' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $rf->document_id ?? '—' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-wv-text-secondary">{{ $rf->certification ?? '—' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $rf->games_count ?? 0 }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center">
                                             @if ($rf->active)

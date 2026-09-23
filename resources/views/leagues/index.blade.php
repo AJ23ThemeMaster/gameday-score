@@ -49,7 +49,7 @@
                                             {{ $league->name }}
                                         </a>
                                         @if ($league->short_name)
-                                            <p class="text-xs text-wv-text-secondary">{{ $league->short_name }}@if ($league->country) Â· {{ $league->country }}@endif</p>
+                                            <p class="text-xs text-wv-text-secondary">{{ $league->short_name }}@if ($league->country) · {{ $league->country }}@endif</p>
                                         @endif
                                         <div class="mt-2 flex gap-2 text-xs flex-wrap">
                                             <span class="inline-flex items-center px-2 py-0.5 rounded bg-wv-accent-soft text-wv-accent">

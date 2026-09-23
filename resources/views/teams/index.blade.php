@@ -66,7 +66,7 @@
                                             @if ($team->league)
                                                 <a href="{{ route('leagues.show', $team->league) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $team->league->short_name ?? $team->league->name }}</a>
                                             @else
-                                                <span class="italic">â€”</span>
+                                                <span class="italic">—</span>
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-wv-text">{{ $team->athletes_count }}</td>

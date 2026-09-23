@@ -34,7 +34,7 @@
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Límite de lanzamientos') }}</dt>
-                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $category->pitch_limit ?? 'â€”' }}</dd>
+                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $category->pitch_limit ?? '—' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Regla del Nocaut') }}</dt>
@@ -58,7 +58,7 @@
                             <span class="font-semibold">{{ $category->team->name }}</span>
                         </a>
                         @if ($category->team->league)
-                            <span class="text-wv-text-secondary mx-1">Â·</span>
+                            <span class="text-wv-text-secondary mx-1">·</span>
                             <a href="{{ route('leagues.show', $category->team->league) }}" class="text-sm text-wv-text-secondary hover:text-wv-accent">{{ $category->team->league->name }}</a>
                         @endif
                     </div>
@@ -111,7 +111,7 @@
                                 <tbody class="divide-y divide-wv-border">
                                     @foreach ($category->games as $g)
                                         <tr class="hover:bg-wv-surface-hover">
-                                            <td class="px-3 py-2 whitespace-nowrap text-wv-text-secondary">{{ $g->scheduled_at?->format('d/m/Y H:i') ?? 'â€”' }}</td>
+                                            <td class="px-3 py-2 whitespace-nowrap text-wv-text-secondary">{{ $g->scheduled_at?->format('d/m/Y H:i') ?? '—' }}</td>
                                             <td class="px-3 py-2 whitespace-nowrap font-medium text-wv-text">{{ $g->homeTeam->short_name ?? $g->homeTeam->name }}</td>
                                             <td class="px-3 py-2 whitespace-nowrap text-center font-bold">
                                                 <a href="{{ route('games.scoreboard', $g) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $g->home_score ?? 0 }} - {{ $g->away_score ?? 0 }}</a>
@@ -129,7 +129,7 @@
                 </div>
 
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
-                    {{ __('Creada') }}: {{ $category->created_at->format('d/m/Y H:i') }} Â·
+                    {{ __('Creada') }}: {{ $category->created_at->format('d/m/Y H:i') }} ·
                     {{ __('Actualizada') }}: {{ $category->updated_at->format('d/m/Y H:i') }}
                 </div>
             </div>

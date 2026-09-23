@@ -72,8 +72,8 @@
                                             </a>
                                         </td>
                                         <td class="px-6 py-3 text-xs text-wv-text-secondary">
-                                            <div>{{ $g->category->name ?? 'â€”' }}</div>
-                                            <div>{{ $g->stadium->name ?? 'â€”' }}</div>
+                                            <div>{{ $g->category->name ?? '—' }}</div>
+                                            <div>{{ $g->stadium->name ?? '—' }}</div>
                                         </td>
                                         <td class="px-6 py-3 text-center">
                                             <span class="inline-flex px-2 text-xs leading-5 font-semibold rounded-full border {{ $statusColors[$g->status] ?? 'bg-wv-surface-hover text-wv-text-secondary border-wv-border' }}">
@@ -86,7 +86,7 @@
                                                     <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
                                                 </span>
                                             @else
-                                                <span class="text-wv-text-secondary">â€”</span>
+                                                <span class="text-wv-text-secondary">—</span>
                                             @endif
                                         </td>
                                         <td class="px-6 py-3 text-right text-sm font-medium">

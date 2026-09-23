@@ -29,11 +29,11 @@
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Cédula') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $athlete->document_id ?? 'â€”' }}</dd>
+                        <dd class="text-base font-medium text-wv-text">{{ $athlete->document_id ?? '—' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Fecha de nacimiento') }}</dt>
-                        <dd class="text-base font-medium text-wv-text">{{ $athlete->birth_date?->format('d/m/Y') ?? 'â€”' }}</dd>
+                        <dd class="text-base font-medium text-wv-text">{{ $athlete->birth_date?->format('d/m/Y') ?? '—' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Equipo') }}</dt>
@@ -41,10 +41,10 @@
                             @if ($athlete->team)
                                 <a href="{{ route('teams.show', $athlete->team) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $athlete->team->name }}</a>
                                 @if ($athlete->team->league)
-                                    <span class="text-wv-text-secondary mx-1">Â·</span>
+                                    <span class="text-wv-text-secondary mx-1">·</span>
                                     <a href="{{ route('leagues.show', $athlete->team->league) }}" class="text-sm text-wv-text-secondary hover:text-wv-accent">{{ $athlete->team->league->name }}</a>
                                 @endif
-                            @else â€”
+                            @else —
                             @endif
                         </dd>
                     </div>
@@ -53,17 +53,17 @@
                         <dd class="text-base font-medium text-wv-text">
                             @if ($athlete->category)
                                 <a href="{{ route('categories.show', $athlete->category) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $athlete->category->name }}</a>
-                            @else â€”
+                            @else —
                             @endif
                         </dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('NÃºmero') }}</dt>
-                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $athlete->number ?? 'â€”' }}</dd>
+                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $athlete->number ?? '—' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('PosiciÃ³n') }}</dt>
-                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $athlete->position ?? 'â€”' }}</dd>
+                        <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $athlete->position ?? '—' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
                         <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Batea / Lanza') }}</dt>
@@ -71,7 +71,7 @@
                     </div>
                 </dl>
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
-                    {{ __('Creado') }}: {{ $athlete->created_at->format('d/m/Y H:i') }} Â· {{ __('Actualizado') }}: {{ $athlete->updated_at->format('d/m/Y H:i') }}
+                    {{ __('Creado') }}: {{ $athlete->created_at->format('d/m/Y H:i') }} · {{ __('Actualizado') }}: {{ $athlete->updated_at->format('d/m/Y H:i') }}
                 </div>
             </div>
 
@@ -285,7 +285,7 @@
                                         $opponent = $g->home_team_id === $athlete->team_id ? $g->awayTeam : $g->homeTeam;
                                     @endphp
                                     <tr>
-                                        <td class="px-3 py-2 whitespace-nowrap text-wv-text-secondary">{{ $g->scheduled_at?->format('d/m/Y') ?? 'â€”' }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-wv-text-secondary">{{ $g->scheduled_at?->format('d/m/Y') ?? '—' }}</td>
                                         <td class="px-3 py-2 whitespace-nowrap text-wv-text">
                                             <a href="{{ route('games.scoreboard', $g) }}" class="hover:text-wv-accent">
                                                 @if ($g->home_team_id === $athlete->team_id)
