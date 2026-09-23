@@ -60,6 +60,31 @@
                         <dd class="text-sm text-wv-text whitespace-pre-line">{{ $coach->notes }}</dd>
                     </div>
                 @endif
+
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-wv-bg border border-wv-border rounded-card p-4">
+                        <dt class="text-wv-text-secondary text-xs uppercase mb-2">{{ __('Foto') }}</dt>
+                        @if ($coach->photo_url)
+                            <a href="{{ $coach->photo_url }}" target="_blank" rel="noopener">
+                                <img src="{{ $coach->photo_url }}" alt="{{ $coach->full_name }}"
+                                     class="w-32 h-32 rounded-lg object-cover border border-wv-border">
+                            </a>
+                        @else
+                            <p class="text-sm text-wv-text-secondary italic">{{ __('Sin foto registrada.') }}</p>
+                        @endif
+                    </div>
+                    <div class="bg-wv-bg border border-wv-border rounded-card p-4">
+                        <dt class="text-wv-text-secondary text-xs uppercase mb-2">{{ __('Documento de identidad') }}</dt>
+                        @if ($coach->document_photo_url)
+                            <a href="{{ $coach->document_photo_url }}" target="_blank" rel="noopener">
+                                <img src="{{ $coach->document_photo_url }}" alt="Documento"
+                                     class="w-32 h-32 rounded-lg object-cover border border-wv-border">
+                            </a>
+                        @else
+                            <p class="text-sm text-wv-text-secondary italic">{{ __('Sin foto del documento.') }}</p>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
     </div>

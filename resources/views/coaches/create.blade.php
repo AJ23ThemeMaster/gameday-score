@@ -13,7 +13,7 @@
             @include('partials._flash')
 
             <div class="bg-wv-surface border border-wv-border rounded-card">
-                <form method="POST" action="{{ route('teams.coaches.store', $team) }}" class="p-6" data-loader>
+                <form method="POST" action="{{ route('teams.coaches.store', $team) }}" enctype="multipart/form-data" class="p-6" data-loader>
                     @csrf
                     @include('coaches._form')
                     <div class="flex justify-end mt-6 gap-3">

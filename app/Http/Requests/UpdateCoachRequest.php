@@ -41,6 +41,8 @@ class UpdateCoachRequest extends FormRequest
             'birth_date' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'active' => ['nullable', 'boolean'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'document_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
         ];
     }

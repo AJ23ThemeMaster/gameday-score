@@ -40,6 +40,9 @@ class StoreCoachRequest extends FormRequest
             'birth_date' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'active' => ['nullable', 'boolean'],
+            // Fotos: nullable, debe ser imagen, max 2MB.
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'document_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             // user_id opcional: si se envia, debe existir en users.
             'user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
         ];

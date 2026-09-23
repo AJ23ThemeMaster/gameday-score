@@ -31,6 +31,8 @@ class Coach extends Model
         'birth_date',
         'notes',
         'active',
+        'photo_path',
+        'document_photo_path',
     ];
 
     protected function casts(): array
@@ -54,5 +56,28 @@ class Coach extends Model
     public function getFullNameAttribute(): string
     {
         return trim($this->first_name.' '.$this->last_name);
+    }
+
+    /**
+     * URL publica de la foto del coach (o null si no tiene).
+     * Usa el disco 'public' que se sirve via symlink storage/.
+     */
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (! $this->photo_path) {
+            return null;
+        }
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->photo_path);
+    }
+
+    /**
+     * URL publica de la foto del documento de identidad (o null).
+     */
+    public function getDocumentPhotoUrlAttribute(): ?string
+    {
+        if (! $this->document_photo_path) {
+            return null;
+        }
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->document_photo_path);
     }
 }

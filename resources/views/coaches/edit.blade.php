@@ -14,7 +14,7 @@
             @include('partials._flash')
 
             <div class="bg-wv-surface border border-wv-border rounded-card">
-                <form method="POST" action="{{ route('teams.coaches.update', [$team, $coach]) }}" class="p-6" data-loader>
+                <form method="POST" action="{{ route('teams.coaches.update', [$team, $coach]) }}" enctype="multipart/form-data" class="p-6" data-loader>
                     @csrf
                     @method('PUT')
                     @include('coaches._form')

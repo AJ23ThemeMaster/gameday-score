@@ -64,6 +64,37 @@
         <x-input-error :messages="$errors->get('notes')" class="mt-2" />
     </div>
 
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+            <x-input-label for="photo" :value="__('Foto del entrenador (opcional)')" />
+            @if (! empty($coach->photo_path))
+                <div class="mt-1 mb-2 flex items-center gap-3">
+                    <img src="{{ $coach->photo_url }}" alt="{{ $coach->full_name }}"
+                         class="w-16 h-16 rounded-full object-cover border border-wv-border">
+                    <p class="text-xs text-wv-text-secondary">{{ basename($coach->photo_path) }}</p>
+                </div>
+            @endif
+            <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"
+                   class="block mt-1 w-full text-sm text-wv-text file:mr-3 file:py-2 file:px-3 file:rounded file:border-0 file:bg-wv-accent file:text-wv-text-on-accent file:font-semibold hover:file:bg-wv-accent-hover">
+            <p class="mt-1 text-xs text-wv-text-secondary">{{ __('JPG, PNG o WebP. Maximo 2MB.') }}</p>
+            <x-input-error :messages="$errors->get('photo')" class="mt-2" />
+        </div>
+        <div>
+            <x-input-label for="document_photo" :value="__('Foto del documento de identidad (opcional)')" />
+            @if (! empty($coach->document_photo_path))
+                <div class="mt-1 mb-2 flex items-center gap-3">
+                    <img src="{{ $coach->document_photo_url }}" alt="Documento"
+                         class="w-16 h-16 rounded object-cover border border-wv-border">
+                    <p class="text-xs text-wv-text-secondary">{{ basename($coach->document_photo_path) }}</p>
+                </div>
+            @endif
+            <input id="document_photo" name="document_photo" type="file" accept="image/jpeg,image/png,image/webp"
+                   class="block mt-1 w-full text-sm text-wv-text file:mr-3 file:py-2 file:px-3 file:rounded file:border-0 file:bg-wv-accent file:text-wv-text-on-accent file:font-semibold hover:file:bg-wv-accent-hover">
+            <p class="mt-1 text-xs text-wv-text-secondary">{{ __('JPG, PNG o WebP. Maximo 2MB.') }}</p>
+            <x-input-error :messages="$errors->get('document_photo')" class="mt-2" />
+        </div>
+    </div>
+
     <div class="flex items-center">
         <input id="active" name="active" type="checkbox" value="1"
                {{ old('active', $coach->active ?? true) ? 'checked' : '' }}

@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateCoachRequest;
 use App\Models\Coach;
 use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
@@ -73,6 +74,13 @@ class CoachController extends Controller
         // Cast defensivo para PHP 8.4 strict types.
         $data['user_id'] = isset($data['user_id']) && $data['user_id'] !== null ? (int) $data['user_id'] : null;
 
+        if ($request->hasFile('photo')) {
+            $data['photo_path'] = $request->file('photo')->store('coaches/photos', 'public');
+        }
+        if ($request->hasFile('document_photo')) {
+            $data['document_photo_path'] = $request->file('document_photo')->store('coaches/documents', 'public');
+        }
+
         $coach = Coach::create($data);
 
         return redirect()
@@ -110,6 +118,21 @@ class CoachController extends Controller
         $data = $request->validated();
         $data['active'] = $request->boolean('active');
         $data['user_id'] = isset($data['user_id']) && $data['user_id'] !== null ? (int) $data['user_id'] : null;
+
+        // Subir nueva foto y borrar la anterior si existe.
+        if ($request->hasFile('photo')) {
+            if ($coach->photo_path && Storage::disk('public')->exists($coach->photo_path)) {
+                Storage::disk('public')->delete($coach->photo_path);
+            }
+            $data['photo_path'] = $request->file('photo')->store('coaches/photos', 'public');
+        }
+        if ($request->hasFile('document_photo')) {
+            if ($coach->document_photo_path && Storage::disk('public')->exists($coach->document_photo_path)) {
+                Storage::disk('public')->delete($coach->document_photo_path);
+            }
+            $data['document_photo_path'] = $request->file('document_photo')->store('coaches/documents', 'public');
+        }
+
         $coach->update($data);
 
         return redirect()
@@ -124,6 +147,13 @@ class CoachController extends Controller
             abort(404);
         }
         $name = $coach->full_name;
+        // Borrar archivos asociados antes de eliminar el registro.
+        if ($coach->photo_path && Storage::disk('public')->exists($coach->photo_path)) {
+            Storage::disk('public')->delete($coach->photo_path);
+        }
+        if ($coach->document_photo_path && Storage::disk('public')->exists($coach->document_photo_path)) {
+            Storage::disk('public')->delete($coach->document_photo_path);
+        }
         $coach->delete();
 
         return redirect()
