@@ -13,7 +13,9 @@
             padding: 0;
         }
 
-        /* Membrete: LOGO + (EQUIPO / LIGA) | FECHA */
+        /* Membrete: LOGO | EQUIPO / CIUDAD | FECHA
+           Las 3 cajas son celdas independientes; cada elemento se centra
+           dentro de su propio recuadro. */
         .membrete {
             width: 100%;
             margin-bottom: 14px;
@@ -21,9 +23,19 @@
             padding-bottom: 8px;
         }
         .membrete table { width: 100%; border-collapse: collapse; }
-        .membrete td { vertical-align: middle; padding: 4px 6px; }
-        .membrete-logo { width: 110px; text-align: left; }
-        .membrete-logo img { max-width: 110px; max-height: 90px; }
+        .membrete td {
+            vertical-align: middle;
+            padding: 4px 6px;
+            text-align: center;
+        }
+        .membrete-logo {
+            width: 20%;
+        }
+        .membrete-logo img {
+            max-width: 110px;
+            max-height: 90px;
+            display: inline-block;
+        }
         .membrete-logo .placeholder {
             width: 110px;
             height: 80px;
@@ -35,28 +47,32 @@
             font-size: 9px;
         }
         .membrete-names {
+            width: 55%;
             font-weight: bold;
             font-size: 13px;
             line-height: 1.4;
-            text-align: left;
         }
         .membrete-names .team { font-size: 14px; }
-        .membrete-names .league { font-size: 11px; font-weight: normal; color: #333; }
+        .membrete-names .city { font-size: 11px; font-weight: normal; }
         .membrete-date {
-            text-align: right;
-            font-size: 10.5px;
+            width: 25%;
+            font-size: 12px;
             font-weight: bold;
             line-height: 1.4;
-            vertical-align: bottom;
         }
 
         /* Titulo */
         .title {
             text-align: center;
-            margin: 4px 0 8px;
+            margin: 6px 0 2px;
             font-size: 16px;
             font-weight: bold;
-            text-decoration: underline;
+        }
+        .subtitle {
+            text-align: center;
+            margin: 0 0 10px;
+            font-size: 12px;
+            font-weight: bold;
         }
 
         /* Tabla unica (atletas + manager + tecnicos + delegado) */
@@ -93,33 +109,32 @@
     </style>
 </head>
 <body>
-    {{-- Membrete: LOGO | EQUIPO / LIGA | FECHA --}}
+    {{-- Membrete: LOGO | EQUIPO / CIUDAD | FECHA --}}
     <div class="membrete">
         <table>
             <tr>
-                <td class="membrete-logo" style="width: 18%;">
+                <td class="membrete-logo">
                     @if ($logoBase64)
                         <img src="{{ $logoBase64 }}" alt="logo">
                     @else
                         <span class="placeholder">Sin logo</span>
                     @endif
                 </td>
-                <td class="membrete-names" style="width: 55%;">
+                <td class="membrete-names">
                     <div class="team">{{ mb_strtoupper($team->name) }}</div>
-                    @if ($team->league)
-                        <div class="league">{{ mb_strtoupper($team->league->name) }}</div>
+                    @if (! empty($team->city))
+                        <div class="city">{{ $team->city }}</div>
                     @endif
                 </td>
-                <td class="membrete-date" style="width: 27%;">
-                    FECHA DE GENERACIÓN<br>
-                    DEL DOCUMENTO:<br>
-                    {{ \Illuminate\Support\Carbon::parse($today)->locale('es')->translatedFormat('d/m/Y') }}
+                <td class="membrete-date">
+                    {{ \Illuminate\Support\Carbon::parse($today)->format('d-m-Y') }}
                 </td>
             </tr>
         </table>
     </div>
 
     <div class="title">ROSTER.</div>
+    <div class="subtitle">CATEGORÍA: {{ mb_strtoupper($category->name ?? '—') }}</div>
 
     {{-- Tabla unificada --}}
     <table class="roster">
@@ -137,13 +152,6 @@
                 // disponibles para futuros ingresos.
                 $maxAthletes = max(20, $athletes->count());
             @endphp
-
-            {{-- Fila de titulo de la categoria --}}
-            <tr>
-                <td colspan="4" class="section-label">
-                    CATEGORÍA: {{ mb_strtoupper($category->name ?? '—') }}
-                </td>
-            </tr>
 
             {{-- Atletas --}}
             @for ($i = 1; $i <= $maxAthletes; $i++)
