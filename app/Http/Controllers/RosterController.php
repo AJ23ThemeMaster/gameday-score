@@ -287,9 +287,17 @@ class RosterController extends Controller
             'coaches' => fn ($q) => $q->orderBy('last_name')->orderBy('first_name'),
         ]);
 
+        // El team necesita el nombre de la liga para el membrete.
+        $team->loadMissing('league');
+
         // Atletas del roster filtrados por la categoria del roster.
+        // En el PDF se ordenan por fecha de nacimiento (mas viejo arriba).
+        // Usamos orderByRaw para que los atletas SIN birth_date caigan
+        // al final del listado (no al principio, donde distorsionarian
+        // el orden real de los demas).
         $athletes = $roster->categoryAthletes()
-            ->orderBy('number')
+            ->orderByRaw('birth_date IS NOT NULL DESC')
+            ->orderBy('birth_date')
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->get();
