@@ -33,3 +33,11 @@ scripts/tmp-debug/
 # Temp commit message drafts
 scripts/tmp-commit-msgs/
 
+
+_e2e_backup/
+app/Http/Controllers/_deprecated/
+server-stderr.log
+server-stdout.log
+-w
+
+public/vendor/log-viewer/

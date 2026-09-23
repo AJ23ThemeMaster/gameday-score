@@ -48,6 +48,20 @@ class Coach extends Model
         return $this->belongsTo(Team::class);
     }
 
+    public function rosters(): BelongsToMany
+    {
+        return $this->belongsToMany(Roster::class, 'roster_coach')
+            ->withTimestamps();
+    }
+
+    /**
+     * Rosters donde este coach es el manager.
+     */
+    public function managedRosters(): HasMany
+    {
+        return $this->hasMany(Roster::class, 'manager_coach_id');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

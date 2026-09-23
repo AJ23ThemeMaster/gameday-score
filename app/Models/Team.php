@@ -49,6 +49,11 @@ class Team extends Model
         return $this->hasMany(Coach::class);
     }
 
+    public function rosters(): HasMany
+    {
+        return $this->hasMany(Roster::class);
+    }
+
     public function categories(): HasMany
     {
         return $this->hasMany(Category::class);

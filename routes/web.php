@@ -11,6 +11,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\RefereeController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\GameRosterController;
 use App\Http\Controllers\RosterController;
 use App\Http\Controllers\ScoreboardController;
 use App\Http\Controllers\ScorekeeperController;
@@ -89,6 +90,8 @@ Route::middleware(['auth', '2fa.challenge'])->group(function () {
     // prefijo App\Http\Controllers (que haria que la ruta se registre
     // como 'CoachController@index' en vez de 'App\Http\Controllers\CoachController@index').
     Route::resource('teams.coaches', \App\Http\Controllers\CoachController::class);
+    // Roster por (equipo, categoria): teams/{team}/rosters/...
+    Route::resource('teams.rosters', \App\Http\Controllers\RosterController::class);
     Route::resource('athletes', AthleteController::class);
     Route::resource('scorekeepers', ScorekeeperController::class);
     Route::resource('referees', RefereeController::class);
@@ -150,12 +153,12 @@ Route::middleware(['auth', '2fa.challenge'])->group(function () {
     // DISI-20: gestion de corredores en el terreno (avance, robo, wild pitch, OBS, etc.)
     Route::post('games/{game}/runner/action', [\App\Http\Controllers\PlayController::class, 'runnerAction'])->name('games.plays.runner');
 
-    // DISI-10: Roster y sustituciones
-    Route::get('games/{game}/roster', [RosterController::class, 'index'])->name('games.roster.index');
-    Route::post('games/{game}/roster/athletes', [RosterController::class, 'store'])->name('games.roster.store');
-    Route::patch('games/{game}/roster/{athlete}', [RosterController::class, 'update'])->name('games.roster.update');
-    Route::delete('games/{game}/roster/{athlete}', [RosterController::class, 'destroy'])->name('games.roster.destroy');
-    Route::post('games/{game}/roster/substitute', [RosterController::class, 'substitute'])->name('games.roster.substitute');
+    // DISI-10: Roster POR-JUEGO (nomina de atletas en un juego) y sustituciones
+    Route::get('games/{game}/roster', [GameRosterController::class, 'index'])->name('games.roster.index');
+    Route::post('games/{game}/roster/athletes', [GameRosterController::class, 'store'])->name('games.roster.store');
+    Route::patch('games/{game}/roster/{athlete}', [GameRosterController::class, 'update'])->name('games.roster.update');
+    Route::delete('games/{game}/roster/{athlete}', [GameRosterController::class, 'destroy'])->name('games.roster.destroy');
+    Route::post('games/{game}/roster/substitute', [GameRosterController::class, 'substitute'])->name('games.roster.substitute');
 });
 
 require __DIR__.'/auth.php';

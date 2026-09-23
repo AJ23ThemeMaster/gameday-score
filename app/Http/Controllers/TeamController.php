@@ -101,6 +101,36 @@ class TeamController extends Controller
         ]);
         $team->loadCount(['athletes', 'homeGames', 'awayGames', 'categories', 'tournaments', 'coaches']);
 
+        // DISI-roster: rosters del equipo por categoria, agrupados para
+        // mostrarlos como una grilla compacta en teams.show.
+        // El conteo de atletas se hace en PHP (no via withCount) porque
+        // la relacion `athletes()` del modelo Roster no incluye el
+        // filtro por categoria del roster (ver Roster.php).
+        $rosters = $team->rosters()
+            ->with(['category', 'managerCoach', 'delegateUser'])
+            ->withCount('coaches')
+            ->orderBy('category_id')
+            ->orderBy('name')
+            ->get();
+
+        $rosterIds = $rosters->pluck('id')->all();
+        if ($rosterIds) {
+            $athleteCounts = \App\Models\Athlete::query()
+                ->selectRaw('rosters.id as roster_id, COUNT(athletes.id) as athletes_count')
+                ->join('rosters', function ($join) {
+                    $join->on('rosters.team_id', '=', 'athletes.team_id')
+                         ->whereColumn('rosters.category_id', 'athletes.category_id');
+                })
+                ->whereIn('rosters.id', $rosterIds)
+                ->groupBy('rosters.id')
+                ->pluck('athletes_count', 'roster_id')
+                ->all();
+
+            foreach ($rosters as $r) {
+                $r->athletes_count = $athleteCounts[$r->id] ?? 0;
+            }
+        }
+
         // Filtros del roster (todos opcionales)
         $filters = [
             'name' => trim((string) $request->query('name', '')),
@@ -175,7 +205,8 @@ class TeamController extends Controller
 
         return view('teams.show', compact(
             'team', 'athletes', 'totalAthletes', 'filteredCount',
-            'filters', 'teamCategories', 'categoryStats', 'positions', 'filterCategories'
+            'filters', 'teamCategories', 'categoryStats', 'positions', 'filterCategories',
+            'rosters'
         ));
     }
 

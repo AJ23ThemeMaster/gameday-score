@@ -271,6 +271,58 @@
                     @endif
                 </div>
 
+                {{-- DISI-roster: rosters del equipo agrupados por categoria --}}
+                <div class="mt-6 pt-6 border-t border-wv-border">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-sm font-semibold text-wv-text">
+                            {{ __('Rosters por categoría') }}
+                            <span class="text-wv-text-secondary font-normal">({{ $rosters->count() }})</span>
+                        </h4>
+                        <a href="{{ route('teams.rosters.index', $team) }}"
+                           class="text-xs text-wv-accent hover:text-wv-accent-hover font-semibold">
+                            {{ __('Gestionar rosters') }} →
+                        </a>
+                    </div>
+
+                    @if ($rosters->isEmpty())
+                        <p class="text-sm text-wv-text-secondary italic">
+                            {{ __('Aún no hay rosters configurados. Cada roster agrupa manager, coaches y delegado de una (categoría, temporada).') }}
+                        </p>
+                    @else
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            @foreach ($rosters as $r)
+                                <a href="{{ route('teams.rosters.show', [$team, $r]) }}"
+                                   class="bg-wv-bg border border-wv-border rounded-card p-3 hover:bg-wv-surface-hover transition block">
+                                    <div class="flex items-center gap-2 mb-1.5">
+                                        @if ($r->category)
+                                            <span class="inline-flex px-2 text-[10px] leading-4 font-semibold rounded-full bg-wv-accent/15 text-wv-accent border border-wv-accent/40">
+                                                {{ $r->category->name }}
+                                            </span>
+                                        @endif
+                                        @if ($r->name)
+                                            <span class="text-xs text-wv-text-secondary">{{ $r->name }}</span>
+                                        @endif
+                                        @if ($r->active)
+                                            <span class="inline-block w-1.5 h-1.5 rounded-full bg-wv-success ml-auto" title="{{ __('Activo') }}"></span>
+                                        @else
+                                            <span class="inline-block w-1.5 h-1.5 rounded-full bg-wv-text-secondary ml-auto" title="{{ __('Inactivo') }}"></span>
+                                        @endif
+                                    </div>
+                                    <p class="text-sm font-medium text-wv-text truncate">
+                                        {{ $r->managerCoach?->full_name ?? __('Sin manager') }}
+                                    </p>
+                                    <div class="flex items-center gap-3 mt-1 text-xs text-wv-text-secondary font-mono">
+                                        <span>{{ __('Manager') }}: {{ $r->managerCoach ? '✓' : '—' }}</span>
+                                        <span>{{ __('Coaches') }}: {{ $r->coaches_count }}</span>
+                                        <span>{{ __('Atletas') }}: {{ $r->athletes_count }}</span>
+                                        <span>{{ __('Delegado') }}: {{ $r->delegateUser ? '✓' : '—' }}</span>
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
                     {{ __('Creado') }}: {{ $team->created_at->format('d/m/Y H:i') }} ·
                     {{ __('Actualizado') }}: {{ $team->updated_at->format('d/m/Y H:i') }}

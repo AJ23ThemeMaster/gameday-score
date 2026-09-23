@@ -111,6 +111,11 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function delegatedRosters(): HasMany
+    {
+        return $this->hasMany(Roster::class, 'delegate_user_id');
+    }
+
     /**
      * Verificar si este usuario es administrador.
      */

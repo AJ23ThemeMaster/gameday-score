@@ -4,215 +4,262 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\RespondsWithRosterPartial;
-use App\Http\Requests\AddAthleteToRosterRequest;
-use App\Http\Requests\SubstituteAthleteRequest;
-use App\Http\Requests\UpdateRosterEntryRequest;
-use App\Models\Athlete;
-use App\Models\Game;
-use Illuminate\Http\JsonResponse;
+use App\Http\Requests\StoreRosterRequest;
+use App\Http\Requests\UpdateRosterRequest;
+use App\Models\Category;
+use App\Models\Coach;
+use App\Models\Roster;
+use App\Models\Team;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
+/**
+ * CRUD de Roster por (equipo, categoria).
+ *
+ * Ruta anidada: teams/{team}/rosters/...
+ *
+ * Permisos (middleware + helper):
+ *  - admin: CRUD completo sobre cualquier roster.
+ *  - gestor: solo rosters de SU equipo (chequeo via
+ *    authorizeGestorOnRoster).
+ *  - delegado: NO entra a este modulo (su scope es atletas).
+ *
+ * Cada roster agrupa:
+ *  - manager (Coach con role libre, en roster.manager_coach_id).
+ *  - N coaches adicionales (pivote roster_coach).
+ *  - 1 delegado (User con rol 'delegado' y mismo team_id+category_id).
+ *  - atletas: derivados de Athlete.team_id + Athlete.category_id
+ *    (no requieren pivote; cualquier atleta con ese (team,category)
+ *    pertenece automaticamente al roster).
+ */
 class RosterController extends Controller
 {
-    use RespondsWithRosterPartial;
-
-    public function index(Game $game): View
+    public function __construct()
     {
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
-
-        $game->load([
-            'category', 'stadium', 'homeTeam', 'awayTeam',
-            'homeTeam.athletes', 'awayTeam.athletes',
-        ]);
-
-        $rosterEntries = $game->athletes()
-            ->withPivot([
-                'team_id', 'lineup_order', 'position',
-                'is_starter', 'is_pitcher', 'pitches_thrown',
-                'at_bats', 'hits', 'runs', 'rbi',
-            ])
-            ->get()
-            ->keyBy('id');
-
-        $homeAvailable = $game->homeTeam->athletes->whereNotIn('id', $rosterEntries->keys());
-        $awayAvailable = $game->awayTeam->athletes->whereNotIn('id', $rosterEntries->keys());
-
-        $homePitcher = $rosterEntries->first(fn ($a) => $a->pivot->is_pitcher && $a->pivot->team_id === $game->home_team_id);
-        $awayPitcher = $rosterEntries->first(fn ($a) => $a->pivot->is_pitcher && $a->pivot->team_id === $game->away_team_id);
-
-        return view('games.roster.index', compact(
-            'game', 'rosterEntries', 'homeAvailable', 'awayAvailable', 'homePitcher', 'awayPitcher'
-        ));
+        // El delegado NO puede acceder a este modulo en absoluto.
+        // admin y gestor (gestor con scope team) pueden CRUD.
+        $this->middleware('admin_or_gestor');
     }
 
-    public function store(AddAthleteToRosterRequest $request, Game $game): RedirectResponse|JsonResponse
+    /**
+     * Garantiza que el gestor solo actua sobre rosters de SU equipo.
+     */
+    private function authorizeGestorOnRoster(?Team $team): void
     {
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        if (! $team) {
+            abort(404);
+        }
+        $user = Auth::user();
+        if ($user && $user->isGestor() && (int) $user->team_id !== (int) $team->id) {
+            abort(403, 'Solo puedes administrar rosters del equipo al que estás asociado.');
+        }
+    }
 
-        $data = $request->validated();
-        $data['is_starter'] = $request->boolean('is_starter', true);
+    /**
+     * Verifica que el roster pertenece al team de la ruta (evita acceso
+     * cruzando equipos via inyeccion de {roster}).
+     */
+    private function authorizeRosterBelongsToTeam(Team $team, Roster $roster): void
+    {
+        if ((int) $roster->team_id !== (int) $team->id) {
+            abort(404);
+        }
+    }
 
-        // Si este atleta es pitcher, quitar el flag de cualquier otro pitcher del mismo equipo
-        if ($request->boolean('is_pitcher')) {
-            $otherPitchers = $game->athletes()
-                ->wherePivot('team_id', $data['team_id'])
-                ->wherePivot('is_pitcher', true)
-                ->pluck('athletes.id')
-                ->toArray();
-            if ($otherPitchers) {
-                $game->athletes()->updateExistingPivot($otherPitchers, ['is_pitcher' => false]);
+    public function index(Team $team): View
+    {
+        $this->authorizeGestorOnRoster($team);
+
+        // withCount(['athletes' => fn ($q) => ...]) no funciona directo
+        // porque la relacion `athletes()` no incluye el filtro por
+        // categoria del roster (ver comentario en App\Models\Roster).
+        // Solucion: paginar manualmente y aplicar el count en PHP.
+        $rosters = $team->rosters()
+            ->with(['category', 'managerCoach', 'delegateUser'])
+            ->withCount('coaches')
+            ->orderBy('category_id')
+            ->orderBy('name')
+            ->paginate(20);
+
+        // Hidratar counts de atletas por categoria para los rosters de la pagina actual.
+        $rosterIds = $rosters->pluck('id')->all();
+        if ($rosterIds) {
+            $athleteCounts = \App\Models\Athlete::query()
+                ->selectRaw('rosters.id as roster_id, COUNT(athletes.id) as athletes_count')
+                ->join('rosters', function ($join) {
+                    $join->on('rosters.team_id', '=', 'athletes.team_id')
+                         ->whereColumn('rosters.category_id', 'athletes.category_id');
+                })
+                ->whereIn('rosters.id', $rosterIds)
+                ->groupBy('rosters.id')
+                ->pluck('athletes_count', 'roster_id')
+                ->all();
+
+            foreach ($rosters as $r) {
+                $r->athletes_count = $athleteCounts[$r->id] ?? 0;
             }
         }
 
-        $game->athletes()->syncWithoutDetaching([
-            $data['athlete_id'] => [
-                'team_id' => $data['team_id'],
-                'lineup_order' => $data['lineup_order'] ?? null,
-                'position' => $data['position'] ?? null,
-                'is_starter' => $data['is_starter'],
-                'is_pitcher' => $request->boolean('is_pitcher'),
-            ],
-        ]);
-
-        $athlete = Athlete::find($data['athlete_id']);
-
-        return $this->rosterResponse(
-            $request,
-            $game,
-            "«{$athlete->full_name}» agregado al roster.",
-        );
+        return view('rosters.index', compact('team', 'rosters'));
     }
 
-    public function update(UpdateRosterEntryRequest $request, Game $game, Athlete $athlete): RedirectResponse|JsonResponse
+    public function create(Team $team): View
     {
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        $this->authorizeGestorOnRoster($team);
 
-        $pivot = $game->athletes()->where('athlete_id', $athlete->id)->first()?->pivot;
-        if (! $pivot) {
-            return $this->rosterResponse(
-                $request, $game,
-                "«{$athlete->full_name}» no está en el roster.",
-                'error',
-            );
-        }
+        // Todas las categorias activas. La vinculacion con el equipo es
+        // a traves de los atletas (athletes.team_id + category_id) y de
+        // la FK rosters.team_id; categories.team_id es nullable en BD.
+        $categories = Category::where('active', true)->orderBy('name')->get();
 
-        $data = array_filter($request->validated(), fn ($v) => $v !== null);
+        // Coaches del equipo (manager + adicionales).
+        $coaches = $team->coaches()->orderBy('last_name')->orderBy('first_name')->get();
 
-        // Si lo marca como pitcher, desmarcar el pitcher actual del mismo equipo
-        if ($request->boolean('is_pitcher') || (isset($data['is_pitcher']) && $data['is_pitcher'])) {
-            $otherPitchers = $game->athletes()
-                ->wherePivot('team_id', $pivot->team_id)
-                ->wherePivot('is_pitcher', true)
-                ->where('athletes.id', '!=', $athlete->id)
-                ->pluck('athletes.id')
-                ->toArray();
-            if ($otherPitchers) {
-                $game->athletes()->updateExistingPivot($otherPitchers, ['is_pitcher' => false]);
-            }
-        }
+        // Delegados candidatos: users con rol 'delegado' y team_id = $team.
+        $delegates = User::role('delegado')
+            ->where('team_id', $team->id)
+            ->whereNotNull('category_id')
+            ->orderBy('name')
+            ->get();
 
-        $game->athletes()->updateExistingPivot($athlete->id, $data);
+        $roster = new Roster(['active' => true]);
 
-        return $this->rosterResponse(
-            $request,
-            $game,
-            "«{$athlete->full_name}» actualizado.",
-        );
+        return view('rosters.create', compact('team', 'categories', 'coaches', 'delegates', 'roster'));
     }
 
-    public function destroy(\Illuminate\Http\Request $request, Game $game, Athlete $athlete): RedirectResponse|JsonResponse
+    public function store(StoreRosterRequest $request, Team $team): RedirectResponse
     {
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
-
-        $name = $athlete->full_name;
-        $game->athletes()->detach($athlete->id);
-
-        return $this->rosterResponse(
-            $request,
-            $game,
-            "«{$name}» removido del roster.",
-        );
-    }
-
-    public function substitute(SubstituteAthleteRequest $request, Game $game): RedirectResponse|JsonResponse
-    {
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
-
+        $this->authorizeGestorOnRoster($team);
         $data = $request->validated();
 
-        DB::transaction(function () use ($game, $data, $request) {
-            $outPivot = $game->athletes()
-                ->where('athlete_id', $data['out_athlete_id'])
-                ->first()?->pivot;
+        // Cast defensivo para PHP 8.4 strict types.
+        $data['team_id'] = $team->id;
+        $data['category_id'] = (int) $data['category_id'];
+        $data['manager_coach_id'] = isset($data['manager_coach_id']) && $data['manager_coach_id'] !== null
+            ? (int) $data['manager_coach_id']
+            : null;
+        $data['delegate_user_id'] = isset($data['delegate_user_id']) && $data['delegate_user_id'] !== null
+            ? (int) $data['delegate_user_id']
+            : null;
+        $data['active'] = $request->boolean('active', true);
 
-            if (! $outPivot) {
-                abort(422, 'El atleta que sale no está en el roster.');
-            }
+        $coaches = $data['coaches'] ?? [];
+        unset($data['coaches']);
 
-            $stats = [
-                'pitches_thrown' => $outPivot->pitches_thrown,
-                'at_bats' => $outPivot->at_bats,
-                'hits' => $outPivot->hits,
-                'runs' => $outPivot->runs,
-                'rbi' => $outPivot->rbi,
-            ];
+        $roster = Roster::create($data);
 
-            $game->athletes()->detach($data['out_athlete_id']);
+        // Sync coaches adicionales (sin incluir al manager).
+        $coachesToSync = collect($coaches)
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (int) $id)
+            ->reject(fn ($id) => $id === $data['manager_coach_id'])
+            ->unique()
+            ->values()
+            ->all();
+        if ($coachesToSync) {
+            $roster->coaches()->sync($coachesToSync);
+        }
 
-            $attachData = array_merge([
-                'team_id' => $outPivot->team_id,
-                'lineup_order' => $data['lineup_order'] ?? $outPivot->lineup_order,
-                'position' => $data['position'] ?? $outPivot->position,
-                'is_starter' => false,
-                'is_pitcher' => $request->boolean('is_pitcher', (bool) $outPivot->is_pitcher),
-            ], $stats);
+        return redirect()
+            ->route('teams.rosters.show', [$team, $roster])
+            ->with('status', "Roster «{$roster->full_name}» creado correctamente.");
+    }
 
-            $game->athletes()->attach($data['in_athlete_id'], $attachData);
+    public function show(Team $team, Roster $roster): View
+    {
+        $this->authorizeGestorOnRoster($team);
+        $this->authorizeRosterBelongsToTeam($team, $roster);
 
-            if ($attachData['is_pitcher']) {
-                $otherPitchers = $game->athletes()
-                    ->wherePivot('team_id', $outPivot->team_id)
-                    ->wherePivot('is_pitcher', true)
-                    ->where('athletes.id', '!=', $data['in_athlete_id'])
-                    ->pluck('athletes.id')
-                    ->toArray();
-                if ($otherPitchers) {
-                    $game->athletes()->updateExistingPivot($otherPitchers, ['is_pitcher' => false]);
-                }
-            }
-        });
+        $roster->load([
+            'category', 'managerCoach', 'delegateUser',
+            'coaches' => fn ($q) => $q->orderBy('last_name')->orderBy('first_name'),
+        ]);
 
-        $inName = Athlete::find($data['in_athlete_id'])->full_name;
-        $outName = Athlete::find($data['out_athlete_id'])->full_name;
+        // Atletas del roster (filtrados por la categoria del roster).
+        // Cargamos manualmente para evitar el bug de eager-loading con
+        // closure sobre `$this->category_id` en la relacion `athletes()`
+        // del modelo. Esto devuelve una Collection que pasamos a la vista
+        // como `categoryAthletes` para que el partial la muestre.
+        $categoryAthletes = $roster->categoryAthletes()
+            ->orderBy('number')
+            ->orderBy('last_name')
+            ->get();
 
-        return $this->rosterResponse(
-            $request,
-            $game,
-            "Sustitución: «{$inName}» entró por «{$outName}».",
-        );
+        return view('rosters.show', compact('team', 'roster', 'categoryAthletes'));
+    }
+
+    public function edit(Team $team, Roster $roster): View
+    {
+        $this->authorizeGestorOnRoster($team);
+        $this->authorizeRosterBelongsToTeam($team, $roster);
+
+        $categories = Category::where('active', true)->orderBy('name')->get();
+        $coaches = $team->coaches()->orderBy('last_name')->orderBy('first_name')->get();
+
+        // Delegados candidatos (incluyendo el actual aunque ya no tenga
+        // la categoria, para no perder la asignacion al guardar).
+        $delegates = User::role('delegado')
+            ->where(function ($q) use ($team, $roster) {
+                $q->where('team_id', $team->id)
+                    ->orWhere('id', $roster->delegate_user_id);
+            })
+            ->whereNotNull('category_id')
+            ->orderBy('name')
+            ->get();
+
+        $roster->load('coaches');
+
+        return view('rosters.edit', compact('team', 'roster', 'categories', 'coaches', 'delegates'));
+    }
+
+    public function update(UpdateRosterRequest $request, Team $team, Roster $roster): RedirectResponse
+    {
+        $this->authorizeGestorOnRoster($team);
+        $this->authorizeRosterBelongsToTeam($team, $roster);
+
+        $data = $request->validated();
+        $data['category_id'] = (int) $data['category_id'];
+        $data['manager_coach_id'] = isset($data['manager_coach_id']) && $data['manager_coach_id'] !== null
+            ? (int) $data['manager_coach_id']
+            : null;
+        $data['delegate_user_id'] = isset($data['delegate_user_id']) && $data['delegate_user_id'] !== null
+            ? (int) $data['delegate_user_id']
+            : null;
+        $data['active'] = $request->boolean('active');
+
+        $coaches = $data['coaches'] ?? [];
+        unset($data['coaches']);
+
+        $roster->update($data);
+
+        $coachesToSync = collect($coaches)
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (int) $id)
+            ->reject(fn ($id) => $id === $data['manager_coach_id'])
+            ->unique()
+            ->values()
+            ->all();
+        $roster->coaches()->sync($coachesToSync);
+
+        return redirect()
+            ->route('teams.rosters.show', [$team, $roster])
+            ->with('status', "Roster «{$roster->full_name}» actualizado correctamente.");
+    }
+
+    public function destroy(Team $team, Roster $roster): RedirectResponse
+    {
+        $this->authorizeGestorOnRoster($team);
+        $this->authorizeRosterBelongsToTeam($team, $roster);
+
+        $name = $roster->full_name;
+        // La migracion cascadeOnDelete limpia roster_coach; los atletas
+        // NO se borran porque la relacion es derivada (no FK directa).
+        $roster->delete();
+
+        return redirect()
+            ->route('teams.rosters.index', $team)
+            ->with('status', "Roster «{$name}» eliminado correctamente.");
     }
 }
