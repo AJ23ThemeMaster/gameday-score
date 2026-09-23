@@ -6,6 +6,14 @@
             </h2>
             <div class="flex gap-2">
                 <a href="{{ route('teams.rosters.index', $team) }}" class="text-sm text-wv-text-secondary hover:text-wv-text">← {{ __('Rosters') }}</a>
+                <a href="{{ route('teams.rosters.pdf', [$team, $roster]) }}"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-wv-border hover:bg-wv-surface-hover text-wv-text text-xs font-semibold rounded-card"
+                   title="{{ __('Descargar reporte en PDF') }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" />
+                    </svg>
+                    {{ __('Descargar PDF') }}
+                </a>
                 <a href="{{ route('teams.rosters.edit', [$team, $roster]) }}" class="inline-flex items-center px-3 py-1.5 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-xs font-semibold rounded-card">{{ __('Editar') }}</a>
             </div>
         </div>

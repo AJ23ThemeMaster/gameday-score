@@ -6,12 +6,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreRosterRequest;
 use App\Http\Requests\UpdateRosterRequest;
+use App\Models\Athlete;
 use App\Models\Category;
 use App\Models\Coach;
 use App\Models\Roster;
 use App\Models\Team;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -261,5 +264,97 @@ class RosterController extends Controller
         return redirect()
             ->route('teams.rosters.index', $team)
             ->with('status', "Roster «{$name}» eliminado correctamente.");
+    }
+
+    /**
+     * Genera un PDF del roster (descargable).
+     *
+     * El PDF replica el formato usado tradicionalmente en la escuela:
+     *  - Cabecera con logo del equipo + datos de la escuela + fecha.
+     *  - Titulo "ROSTER." + categoria.
+     *  - Tabla con atletas (N°, nombre, cedula, fecha de nacimiento).
+     *  - Secciones finales: MANAGER, TECNICOS, DELEGADO.
+     *
+     * Los atletas se derivan por (team_id, category_id) automaticamente.
+     */
+    public function pdf(Team $team, Roster $roster): Response
+    {
+        $this->authorizeGestorOnRoster($team);
+        $this->authorizeRosterBelongsToTeam($team, $roster);
+
+        $roster->load([
+            'category', 'managerCoach', 'delegateUser',
+            'coaches' => fn ($q) => $q->orderBy('last_name')->orderBy('first_name'),
+        ]);
+
+        // Atletas del roster filtrados por la categoria del roster.
+        $athletes = $roster->categoryAthletes()
+            ->orderBy('number')
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+
+        // Logo del equipo en base64 (DomPDF necesita imagenes embebidas
+        // locales; pasamos base64 para que sea autonoma y no requiera
+        // permisos especiales al filesystem).
+        $logoBase64 = null;
+        if ($team->logo_path) {
+            $absolutePath = \Illuminate\Support\Facades\Storage::disk('public')->path($team->logo_path);
+            if (is_file($absolutePath)) {
+                $mime = 'image/'.strtolower(pathinfo($absolutePath, PATHINFO_EXTENSION));
+                if (str_contains($mime, 'jpg') || str_contains($mime, 'jpeg')) {
+                    $mime = 'image/jpeg';
+                }
+                if (str_contains($mime, 'webp')) {
+                    $mime = 'image/webp';
+                }
+                $logoBase64 = 'data:'.$mime.';base64,'.base64_encode(file_get_contents($absolutePath));
+            }
+        }
+
+        // Si el delegado (User) tiene coach vinculado en el mismo equipo
+        // con nombre similar, usamos los datos del coach (cédula +
+        // birthdate) porque el modelo User no tiene esos campos. Caso
+        // contrario, quedan vacíos en el PDF. La tabla `coaches` no
+        // tiene `category_id` (solo `team_id`), asi que el filtro es
+        // solo por team + nombre.
+        $delegateCoachData = null;
+        if ($roster->delegateUser) {
+            $delegateName = $roster->delegateUser->name;
+            $delegateCoachData = Coach::query()
+                ->where('team_id', $team->id)
+                ->where(function ($q) use ($delegateName) {
+                    $q->whereRaw("CONCAT(first_name, ' ', last_name) = ?", [$delegateName])
+                      ->orWhere('first_name', $delegateName);
+                })
+                ->first();
+        }
+
+        $pdf = Pdf::loadView('rosters.pdf', [
+            'team' => $team,
+            'roster' => $roster,
+            'category' => $roster->category,
+            'athletes' => $athletes,
+            'manager' => $roster->managerCoach,
+            'coaches' => $roster->coaches,
+            'delegateUser' => $roster->delegateUser,
+            'delegateCoachData' => $delegateCoachData,
+            'logoBase64' => $logoBase64,
+            'today' => now(),
+        ]);
+
+        // Tamano carta, vertical, margenes estrechos.
+        $pdf->setPaper('letter', 'portrait');
+        $pdf->setOptions([
+            'dpi' => 120,
+            'defaultFont' => 'sans-serif',
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+        ]);
+
+        $filename = 'Roster_'.preg_replace('/[^A-Za-z0-9_-]+/', '_', $team->name).'_'
+            .preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) $roster->category?->name).'.pdf';
+
+        return $pdf->download($filename);
     }
 }

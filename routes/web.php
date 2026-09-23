@@ -92,6 +92,11 @@ Route::middleware(['auth', '2fa.challenge'])->group(function () {
     Route::resource('teams.coaches', \App\Http\Controllers\CoachController::class);
     // Roster por (equipo, categoria): teams/{team}/rosters/...
     Route::resource('teams.rosters', \App\Http\Controllers\RosterController::class);
+    // Descarga PDF del roster (sub-recurso, fuera del resource para
+    // mantenerlo desacoplado y permitir cambiar la forma de export sin
+    // tocar las rutas CRUD).
+    Route::get('teams/{team}/rosters/{roster}/pdf', [\App\Http\Controllers\RosterController::class, 'pdf'])
+        ->name('teams.rosters.pdf');
     Route::resource('athletes', AthleteController::class);
     Route::resource('scorekeepers', ScorekeeperController::class);
     Route::resource('referees', RefereeController::class);
