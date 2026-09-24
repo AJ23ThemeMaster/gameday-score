@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Game;
 use App\Models\Play;
+use App\Models\Athlete;
 use App\Services\GameplayEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -161,6 +162,10 @@ class PlayController extends Controller
             $summary = $engine->inningSummary($game->fresh(), $closedInning, $closedHalf);
         }
 
+        // Snapshot UI: pitcher/batter/on-deck/stats actuales (necesario para que el
+        // scoreboard-v2 actualice la UI sin recargar la pagina).
+        $snapshot = $this->buildUiSnapshot($engine, $game->fresh(), $result['state']);
+
         return response()->json([
             'success' => true,
             'state' => $result['state'],
@@ -169,6 +174,12 @@ class PlayController extends Controller
             'strikeout' => $result['strikeout'] ?? false,
             'end_half' => $result['end_half'] ?? false,
             'summary' => $summary,
+            'pitcher' => $snapshot['pitcher'],
+            'batter' => $snapshot['batter'],
+            'on_deck' => $snapshot['on_deck'],
+            'pitcher_stats' => $snapshot['pitcher_stats'],
+            'batter_stats' => $snapshot['batter_stats'],
+            'is_completed' => $game->fresh()->isCompleted(),
             'plays' => collect($result['plays'])->map(fn ($p) => [
                 'id' => $p->id,
                 'type' => $p->type,
@@ -206,10 +217,29 @@ class PlayController extends Controller
             $summary = $engine->inningSummary($game->fresh(), $result['inning'], $result['half']);
         }
 
+        // Snapshot UI: pitcher/batter/on-deck/stats actuales despues del endInning.
+        $freshGame = $game->fresh();
+        $stateForUi = [
+            'inning' => $result['inning'] ?? $freshGame->current_inning,
+            'half' => $result['half'] ?? ($freshGame->inning_half ?? 'top'),
+            'bases' => ['first' => null, 'second' => null, 'third' => null],
+            'current_batter_id' => $result['batter_id'] ?? null,
+            'current_pitcher_id' => $result['pitcher_id'] ?? null,
+        ];
+        $snapshot = $this->buildUiSnapshot($engine, $freshGame, $stateForUi);
+
         return response()->json([
             'success' => true,
             'result' => $result,
             'summary' => $summary,
+            'pitcher' => $snapshot['pitcher'],
+            'batter' => $snapshot['batter'],
+            'on_deck' => $snapshot['on_deck'],
+            'pitcher_stats' => $snapshot['pitcher_stats'],
+            'batter_stats' => $snapshot['batter_stats'],
+            'is_completed' => $freshGame->isCompleted(),
+            'state' => $stateForUi,
+            'score' => Play::scoreboard($freshGame->id),
         ]);
     }
 
@@ -240,9 +270,28 @@ class PlayController extends Controller
 
         $result = $engine->endGame($game);
 
+        // Snapshot UI despues del endGame.
+        $freshGame = $game->fresh();
+        $stateForUi = [
+            'inning' => $freshGame->current_inning,
+            'half' => $freshGame->inning_half ?? 'top',
+            'bases' => ['first' => null, 'second' => null, 'third' => null],
+            'current_batter_id' => null,
+            'current_pitcher_id' => null,
+        ];
+        $snapshot = $this->buildUiSnapshot($engine, $freshGame, $stateForUi);
+
         return response()->json([
             'success' => true,
             'result' => $result,
+            'pitcher' => $snapshot['pitcher'],
+            'batter' => $snapshot['batter'],
+            'on_deck' => $snapshot['on_deck'],
+            'pitcher_stats' => $snapshot['pitcher_stats'],
+            'batter_stats' => $snapshot['batter_stats'],
+            'is_completed' => $freshGame->isCompleted(),
+            'state' => $stateForUi,
+            'score' => Play::scoreboard($freshGame->id),
         ]);
     }
 
@@ -321,5 +370,68 @@ class PlayController extends Controller
             'success' => true,
             'result' => $result,
         ]);
+    }
+
+    /**
+     * Construye el snapshot UI (pitcher/batter/on-deck/stats) en el formato
+     * JSON-friendly que consume el scoreboard-v2 via applyState().
+     *
+     * Replica la logica de ScoreboardController::buildSnapshot() sin depender
+     * del controller (evita inyeccion cruzada). El parametro $state puede
+     * traer current_batter_id/current_pitcher_id; si faltan, se resuelven
+     * desde el engine (firstBatter/pitcherFor) usando el half del state.
+     */
+    private function buildUiSnapshot(GameplayEngine $engine, Game $game, array $state): array
+    {
+        $half = $state['half'] ?? ($game->inning_half ?? 'top');
+        $currentBatterId = $state['current_batter_id'] ?? null;
+        $currentPitcherId = $state['current_pitcher_id'] ?? null;
+
+        // Si no hay bateador/pitcher actuales, resolver desde el lineup.
+        if (! $currentBatterId) {
+            $currentBatterId = $engine->firstBatter($game, $half);
+        }
+        if (! $currentPitcherId) {
+            $defendingTeamId = $half === 'top' ? $game->home_team_id : $game->away_team_id;
+            $currentPitcherId = $engine->pitcherFor($game, $defendingTeamId);
+        }
+
+        $pitcher = $currentPitcherId ? Athlete::find($currentPitcherId) : null;
+        $batter = $currentBatterId ? Athlete::find($currentBatterId) : null;
+
+        // On-deck: siguiente bateador del lineup (el engine respeta el wrap 9->1).
+        $onDeckId = $engine->nextBatter($game, $half, $currentBatterId);
+        $onDeck = $onDeckId ? Athlete::find($onDeckId) : null;
+
+        $pitcherStats = $pitcher ? Play::statsForPitcher($game->id, $pitcher->id)
+            : ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0];
+        $batterStats = $batter ? Play::statsForBatter($game->id, $batter->id)
+            : ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0, 'avg' => 0.0];
+
+        return [
+            'pitcher' => $pitcher ? $this->athleteToArray($pitcher) : null,
+            'batter' => $batter ? $this->athleteToArray($batter) : null,
+            'on_deck' => $onDeck ? $this->athleteToArray($onDeck) : null,
+            'pitcher_stats' => $pitcherStats,
+            'batter_stats' => $batterStats,
+        ];
+    }
+
+    private function athleteToArray(Athlete $a): array
+    {
+        $firstInitial = mb_strtoupper(mb_substr($a->first_name ?? '', 0, 1));
+        $lastInitial = mb_strtoupper(mb_substr($a->last_name ?? '', 0, 1));
+
+        return [
+            'id' => $a->id,
+            'name' => $a->full_name,
+            'first_name' => $a->first_name,
+            'last_name' => $a->last_name,
+            'number' => $a->number,
+            'position' => $a->position,
+            'team_id' => $a->team?->id,
+            'photo_url' => $a->photoUrl,
+            'initials' => $firstInitial . $lastInitial,
+        ];
     }
 }

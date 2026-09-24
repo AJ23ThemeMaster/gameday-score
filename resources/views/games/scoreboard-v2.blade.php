@@ -306,12 +306,62 @@
         csrf: @js(csrf_token()),
      })">
 
-    {{-- Top mini-pills: category / stadium / status --}}
-    <div class="flex items-center gap-2 mb-3 flex-wrap">
-        <span class="sb-pill accent">Live</span>
-        <span class="sb-pill warn" x-text="halfLabel() + ' · Inning ' + inning"></span>
-        <span class="sb-pill" x-show="gameStatus" x-text="gameStatusLabel()"></span>
-        <span class="sb-pill" style="margin-left:auto;" x-text="categoryStadium()"></span>
+    {{-- Top header: liga / torneo / categoria a la izquierda, 4 acciones a la derecha --}}
+    <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
+        {{-- Izquierda: liga · torneo · categoria --}}
+        <div class="flex items-center gap-1.5 text-xs flex-wrap" style="color: var(--sb-text-dim);">
+            @if ($game->tournament?->league)
+                <a href="{{ route('leagues.show', $game->tournament->league) }}"
+                   class="inline-flex items-center px-2 py-1 rounded-md bg-wv-surface border border-wv-border hover:border-wv-accent transition"
+                   style="color: var(--sb-text);">
+                    {{ $game->tournament->league->short_name ?? $game->tournament->league->name }}
+                </a>
+                <span style="opacity:.5;">/</span>
+            @endif
+            @if ($game->tournament)
+                <a href="{{ route('tournaments.show', $game->tournament) }}"
+                   class="inline-flex items-center px-2 py-1 rounded-md bg-wv-surface border border-wv-border hover:border-wv-accent transition"
+                   style="color: var(--sb-text);">
+                    {{ $game->tournament->name }}
+                </a>
+                <span style="opacity:.5;">/</span>
+            @endif
+            <span class="inline-flex items-center px-2 py-1 rounded-md bg-wv-surface border border-wv-border"
+                  style="color: var(--sb-text);">
+                {{ $game->category->name ?? '' }}
+            </span>
+        </div>
+
+        {{-- Derecha: 4 acciones con colores del index --}}
+        <div class="inline-flex items-center gap-1">
+            @if ($game->is_public && $game->public_token)
+                <a href="{{ route('games.live.public', $game->public_token) }}"
+                   target="_blank" rel="noopener"
+                   title="{{ __('En vivo (vista publica)') }}"
+                   aria-label="{{ __('En vivo (vista publica)') }}"
+                   class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-alert/40 text-wv-alert hover:bg-wv-alert/15 hover:border-wv-alert focus:ring-wv-alert">
+                    <span class="material-symbols-outlined" style="font-size:18px;">live_tv</span>
+                </a>
+            @endif
+            <a href="{{ route('games.show', $game) }}"
+               title="{{ __('Detalle del juego') }}"
+               aria-label="{{ __('Detalle del juego') }}"
+               class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-accent/40 text-wv-accent hover:bg-wv-accent/15 hover:border-wv-accent focus:ring-wv-accent">
+                <span class="material-symbols-outlined" style="font-size:18px;">visibility</span>
+            </a>
+            <a href="{{ route('games.roster.index', $game) }}"
+               title="{{ __('Roster del juego') }}"
+               aria-label="{{ __('Roster del juego') }}"
+               class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-success/40 text-wv-success hover:bg-wv-success/15 hover:border-wv-success focus:ring-wv-success">
+                <span class="material-symbols-outlined" style="font-size:18px;">groups</span>
+            </a>
+            <a href="{{ route('games.index') }}"
+               title="{{ __('Salir al listado') }}"
+               aria-label="{{ __('Salir al listado') }}"
+               class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-text-secondary/40 text-wv-text-secondary hover:bg-wv-text-secondary/15 hover:border-wv-text-secondary focus:ring-wv-text-secondary">
+                <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
+            </a>
+        </div>
     </div>
 
     {{-- HEADER: Local | Score | Visitante (estructura del scoreboard base) --}}
