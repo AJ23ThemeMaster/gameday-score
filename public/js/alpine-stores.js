@@ -272,6 +272,10 @@ document.addEventListener('alpine:init', () => {
         substituteUrl: config.substituteUrl,
         lineupReorderUrl: config.lineupReorderUrl,
         statsUrl: config.statsUrl,
+        // Modal resumen tras finalizar inning (DISI-218 migrado al v2): el
+        // pitch endpoint devuelve data.summary con {inning, half, runs, hits,
+        // walks, strikeouts, errors, lob, pitcher_id, pitcher_name, pitcher_pitches}.
+        inningSummary: null,
         // Modal Sustituir (alterna atleta saliente / entrante).
         substituteKind: 'pitcher', // 'pitcher' | 'batter' | 'runner'
         substituteBase: 'first', // base del corredor (solo si kind=runner)
@@ -820,6 +824,14 @@ document.addEventListener('alpine:init', () => {
                 // pitcher, batter, on_deck, pitcher_stats, batter_stats,
                 // is_completed } en la respuesta JSON.
                 this.applyState(data);
+                // DISI-218: si el inning termino naturalmente (3 outs) y el
+                // server incluyo el summary del inning cerrado, mostrar el
+                // modal con carreras, hits, BB, K, E, LOB y lanzamientos
+                // del pitcher.
+                if (data.end_half && data.summary) {
+                    this.inningSummary = data.summary;
+                    this.modal = 'inning-summary';
+                }
                 if (data.walk) this.toast('Base por bolas', 'info');
                 else if (data.strikeout) this.toast('Ponche', 'info');
                 else if (data.end_half) this.toast('Fin del inning', 'warning');
@@ -852,6 +864,12 @@ document.addEventListener('alpine:init', () => {
                     return;
                 }
                 this.applyState(data);
+                // DISI-218: mostrar el modal de resumen con LOB + lanzamientos
+                // del pitcher cuando el servidor incluyo data.summary.
+                if (data.summary) {
+                    this.inningSummary = data.summary;
+                    this.modal = 'inning-summary';
+                }
                 this.toast('Inning cerrado', 'success');
             } catch (e) {
                 this.toast('Error de red: ' + e.message, 'error');

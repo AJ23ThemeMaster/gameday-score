@@ -903,6 +903,29 @@ class GameplayEngine
         $walks = $plays->where('type', Play::TYPE_WALK)->count();
         $strikeouts = $plays->where('type', Play::TYPE_OUT)
             ->where('subtype', Play::SUBTYPE_OUT_STRIKEOUT)->count();
+
+        // DISI-218: corredores dejados en base (LOB) + lanzamientos del pitcher
+        // durante el inning. LOB = bases ocupadas al cierre (la jugada final del
+        // inning es la que tiene bases_after poblado). Lanzamientos = cualquier
+        // play no strikeout con pitches registradas en meta (ball, strike, foul).
+        $lastPlay = $plays->last();
+        $lob = 0;
+        if ($lastPlay && is_array($lastPlay->bases_after)) {
+            foreach ($lastPlay->bases_after as $runnerId) {
+                if ($runnerId !== null && $runnerId !== '') {
+                    $lob++;
+                }
+            }
+        }
+
+        $pitcherId = $plays->whereNotNull('pitcher_id')->pluck('pitcher_id')->last();
+        $pitcherName = null;
+        if ($pitcherId) {
+            $athlete = \App\Models\Athlete::find($pitcherId);
+            $pitcherName = $athlete?->full_name;
+        }
+        $pitcherPitches = $plays->where('pitcher_id', $pitcherId)->count();
+
         return [
             'inning' => $inning,
             'half' => $half,
@@ -912,6 +935,10 @@ class GameplayEngine
             'errors' => $errors,
             'walks' => $walks,
             'strikeouts' => $strikeouts,
+            'lob' => $lob,
+            'pitcher_id' => $pitcherId,
+            'pitcher_name' => $pitcherName,
+            'pitcher_pitches' => $pitcherPitches,
         ];
     }
 

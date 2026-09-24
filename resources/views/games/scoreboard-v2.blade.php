@@ -778,6 +778,58 @@
     </div>
 
     {{-- Modal: Gestionar corredor (DISI-20 migrado al v2) --}}
+    <div x-show="modal==='inning-summary'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+            <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-5 py-3 flex items-center justify-between">
+                <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Inning finalizado') }}</h3>
+                <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-5 space-y-3" x-show="inningSummary">
+                {{-- Cabecera del inning + carreras --}}
+                <div class="bg-emerald-900/40 border border-emerald-500/40 rounded-card p-4 text-center">
+                    <div class="text-xs text-emerald-300 uppercase font-bold tracking-wider mb-1">
+                        Inning <span class="text-emerald-100" x-text="inningSummary?.inning"></span>
+                        · <span class="text-emerald-100" x-text="inningSummary?.half === 'top' ? 'TOP' : 'BOTTOM'"></span>
+                    </div>
+                    <div class="text-4xl font-black text-white my-1">
+                        <span x-text="inningSummary?.runs ?? 0"></span>
+                        <span class="text-base font-normal opacity-80">carrera<span x-show="(inningSummary?.runs ?? 0) !== 1">s</span></span>
+                    </div>
+                    <div class="text-xs text-emerald-200">
+                        <span x-text="inningSummary?.hits ?? 0"></span> hits ·
+                        <span x-text="inningSummary?.walks ?? 0"></span> BB ·
+                        <span x-text="inningSummary?.strikeouts ?? 0"></span> K ·
+                        <span x-text="inningSummary?.errors ?? 0"></span> E
+                    </div>
+                </div>
+
+                {{-- Grid de metricas adicionales (LOB + lanzamientos del pitcher) --}}
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-wv-bg border border-wv-border rounded-card p-3 text-center">
+                        <div class="text-3xl font-black text-wv-accent leading-none" x-text="inningSummary?.lob ?? 0"></div>
+                        <div class="text-[10px] text-wv-text-secondary uppercase font-bold tracking-wider mt-1.5">{{ __('Dejados en base') }}</div>
+                        <div class="text-[9px] text-wv-text-secondary mt-0.5 opacity-70">LOB</div>
+                    </div>
+                    <div class="bg-wv-bg border border-wv-border rounded-card p-3 text-center">
+                        <div class="text-3xl font-black text-wv-info leading-none" x-text="inningSummary?.pitcher_pitches ?? 0"></div>
+                        <div class="text-[10px] text-wv-text-secondary uppercase font-bold tracking-wider mt-1.5">{{ __('Lanzamientos') }}</div>
+                        <div class="text-[9px] text-wv-text-secondary mt-0.5 opacity-70" x-text="inningSummary?.pitcher_name ? 'de ' + inningSummary.pitcher_name : 'del pitcher'"></div>
+                    </div>
+                </div>
+
+                <button type="button" @click="closeModal()"
+                        class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-card transition">
+                    {{ __('Continuar') }}
+                </button>
+            </div>
+            <div x-show="!inningSummary" class="p-6 text-center text-wv-text-secondary">
+                {{ __('Sin resumen disponible.') }}
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal: Gestionar corredor (DISI-20 migrado al v2) --}}
     <div x-show="modal==='runner'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
          @keydown.escape.window="closeRunnerModal()">
         <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeRunnerModal()">
