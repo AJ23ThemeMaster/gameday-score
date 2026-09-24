@@ -388,6 +388,7 @@ class ScoreboardController extends Controller
             'awayLogoUrl' => $game->awayTeam->logoUrl,
             'homeColor' => $game->homeTeam->home_color,
             'awayColor' => $game->awayTeam->away_color,
+            'runnerUrl' => route('games.plays.runner', $game),
         ];
 
         return view('games.scoreboard-v2', compact(

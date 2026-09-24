@@ -263,6 +263,11 @@ document.addEventListener('alpine:init', () => {
         awayColor: config.awayColor ?? null,
         categoryName: config.categoryName ?? '',
         stadiumName: config.stadiumName ?? '',
+        // Modal "Gestionar corredor" (DISI-20 migrado al v2): base seleccionada.
+        runnerBase: null, // 'first' | 'second' | 'third' | null
+        runnerActionBusy: false,
+        // URL del endpoint de acciones de corredor (avanzar, robar, anotar, etc.)
+        runnerUrl: config.runnerUrl,
 
         toast(message, level = 'success') {
             window.dispatchEvent(
@@ -299,21 +304,41 @@ document.addEventListener('alpine:init', () => {
                 this.balls = s.balls ?? this.balls;
                 this.strikes = s.strikes ?? this.strikes;
                 this.outs = s.outs ?? this.outs;
-                const bases = s.bases || {};
-                // El servidor puede devolver athlete IDs (integer) u objetos completos.
-                // Si devuelve un ID y ya tenemos al atleta con ese ID en cache, conservamos
-                // el objeto completo (con name/number/photo_url) para no perder los datos
-                // visuales en el diamante. Solo limpiamos si el ID es null.
-                const resolveBase = (current, newVal) => {
-                    if (newVal === null || newVal === undefined) return null;
-                    if (typeof newVal === 'object') return newVal;
-                    // newVal es un ID numerico: mantener el objeto actual si coincide
-                    if (current && current.id === newVal) return current;
-                    return newVal; // fallback: el ID (la vista mostrara solo el ID)
-                };
-                this.base1 = resolveBase(this.base1, bases.first);
-                this.base2 = resolveBase(this.base2, bases.second);
-                this.base3 = resolveBase(this.base3, bases.third);
+                // Si el payload trae `bases` con atletas completos (caso normal
+                // desde PlayController::pitch), los usamos directamente. Esto
+                // garantiza que cuando un bateador se embasa o un corredor
+                // avanza, el diamante del v2 muestre el nombre + dorsal nuevo
+                // sin recargar la pagina.
+                if (payload.bases && typeof payload.bases === 'object') {
+                    // Normalizar: si el server mando el placeholder Play::ANON_RUNNER
+                    // ('corredor') en vez de un athlete object, convertirlo a un
+                    // objeto minimo para que la UI muestre "Corredor" en la base.
+                    const normalize = (v) => {
+                        if (v === null || v === undefined) return null;
+                        if (typeof v === 'object') return v;
+                        if (v === 'corredor' || v === 'runner') {
+                            return { id: 'corredor', name: 'Corredor', number: '?', initials: '?' };
+                        }
+                        return null;
+                    };
+                    this.base1 = normalize(payload.bases.first);
+                    this.base2 = normalize(payload.bases.second);
+                    this.base3 = normalize(payload.bases.third);
+                } else {
+                    // Fallback: el payload solo trae IDs (state.bases). Conservamos
+                    // el objeto cacheado si coincide con el ID, si no, queda el ID
+                    // solo (la UI mostrara un valor degradado hasta el proximo poll).
+                    const bases = s.bases || {};
+                    const resolveBase = (current, newVal) => {
+                        if (newVal === null || newVal === undefined) return null;
+                        if (typeof newVal === 'object') return newVal;
+                        if (current && current.id === newVal) return current;
+                        return newVal;
+                    };
+                    this.base1 = resolveBase(this.base1, bases.first);
+                    this.base2 = resolveBase(this.base2, bases.second);
+                    this.base3 = resolveBase(this.base3, bases.third);
+                }
             }
             // Players (objetos simples con id/name/number/position/initials)
             if (payload.pitcher !== undefined) this.pitcher = payload.pitcher;
@@ -508,9 +533,122 @@ document.addEventListener('alpine:init', () => {
             await this.endGame();
         },
 
+        // ===== MODAL: Gestionar corredor (DISI-20 migrado al v2) =====
+        // Al hacer click sobre una base ocupada en el diamante se abre un
+        // modal con las acciones tipicas del anotador sobre ese corredor:
+        // avanzar, robo de base, anotarse (con/sin RBI), wild pitch, etc.
+        baseLabel(base) {
+            switch (base) {
+                case 'first': return '1RA BASE';
+                case 'second': return '2DA BASE';
+                case 'third': return '3RA BASE';
+                default: return '';
+            }
+        },
+        // Devuelve el atleta asignado a una base (first/second/third) o null.
+        baseAthlete(base) {
+            switch (base) {
+                case 'first': return this.base1;
+                case 'second': return this.base2;
+                case 'third': return this.base3;
+                default: return null;
+            }
+        },
+        openRunnerModal(base) {
+            if (!base || !['first', 'second', 'third'].includes(base)) return;
+            const athlete = this.baseAthlete(base);
+            if (!athlete) {
+                this.toast('No hay corredor en ' + this.baseLabel(base), 'warning');
+                return;
+            }
+            this.runnerBase = base;
+            this.modal = 'runner';
+        },
+        closeRunnerModal() {
+            this.runnerBase = null;
+            this.modal = null;
+        },
+        // Atleta del corredor seleccionado (para mostrar en el header del modal).
+        runnerModalRunner() {
+            return this.runnerBase ? this.baseAthlete(this.runnerBase) : null;
+        },
+        runnerModalTitle() {
+            return this.runnerBase ? this.baseLabel(this.runnerBase) : '';
+        },
+        // Accion disabled si la base es 3B (no se puede anotar desde 3B).
+        isRunnerOnThird() {
+            return this.runnerBase === 'third';
+        },
+        async sendRunnerAction(action) {
+            if (this.busy || this.runnerActionBusy) return;
+            if (!this.runnerBase) return;
+            const base = this.runnerBase;
+            this.busy = true;
+            this.runnerActionBusy = true;
+            try {
+                const fd = new FormData();
+                fd.append('base', base);
+                fd.append('action', action);
+                fd.append('_token', this.csrf);
+                const res = await fetch(this.runnerUrl, {
+                    method: 'POST',
+                    body: fd,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    this.toast(data.message || data.error || 'Error al ejecutar la accion', 'error');
+                    return;
+                }
+                // El endpoint runnerAction devuelve {success, result:{...}}. El
+                // engine devuelve el state actualizado en $result. Como runner
+                // action no construye snapshot UI completo, recargamos via poll
+                // para refrescar bases + score + roster en una sola pasada.
+                // Pero antes intentamos aplicar el state si viene incluido.
+                if (data.state) {
+                    this.applyState(data);
+                } else {
+                    // Forzar refresh completo via poll (mejor UX que reload).
+                    await this.refreshSnapshot();
+                }
+                this.toast('Accion registrada', 'success');
+                this.closeRunnerModal();
+            } catch (e) {
+                this.toast('Error de red: ' + e.message, 'error');
+            } finally {
+                this.busy = false;
+                this.runnerActionBusy = false;
+            }
+        },
+
         // ===== SEND (genericos) =====
         async sendPitch(type, subtype = null) {
             return this.sendPitchWithSequence(type, subtype, null);
+        },
+
+        // Refresca el snapshot completo desde el endpoint /poll (usado cuando
+        // una respuesta AJAX no incluye el state fresco, p.ej. runnerAction).
+        async refreshSnapshot() {
+            if (!this.pollUrl) return;
+            try {
+                const res = await fetch(this.pollUrl, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                this.applyState(data);
+            } catch (e) {
+                console.warn('refreshSnapshot failed', e);
+            }
         },
 
         async sendPitchWithSequence(type, subtype = null, defensiveSequence = null) {

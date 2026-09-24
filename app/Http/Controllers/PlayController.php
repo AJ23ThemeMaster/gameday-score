@@ -179,6 +179,9 @@ class PlayController extends Controller
             'on_deck' => $snapshot['on_deck'],
             'pitcher_stats' => $snapshot['pitcher_stats'],
             'batter_stats' => $snapshot['batter_stats'],
+            // Bases con atletas completos (no solo IDs) para que el scoreboard-v2
+            // muestre nombre + dorsal del corredor en cada base tras embasar / out / etc.
+            'bases' => $this->basesToAthletes($result['state']['bases'] ?? []),
             'is_completed' => $game->fresh()->isCompleted(),
             'plays' => collect($result['plays'])->map(fn ($p) => [
                 'id' => $p->id,
@@ -433,5 +436,48 @@ class PlayController extends Controller
             'photo_url' => $a->photoUrl,
             'initials' => $firstInitial . $lastInitial,
         ];
+    }
+
+    /**
+     * Convierte un array de bases (first/second/third con athlete IDs)
+     * en un objeto con atletas completos para enviar al cliente.
+     * Si la base esta vacia (null), devuelve null para esa posicion.
+     *
+     * Caso especial: si el engine almaceno el placeholder Play::ANON_RUNNER
+     * (= 'corredor') porque no tiene ID del atleta (caso de un corredor que
+     * avanzo sin que el engine preservara su ID), devolvemos un objeto
+     * atleta minimo para que el diamante muestre la base ocupada con un
+     * label generico "Corredor" en vez de quedar vacia.
+     */
+    private function basesToAthletes(array $stateBases): array
+    {
+        $out = ['first' => null, 'second' => null, 'third' => null];
+        foreach (['first', 'second', 'third'] as $base) {
+            $val = $stateBases[$base] ?? null;
+            if ($val === null) {
+                $out[$base] = null;
+            } elseif ($val === Play::ANON_RUNNER) {
+                $out[$base] = [
+                    'id' => 'corredor',
+                    'name' => 'Corredor',
+                    'first_name' => '',
+                    'last_name' => '',
+                    'number' => '?',
+                    'position' => null,
+                    'team_id' => null,
+                    'photo_url' => null,
+                    'initials' => '?',
+                ];
+            } elseif (is_int($val)) {
+                $athlete = Athlete::find($val);
+                if ($athlete) {
+                    $out[$base] = $this->athleteToArray($athlete);
+                }
+            } else {
+                // Cualquier otro caso degenerado: limpiar la base.
+                $out[$base] = null;
+            }
+        }
+        return $out;
     }
 }
