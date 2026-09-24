@@ -211,9 +211,10 @@
                                         </td>
                                         <td class="px-6 py-3 text-right text-sm font-medium">
                                             <div class="inline-flex items-center gap-1">
-                                                @if (in_array($g->status, ['scheduled', 'in_progress', 'paused']))
+                                                @if ($g->status === 'in_progress')
                                                     {{-- live_tv: enlace publico al juego en vivo con token (games.live.public).
-                                                         Es la URL que se comparte con espectadores externos. --}}
+                                                         Es la URL que se comparte con espectadores externos.
+                                                         Solo aparece cuando el juego esta en curso. --}}
                                                     @if ($g->public_token)
                                                         <a href="{{ route('games.live.public', $g->public_token) }}"
                                                            target="_blank"
