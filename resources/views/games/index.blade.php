@@ -212,11 +212,27 @@
                                         <td class="px-6 py-3 text-right text-sm font-medium">
                                             <div class="inline-flex items-center gap-1">
                                                 @if (in_array($g->status, ['scheduled', 'in_progress', 'paused']))
+                                                    {{-- live_tv: enlace publico al juego en vivo con token (games.live.public).
+                                                         Es la URL que se comparte con espectadores externos. --}}
+                                                    @if ($g->public_token)
+                                                        <a href="{{ route('games.live.public', $g->public_token) }}"
+                                                           target="_blank"
+                                                           rel="noopener noreferrer"
+                                                           title="{{ __('En vivo (vista publica)') }}"
+                                                           aria-label="{{ __('En vivo (vista publica)') }}"
+                                                           class="inline-flex items-center justify-center w-8 h-8 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-alert/40 text-wv-alert hover:bg-wv-alert/15 hover:border-wv-alert focus:ring-wv-alert">
+                                                            <span class="material-symbols-outlined !text-[16px]">live_tv</span>
+                                                        </a>
+                                                    @endif
+                                                @endif
+                                                {{-- sports_baseball: scoreboard de control del juego (games.scoreboard).
+                                                     Solo el anotador/admin usa esta vista para gestionar jugadas. --}}
+                                                @if (in_array($g->status, ['scheduled', 'in_progress', 'paused']))
                                                     <a href="{{ route('games.scoreboard', $g) }}"
-                                                       title="{{ __('En vivo') }}"
-                                                       aria-label="{{ __('En vivo') }}"
-                                                       class="inline-flex items-center justify-center w-8 h-8 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-alert/40 text-wv-alert hover:bg-wv-alert/15 hover:border-wv-alert focus:ring-wv-alert">
-                                                        <span class="material-symbols-outlined !text-[16px]">live_tv</span>
+                                                       title="{{ __('Scoreboard') }}"
+                                                       aria-label="{{ __('Scoreboard') }}"
+                                                       class="inline-flex items-center justify-center w-8 h-8 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-accent/40 text-wv-accent hover:bg-wv-accent/15 hover:border-wv-accent focus:ring-wv-accent">
+                                                        <span class="material-symbols-outlined !text-[16px]">sports_baseball</span>
                                                     </a>
                                                 @endif
                                                 <x-action-buttons
