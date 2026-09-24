@@ -137,6 +137,9 @@ Route::middleware(['auth', '2fa.challenge'])->group(function () {
 
     // DISI-12: Nuevo scoreboard moderno (Fase 1: layout + live AJAX sin recargar)
     Route::get('games/{game}/scoreboard', [ScoreboardController::class, 'show'])->name('games.scoreboard');
+    // Scoreboard v2: vista paralela experimental con diseno diferente
+    // para evaluar el rediseño sin tocar la vista clasica.
+    Route::get('games/{game}/scoreboard-v2', [ScoreboardController::class, 'v2'])->name('games.scoreboard.v2');
     Route::get('games/{game}/scoreboard/poll', [ScoreboardController::class, 'poll'])->name('games.scoreboard.poll');
     // DISI-12 MEJ-3: stats historicas del juego (box score)
     Route::get('games/{game}/scoreboard/stats', [ScoreboardController::class, 'stats'])->name('games.scoreboard.stats');

@@ -326,6 +326,41 @@ class ScoreboardController extends Controller
     }
 
     /**
+     * Scoreboard v2 (vista paralela experimental).
+     *
+     * Misma logica de datos que show(), pero con un diseno distinto:
+     * fondo oscuro, tarjeta "is-batting" para el equipo al bate,
+     * diamante SVG en lugar de texto, meter de strike% del pitcher.
+     * Sirve para evaluar el rediseño sin tocar la vista clasica.
+     */
+    public function v2(Request $request, Game $game): View|JsonResponse
+    {
+        $this->authorize('view', $game);
+
+        $game->load([
+            'category', 'tournament', 'tournament.league', 'stadium',
+            'homeTeam', 'awayTeam',
+            'homeTeam.athletes', 'awayTeam.athletes',
+        ]);
+
+        if ($game->is_public && empty($game->public_token)) {
+            $game->public_token = \Illuminate\Support\Str::random(48);
+            $game->save();
+        }
+
+        [$state, $pitcher, $batter, $onDeck, $pitcherStats, $batterStats] =
+            $this->buildSnapshot($game);
+
+        $score = Play::scoreboard($game->id);
+        $runners = $this->runners($state);
+
+        return view('games.scoreboard-v2', compact(
+            'game', 'state', 'score', 'pitcher', 'batter', 'onDeck', 'runners',
+            'pitcherStats', 'batterStats',
+        ));
+    }
+
+    /**
      * Live poll endpoint: solo el state JSON, no la vista completa.
      * El cliente lo llama cada 5s para mantener el scoreboard sincronizado.
      */
