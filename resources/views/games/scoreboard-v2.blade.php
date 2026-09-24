@@ -435,7 +435,7 @@
                                 class="py-4 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-lg font-black rounded-card transition">
                             {{ __('Ball') }}
                         </button>
-                        <button type="button" @click="sendPitch('strike')" :disabled="busy"
+                        <button type="button" @click="openStrikeModal()" :disabled="busy"
                                 class="py-4 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-lg font-black rounded-card transition">
                             {{ __('Strike') }}
                         </button>
@@ -443,33 +443,43 @@
                                 class="py-4 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-lg font-black rounded-card transition">
                             {{ __('Foul') }}
                         </button>
-                        <button type="button" @click="sendPitch('out')" :disabled="busy"
+                        <button type="button" @click="openOutStep1()" :disabled="busy"
                                 class="py-4 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white text-lg font-black rounded-card transition">
                             {{ __('Out') }}
                         </button>
                     </div>
 
                     {{-- HIT tab --}}
-                    <div x-show="tab==='hit' && !isFinalized && gameStatus==='in_progress'" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <button type="button" @click="sendPitch('hit','single')" :disabled="busy"
+                    <div x-show="tab==='hit' && !isFinalized && gameStatus==='in_progress'" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <button type="button" @click="openHitModal('single')" :disabled="busy"
                                 class="py-4 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-base font-black rounded-card transition">
                             {{ __('Sencillo') }}
                             <div class="text-[10px] font-normal opacity-80 mt-0.5">1B</div>
                         </button>
-                        <button type="button" @click="sendPitch('hit','double')" :disabled="busy"
+                        <button type="button" @click="openHitModal('double')" :disabled="busy"
                                 class="py-4 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-base font-black rounded-card transition">
                             {{ __('Doble') }}
                             <div class="text-[10px] font-normal opacity-80 mt-0.5">2B</div>
                         </button>
-                        <button type="button" @click="sendPitch('hit','triple')" :disabled="busy"
+                        <button type="button" @click="openHitModal('triple')" :disabled="busy"
                                 class="py-4 bg-violet-500 hover:bg-violet-600 disabled:opacity-50 text-white text-base font-black rounded-card transition">
                             {{ __('Triple') }}
                             <div class="text-[10px] font-normal opacity-80 mt-0.5">3B</div>
                         </button>
-                        <button type="button" @click="sendPitch('hit','hr')" :disabled="busy"
+                        <button type="button" @click="openHitModal('hr')" :disabled="busy"
                                 class="py-4 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-base font-black rounded-card transition">
                             {{ __('HR') }}
                             <div class="text-[10px] font-normal opacity-80 mt-0.5">Home Run</div>
+                        </button>
+                        <button type="button" @click="openHitModal('inside_park')" :disabled="busy"
+                                class="col-span-2 py-4 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-base font-black rounded-card transition">
+                            {{ __('HR de pierna') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-0.5">Inside-the-park</div>
+                        </button>
+                        <button type="button" @click="openBuntModal()" :disabled="busy"
+                                class="col-span-3 py-4 bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white text-base font-black rounded-card transition">
+                            {{ __('Toque de bolas') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-0.5">{{ __('Sacrificio o bunt single') }}</div>
                         </button>
                     </div>
 
@@ -481,12 +491,12 @@
                                 {{ __('Balk') }}
                                 <div class="text-[9px] font-normal opacity-80 mt-0.5">{{ __('Corredores avanzan 1 base') }}</div>
                             </button>
-                            <button type="button" @click="endInning()" :disabled="busy"
+                            <button type="button" @click="openEndInningModal()" :disabled="busy"
                                     class="py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-bold rounded-card transition">
                                 {{ __('Cerrar inning') }}
                                 <div class="text-[9px] font-normal opacity-80 mt-0.5">{{ __('Terminar la media entrada actual') }}</div>
                             </button>
-                            <button type="button" @click="endGame()" :disabled="busy"
+                            <button type="button" @click="openEndGameModal()" :disabled="busy"
                                     class="py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold rounded-card transition">
                                 {{ __('Finalizar juego') }}
                                 <div class="text-[9px] font-normal opacity-80 mt-0.5">{{ __('Cerrar el juego por completo') }}</div>
@@ -505,6 +515,239 @@
                                class="py-3 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-card transition text-center block">
                                 ⚙️ {{ __('Scoreboard clasico') }}
                             </a>
+                        </div>
+                    </div>
+
+                    {{-- ===== MODALES (mismas acciones que el scoreboard base) ===== --}}
+
+                    {{-- Modal: tipo de ponche --}}
+                    <div x-show="modal==='strike'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+                         @keydown.escape.window="closeModal()">
+                        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                            <div class="bg-rose-600 text-white px-5 py-3 flex items-center justify-between">
+                                <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Tipo de ponche') }}</h3>
+                                <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                            </div>
+                            <div class="p-5 space-y-3">
+                                <button type="button" @click="sendStrike('looking')"
+                                        class="w-full py-4 bg-rose-700 hover:bg-rose-800 text-white text-lg font-bold rounded-card transition">
+                                    {{ __('Mirando') }}
+                                </button>
+                                <button type="button" @click="sendStrike('swinging')"
+                                        class="w-full py-4 bg-rose-800 hover:bg-rose-900 text-white text-lg font-bold rounded-card transition">
+                                    {{ __('Swing') }}
+                                </button>
+                                <button type="button" @click="sendStrike('foul_tip')"
+                                        class="w-full py-4 bg-rose-900 hover:bg-black text-white text-lg font-bold rounded-card transition">
+                                    {{ __('Foul Tip') }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Modal: tipo de out (paso 1) --}}
+                    <div x-show="modal==='out-step1'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+                         @keydown.escape.window="closeModal()">
+                        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                            <div class="bg-slate-700 text-white px-5 py-3 flex items-center justify-between">
+                                <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Tipo de out') }}</h3>
+                                <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                            </div>
+                            <div class="p-5 space-y-3">
+                                <button type="button" @click="openOutStep2('fly')"
+                                        class="w-full py-4 bg-sky-600 hover:bg-sky-700 text-white text-lg font-bold rounded-card transition">
+                                    {{ __('Fly (elevado)') }}
+                                </button>
+                                <button type="button" @click="openOutStep2('line')"
+                                        class="w-full py-4 bg-sky-700 hover:bg-sky-800 text-white text-lg font-bold rounded-card transition">
+                                    {{ __('Línea') }}
+                                </button>
+                                <button type="button" @click="openOutStep2('ground')"
+                                        class="w-full py-4 bg-amber-600 hover:bg-amber-700 text-white text-lg font-bold rounded-card transition">
+                                    {{ __('Roletazo') }}
+                                </button>
+                                <button type="button" @click="confirmOut()"
+                                        class="w-full py-4 bg-slate-600 hover:bg-slate-700 text-white text-lg font-bold rounded-card transition">
+                                    {{ __('De reglamento') }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Modal: jugada defensiva (paso 2) --}}
+                    <div x-show="modal==='out-step2'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+                         @keydown.escape.window="closeModal()">
+                        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" @click.outside="closeModal()">
+                            <div class="bg-slate-800 text-white px-5 py-3 flex items-center justify-between">
+                                <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Jugada defensiva') }}</h3>
+                                <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                            </div>
+                            <div class="p-5">
+                                <p class="text-sm text-wv-text-secondary mb-3">{{ __('Toca los fildeadores en el orden que participaron.') }}</p>
+
+                                {{-- Diamante con los 9 fildeadores --}}
+                                <div class="relative bg-emerald-700 rounded-card mx-auto" style="width: 320px; height: 320px;">
+                                    <div class="absolute rounded-full bg-amber-200/30" style="top: 90px; left: 40px; right: 40px; bottom: 90px;"></div>
+                                    <div class="absolute w-9 h-9 bg-white border-2 border-gray-300 rounded rotate-45" style="top: 70px; left: 50%; transform: translateX(-50%) rotate(45deg);" title="2da base"></div>
+                                    <div class="absolute w-9 h-9 bg-white border-2 border-gray-300 rounded rotate-45" style="top: 50%; right: 8px; transform: translateY(-50%) rotate(45deg);" title="1ra base"></div>
+                                    <div class="absolute w-9 h-9 bg-white border-2 border-gray-300 rounded rotate-45" style="bottom: 8px; left: 50%; transform: translateX(-50%) rotate(45deg);" title="Home"></div>
+                                    <div class="absolute w-9 h-9 bg-white border-2 border-gray-300 rounded rotate-45" style="top: 50%; left: 8px; transform: translateY(-50%) rotate(45deg);" title="3ra base"></div>
+                                    <div class="absolute flex items-center justify-center text-xs font-black text-amber-900 bg-amber-200/90 rounded-full" style="top: 138px; left: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px;">P</div>
+
+                                    <button type="button" @click="addFielder('LF')" style="top: 14px; left: 16px;"
+                                            :class="isFielderSelected('LF') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                            class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">LF</button>
+                                    <button type="button" @click="addFielder('CF')" style="top: 10px; left: 50%; transform: translateX(-50%);"
+                                            :class="isFielderSelected('CF') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                            class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">CF</button>
+                                    <button type="button" @click="addFielder('RF')" style="top: 14px; right: 16px;"
+                                            :class="isFielderSelected('RF') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                            class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">RF</button>
+                                    <button type="button" @click="addFielder('SS')" style="top: 102px; left: 50px;"
+                                            :class="isFielderSelected('SS') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                            class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">SS</button>
+                                    <button type="button" @click="addFielder('2B')" style="top: 102px; right: 50px;"
+                                            :class="isFielderSelected('2B') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                            class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">2B</button>
+                                    <button type="button" @click="addFielder('3B')" style="top: 178px; left: 28px;"
+                                            :class="isFielderSelected('3B') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                            class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">3B</button>
+                                    <button type="button" @click="addFielder('1B')" style="top: 178px; right: 28px;"
+                                            :class="isFielderSelected('1B') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                            class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">1B</button>
+                                    <button type="button" @click="addFielder('C')" style="bottom: 56px; left: 50%; transform: translateX(-50%);"
+                                            :class="isFielderSelected('C') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'"
+                                            class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">C</button>
+                                </div>
+
+                                <div class="mt-4 p-3 bg-wv-bg rounded-card min-h-[60px]">
+                                    <div class="text-xs text-wv-text-secondary uppercase font-semibold mb-1">{{ __('Secuencia') }}</div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <template x-for="(f, i) in defensiveSequence" :key="i">
+                                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-amber-200 text-amber-900 rounded-full text-sm font-bold">
+                                                <span x-text="f"></span>
+                                                <button type="button" @click="removeFielder(i)" class="text-amber-700 hover:text-red-600 font-black">&times;</button>
+                                            </span>
+                                        </template>
+                                        <span x-show="defensiveSequence.length === 0" class="text-sm text-wv-text-secondary italic">{{ __('Selecciona los fildeadores') }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 flex gap-2">
+                                    <button type="button" @click="closeModal()"
+                                            class="flex-1 py-3 bg-wv-surface-hover hover:bg-wv-surface text-wv-text font-bold rounded-card">
+                                        {{ __('Cancelar') }}
+                                    </button>
+                                    <button type="button" @click="confirmOut()" :disabled="defensiveSequence.length === 0"
+                                            class="flex-1 py-3 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-bold rounded-card">
+                                        {{ __('Registrar out') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Modal: confirmacion de hit --}}
+                    <div x-show="modal==='hit'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+                         @keydown.escape.window="closeModal()">
+                        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                            <div class="bg-emerald-600 text-white px-5 py-3 flex items-center justify-between">
+                                <h3 class="text-lg font-black uppercase tracking-wider" x-text="hitConfig.label"></h3>
+                                <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                            </div>
+                            <div class="p-5 space-y-4">
+                                <p class="text-sm text-wv-text-secondary" x-text="hitConfig.description"></p>
+                                <div class="bg-wv-bg rounded-card p-3 text-sm">
+                                    <div class="text-xs text-wv-text-secondary uppercase font-semibold mb-1">{{ __('Resultado esperado') }}</div>
+                                    <div class="text-wv-text" x-text="hitConfig.preview"></div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button type="button" @click="closeModal()"
+                                            class="flex-1 py-3 bg-wv-surface-hover hover:bg-wv-surface text-wv-text font-bold rounded-card">
+                                        {{ __('Cancelar') }}
+                                    </button>
+                                    <button type="button" @click="confirmHit()"
+                                            class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-card">
+                                        {{ __('Registrar hit') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Modal: tipo de bunt --}}
+                    <div x-show="modal==='bunt'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+                         @keydown.escape.window="closeModal()">
+                        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                            <div class="bg-amber-600 text-white px-5 py-3 flex items-center justify-between">
+                                <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Toque de bolas') }}</h3>
+                                <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                            </div>
+                            <div class="p-5 space-y-3">
+                                <p class="text-sm text-wv-text-secondary">{{ __('Elige el resultado del toque:') }}</p>
+                                <button type="button" @click="sendBunt('sacrifice')"
+                                        class="w-full py-4 bg-amber-700 hover:bg-amber-800 text-white text-lg font-bold rounded-card transition">
+                                    {{ __('Toque de sacrificio') }}
+                                    <div class="text-xs font-normal opacity-80 mt-1">{{ __('Bateador out, corredores avanzan') }}</div>
+                                </button>
+                                <button type="button" @click="sendBunt('bunt_single')"
+                                        class="w-full py-4 bg-emerald-700 hover:bg-emerald-800 text-white text-lg font-bold rounded-card transition">
+                                    {{ __('Bunt single') }}
+                                    <div class="text-xs font-normal opacity-80 mt-1">{{ __('Bateador a 1B, corredores avanzan') }}</div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Modal: confirmar cerrar inning --}}
+                    <div x-show="modal==='end-inning'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+                         @keydown.escape.window="closeModal()">
+                        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                            <div class="bg-orange-600 text-white px-5 py-3 flex items-center justify-between">
+                                <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Cerrar inning') }}</h3>
+                                <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                            </div>
+                            <div class="p-5 space-y-3">
+                                <p class="text-sm text-wv-text-secondary">
+                                    {{ __('Vas a cerrar la entrada actual antes de los 3 outs. Esta accion no se puede deshacer.') }}
+                                </p>
+                                <div class="flex gap-2">
+                                    <button type="button" @click="closeModal()"
+                                            class="flex-1 py-3 bg-wv-surface-hover hover:bg-wv-surface text-wv-text font-bold rounded-card">
+                                        {{ __('Cancelar') }}
+                                    </button>
+                                    <button type="button" @click="confirmEndInning()"
+                                            class="flex-1 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-card">
+                                        {{ __('Cerrar inning') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Modal: confirmar finalizar juego --}}
+                    <div x-show="modal==='end-game'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+                         @keydown.escape.window="closeModal()">
+                        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+                            <div class="bg-red-700 text-white px-5 py-3 flex items-center justify-between">
+                                <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Finalizar juego') }}</h3>
+                                <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                            </div>
+                            <div class="p-5 space-y-3">
+                                <p class="text-sm text-wv-text-secondary">
+                                    {{ __('Vas a finalizar el juego por completo. Esta accion no se puede deshacer.') }}
+                                </p>
+                                <div class="flex gap-2">
+                                    <button type="button" @click="closeModal()"
+                                            class="flex-1 py-3 bg-wv-surface-hover hover:bg-wv-surface text-wv-text font-bold rounded-card">
+                                        {{ __('Cancelar') }}
+                                    </button>
+                                    <button type="button" @click="confirmEndGame()"
+                                            class="flex-1 py-3 bg-red-700 hover:bg-red-800 text-white font-bold rounded-card">
+                                        {{ __('Finalizar') }}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

@@ -204,6 +204,14 @@ document.addEventListener('alpine:init', () => {
     // end-game) pero con una UI reducida. Despues de cada accion exitosa,
     // recarga la pagina para mantener sincronia con el server (no replica
     // toda la logica reactiva del scoreboardApp original).
+    //
+    // Modales soportados (paridad con el scoreboard base):
+    //  - strike: 3 subtipos (Mirando / Swing / Foul Tip)
+    //  - out-step1: 4 tipos (Fly / Linea / Roletazo / De reglamento)
+    //  - out-step2: secuencia defensiva (9 fildeadores)
+    //  - hit: confirmacion con preview del resultado
+    //  - bunt: 2 subtipos (Toque de sacrificio / Bunt single)
+    //  - end-inning / end-game: confirmacion
     window.Alpine.data('scoreboardV2App', (config) => ({
         pitchUrl: config.pitchUrl,
         endInningUrl: config.endInningUrl,
@@ -213,6 +221,11 @@ document.addEventListener('alpine:init', () => {
         gameStatus: config.gameStatus ?? 'scheduled',
         tab: 'pitch',
         busy: false,
+        modal: null,            // 'strike' | 'out-step1' | 'out-step2' | 'hit' | 'bunt' | 'end-inning' | 'end-game' | null
+        outType: null,           // 'fly' | 'line' | 'ground' | 'reglamento' | null
+        defensiveSequence: [],   // ['P', 'C', '1B', ...] en orden de fildeadores
+        hitSubtype: null,        // 'single' | 'double' | 'triple' | 'hr' | 'inside_park' | null
+        hitConfig: { label: '', description: '', preview: '' },
 
         toast(message, level = 'success') {
             window.dispatchEvent(
@@ -220,13 +233,102 @@ document.addEventListener('alpine:init', () => {
             );
         },
 
+        closeModal() {
+            this.modal = null;
+            this.outType = null;
+            this.defensiveSequence = [];
+            this.hitSubtype = null;
+            this.hitConfig = { label: '', description: '', preview: '' };
+        },
+
+        // ===== STRIKE =====
+        openStrikeModal() { this.modal = 'strike'; },
+        async sendStrike(subtype) {
+            this.closeModal();
+            await this.sendPitch('strike', subtype);
+        },
+
+        // ===== OUT =====
+        openOutStep1() { this.modal = 'out-step1'; },
+        openOutStep2(type) {
+            this.outType = type;
+            this.modal = 'out-step2';
+        },
+        addFielder(pos) {
+            if (this.defensiveSequence.includes(pos)) {
+                this.defensiveSequence = this.defensiveSequence.filter(p => p !== pos);
+            } else {
+                this.defensiveSequence.push(pos);
+            }
+        },
+        removeFielder(i) {
+            this.defensiveSequence.splice(i, 1);
+        },
+        isFielderSelected(pos) {
+            return this.defensiveSequence.includes(pos);
+        },
+        async confirmOut() {
+            // Reglas: out de reglamento NO lleva secuencia; los demas SI.
+            const seq = this.outType === 'reglamento' ? [] : [...this.defensiveSequence];
+            this.closeModal();
+            // El endpoint pitch acepta defensive_sequence como array.
+            // Usamos el metodo generico con el field defensive_sequence[].
+            await this.sendPitchWithSequence(this.outType === 'reglamento' ? 'out' : 'out', null, seq);
+        },
+
+        // ===== HIT =====
+        openHitModal(subtype) {
+            this.hitSubtype = subtype;
+            const labels = {
+                single: { label: 'Sencillo (1B)', description: 'El bateador llega a primera base.', preview: 'Bateador a 1B.' },
+                double: { label: 'Doble (2B)', description: 'El bateador llega a segunda base.', preview: 'Bateador a 2B.' },
+                triple: { label: 'Triple (3B)', description: 'El bateador llega a tercera base.', preview: 'Bateador a 3B.' },
+                hr: { label: 'Home Run', description: 'El bateador recorre todas las bases.', preview: 'Carrera anotada.' },
+                inside_park: { label: 'HR de pierna', description: 'Home run sin que la pelota salga del parque.', preview: 'Carrera anotada.' },
+            };
+            this.hitConfig = labels[subtype] || { label: 'Hit', description: '', preview: '' };
+            this.modal = 'hit';
+        },
+        async confirmHit() {
+            const subtype = this.hitSubtype;
+            this.closeModal();
+            await this.sendPitch('hit', subtype);
+        },
+
+        // ===== BUNT =====
+        openBuntModal() { this.modal = 'bunt'; },
+        async sendBunt(subtype) {
+            this.closeModal();
+            await this.sendPitch('bunt', subtype);
+        },
+
+        // ===== END INNING / END GAME =====
+        openEndInningModal() { this.modal = 'end-inning'; },
+        async confirmEndInning() {
+            this.closeModal();
+            await this.endInning();
+        },
+        openEndGameModal() { this.modal = 'end-game'; },
+        async confirmEndGame() {
+            this.closeModal();
+            await this.endGame();
+        },
+
+        // ===== SEND (genericos) =====
         async sendPitch(type, subtype = null) {
+            return this.sendPitchWithSequence(type, subtype, null);
+        },
+
+        async sendPitchWithSequence(type, subtype = null, defensiveSequence = null) {
             if (this.busy) return;
             this.busy = true;
             try {
                 const fd = new FormData();
                 fd.append('type', type);
                 if (subtype) fd.append('subtype', subtype);
+                if (defensiveSequence && defensiveSequence.length) {
+                    defensiveSequence.forEach(p => fd.append('defensive_sequence[]', p));
+                }
                 fd.append('_token', this.csrf);
                 const res = await fetch(this.pitchUrl, {
                     method: 'POST',
@@ -243,8 +345,6 @@ document.addEventListener('alpine:init', () => {
                     return;
                 }
                 this.toast('Jugada registrada', 'success');
-                // Recarga la pagina para reflejar el state actualizado
-                // (outs, bases, score, inning/half, pitcher/batter).
                 setTimeout(() => window.location.reload(), 350);
             } catch (e) {
                 this.toast('Error de red: ' + e.message, 'error');
@@ -255,7 +355,6 @@ document.addEventListener('alpine:init', () => {
 
         async endInning() {
             if (this.busy) return;
-            if (!window.confirm('¿Cerrar la media entrada actual?')) return;
             this.busy = true;
             try {
                 const fd = new FormData();
@@ -285,7 +384,6 @@ document.addEventListener('alpine:init', () => {
 
         async endGame() {
             if (this.busy) return;
-            if (!window.confirm('¿Finalizar el juego? Esta accion no se puede deshacer.')) return;
             this.busy = true;
             try {
                 const fd = new FormData();
