@@ -564,17 +564,20 @@
 
     {{-- Action panel + modals --}}
     <div class="mt-4">
-        <div class="flex gap-1 border-b border-wv-border mb-3">
+        <div class="flex border-b border-wv-border mb-3">
             <button type="button" @click="tab='pitch'"
-                    :class="tab==='pitch' ? 'sb-tab is-active' : 'sb-tab'">
+                    :class="tab==='pitch' ? 'sb-tab is-active' : 'sb-tab'"
+                    class="flex-1 text-center">
                 {{ __('Pitcheo') }}
             </button>
             <button type="button" @click="tab='hit'"
-                    :class="tab==='hit' ? 'sb-tab is-active' : 'sb-tab'">
+                    :class="tab==='hit' ? 'sb-tab is-active' : 'sb-tab'"
+                    class="flex-1 text-center">
                 {{ __('Bateo') }}
             </button>
             <button type="button" @click="tab='extra'"
-                    :class="tab==='extra' ? 'sb-tab is-active' : 'sb-tab'">
+                    :class="tab==='extra' ? 'sb-tab is-active' : 'sb-tab'"
+                    class="flex-1 text-center">
                 {{ __('Extras') }}
             </button>
         </div>
@@ -587,27 +590,35 @@
             <button type="button" @click="openOutStep1()" :disabled="busy" class="sb-action-btn out">{{ __('Out') }}</button>
         </div>
 
-        {{-- HIT --}}
-        <div x-show="tab==='hit' && !isFinalized && gameStatus==='in_progress'" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            <button type="button" @click="openHitModal('single')" :disabled="busy" class="sb-action-btn ball">{{ __('Sencillo') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">1B</div></button>
-            <button type="button" @click="openHitModal('double')" :disabled="busy" class="sb-action-btn" style="background:#0ea5e9;">{{ __('Doble') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">2B</div></button>
-            <button type="button" @click="openHitModal('triple')" :disabled="busy" class="sb-action-btn" style="background:#8b5cf6;">{{ __('Triple') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">3B</div></button>
-            <button type="button" @click="openHitModal('hr')" :disabled="busy" class="sb-action-btn strike">{{ __('HR') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">Home Run</div></button>
-            <button type="button" @click="openHitModal('inside_park')" :disabled="busy" class="col-span-2 sb-action-btn foul">{{ __('HR de pierna') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">Inside-the-park</div></button>
-            <button type="button" @click="openBuntModal()" :disabled="busy" class="col-span-3 sb-action-btn" style="background:#eab308;">{{ __('Toque de bolas') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">{{ __('Sacrificio o bunt single') }}</div></button>
+        {{-- BATEO: Sencillo | Doble | Triple | HR  (fila 1, 4 cols)
+                    HR de pierna | Toque de bolas (fila 2, 2 cols) --}}
+        <div x-show="tab==='hit' && !isFinalized && gameStatus==='in_progress'">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button type="button" @click="openHitModal('single')" :disabled="busy" class="sb-action-btn ball">{{ __('Sencillo') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">1B</div></button>
+                <button type="button" @click="openHitModal('double')" :disabled="busy" class="sb-action-btn" style="background:#0ea5e9;">{{ __('Doble') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">2B</div></button>
+                <button type="button" @click="openHitModal('triple')" :disabled="busy" class="sb-action-btn" style="background:#8b5cf6;">{{ __('Triple') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">3B</div></button>
+                <button type="button" @click="openHitModal('hr')" :disabled="busy" class="sb-action-btn strike">{{ __('HR') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">Home Run</div></button>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-2 gap-2 mt-2">
+                <button type="button" @click="openHitModal('inside_park')" :disabled="busy" class="sb-action-btn foul">{{ __('HR de pierna') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">Inside-the-park</div></button>
+                <button type="button" @click="openBuntModal()" :disabled="busy" class="sb-action-btn" style="background:#eab308;">{{ __('Toque de bolas') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">{{ __('Sacrificio o bunt single') }}</div></button>
+            </div>
         </div>
 
-        {{-- EXTRAS --}}
+        {{-- EXTRAS: 4 arriba (Sustituir, Balk, Reordenar Lineup, Stats)
+                      4 abajo (Roster, Cerrar Inning, Finalizar Juego, Box Score) --}}
         <div x-show="tab==='extra'">
-            <div x-show="!isFinalized && gameStatus==='in_progress'" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                <button type="button" @click="sendPitch('balk')" :disabled="busy" class="sb-action-btn" style="background:#a855f7;">{{ __('Balk') }}<div class="text-[9px] font-normal opacity-80 mt-0.5">{{ __('Corredores avanzan 1 base') }}</div></button>
-                <button type="button" @click="openEndInningModal()" :disabled="busy" class="sb-action-btn" style="background:#f97316;">{{ __('Cerrar inning') }}<div class="text-[9px] font-normal opacity-80 mt-0.5">{{ __('Terminar la media entrada actual') }}</div></button>
-                <button type="button" @click="openEndGameModal()" :disabled="busy" class="sb-action-btn" style="background:#b91c1c;">{{ __('Finalizar juego') }}<div class="text-[9px] font-normal opacity-80 mt-0.5">{{ __('Cerrar el juego por completo') }}</div></button>
+            <div x-show="!isFinalized && gameStatus==='in_progress'" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button type="button" @click="openSubstituteModal('pitcher')" :disabled="busy" class="sb-action-btn" style="background:#0ea5e9;">{{ __('Sustituir') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Pitcher, bateador o corredor') }}</div></button>
+                <button type="button" @click="sendPitch('balk')" :disabled="busy" class="sb-action-btn" style="background:#a855f7;">{{ __('Balk') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Corredores avanzan 1 base') }}</div></button>
+                <button type="button" @click="openLineupModal()" :disabled="busy" class="sb-action-btn" style="background:#10b981;">{{ __('Reordenar lineup') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Drag &amp; drop para cambiar el orden') }}</div></button>
+                <button type="button" @click="openStatsModal()" :disabled="busy" class="sb-action-btn" style="background:#6366f1;">{{ __('Stats del juego') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo: pitcheo y bateo') }}</div></button>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                <a href="{{ route('games.box-score', $game) }}" class="sb-action-btn out text-center block text-sm">📋 {{ __('Box Score') }}</a>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
                 <a href="{{ route('games.roster.index', $game) }}" class="sb-action-btn out text-center block text-sm">👥 {{ __('Roster del juego') }}</a>
-                <a href="{{ route('games.scoreboard', $game) }}" class="sb-action-btn out text-center block text-sm">⚙️ {{ __('Scoreboard clásico') }}</a>
+                <button type="button" @click="openEndInningModal()" :disabled="busy" class="sb-action-btn" style="background:#f97316;">{{ __('Cerrar inning') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Terminar la media entrada actual') }}</div></button>
+                <button type="button" @click="openEndGameModal()" :disabled="busy" class="sb-action-btn" style="background:#b91c1c;">{{ __('Finalizar juego') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Cerrar el juego por completo') }}</div></button>
+                <a href="{{ route('games.box-score', $game) }}" class="sb-action-btn out text-center block text-sm">📋 {{ __('Box Score') }}</a>
             </div>
         </div>
     </div>
@@ -894,6 +905,136 @@
                 <button type="button" @click="closeRunnerModal()" class="w-full py-3 bg-wv-surface-hover hover:bg-wv-surface text-wv-text font-bold rounded-card">
                     {{ __('Cancelar') }}
                 </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal: Sustituir (alterna pitcher/bateador/corredor) --}}
+    <div x-show="modal==='substitute'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeModal()">
+            <div class="bg-sky-600 text-white px-5 py-3 flex items-center justify-between flex-shrink-0">
+                <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Sustituir') }}</h3>
+                <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-5 space-y-3 overflow-y-auto">
+                <div class="flex gap-2 text-xs">
+                    <button type="button" @click="substituteKind='pitcher'"
+                            :class="substituteKind==='pitcher' ? 'bg-sky-600 text-white' : 'bg-wv-surface text-wv-text-secondary'"
+                            class="flex-1 py-2 rounded font-bold uppercase tracking-wider">{{ __('Pitcher') }}</button>
+                    <button type="button" @click="substituteKind='batter'"
+                            :class="substituteKind==='batter' ? 'bg-sky-600 text-white' : 'bg-wv-surface text-wv-text-secondary'"
+                            class="flex-1 py-2 rounded font-bold uppercase tracking-wider">{{ __('Bateador') }}</button>
+                    <button type="button" @click="substituteKind='runner'"
+                            :class="substituteKind==='runner' ? 'bg-sky-600 text-white' : 'bg-wv-surface text-wv-text-secondary'"
+                            class="flex-1 py-2 rounded font-bold uppercase tracking-wider">{{ __('Corredor') }}</button>
+                </div>
+                <div x-show="substituteKind==='runner'">
+                    <label class="block text-xs text-wv-text-secondary uppercase font-semibold mb-1">{{ __('Base del corredor saliente') }}</label>
+                    <select x-model="substituteBase" class="w-full bg-wv-bg border border-wv-border rounded-card text-wv-text px-3 py-2">
+                        <option value="first">{{ __('1ra Base') }}</option>
+                        <option value="second">{{ __('2da Base') }}</option>
+                        <option value="third">{{ __('3ra Base') }}</option>
+                    </select>
+                </div>
+                <p class="text-xs text-wv-text-secondary">
+                    {{ __('Indica el atleta saliente y el atleta entrante (mismo equipo). Esta vista captura los IDs y los envia al endpoint de sustitucion.') }}
+                </p>
+                <div>
+                    <label class="block text-xs text-wv-text-secondary uppercase font-semibold mb-1">{{ __('Atleta saliente (ID)') }}</label>
+                    <input type="number" min="1" x-model.number="substituteOutId" class="w-full bg-wv-bg border border-wv-border rounded-card text-wv-text px-3 py-2" placeholder="ID">
+                </div>
+                <div>
+                    <label class="block text-xs text-wv-text-secondary uppercase font-semibold mb-1">{{ __('Atleta entrante (ID)') }}</label>
+                    <input type="number" min="1" x-model.number="substituteInId" class="w-full bg-wv-bg border border-wv-border rounded-card text-wv-text px-3 py-2" placeholder="ID">
+                </div>
+                <div x-show="substituteError" class="text-sm text-wv-alert" x-text="substituteError"></div>
+            </div>
+            <div class="p-4 border-t border-wv-border flex gap-2 flex-shrink-0">
+                <button type="button" @click="closeModal()" class="flex-1 py-3 bg-wv-surface-hover hover:bg-wv-surface text-wv-text font-bold rounded-card">{{ __('Cancelar') }}</button>
+                <button type="button" @click="sendSubstitute()" :disabled="substituteBusy" class="flex-1 py-3 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold rounded-card">
+                    <span x-show="!substituteBusy">{{ __('Sustituir') }}</span>
+                    <span x-show="substituteBusy">{{ __('Procesando...') }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal: Reordenar lineup --}}
+    <div x-show="modal==='lineup'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeModal()">
+            <div class="bg-emerald-600 text-white px-5 py-3 flex items-center justify-between flex-shrink-0">
+                <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Reordenar lineup') }}</h3>
+                <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-5 space-y-3 overflow-y-auto">
+                <p class="text-sm text-wv-text-secondary">
+                    {{ __('Captura aqui la nueva secuencia de IDs del lineup del equipo al bate (separados por comas, en el orden deseado).') }}
+                </p>
+                <div>
+                    <label class="block text-xs text-wv-text-secondary uppercase font-semibold mb-1">{{ __('Orden del lineup (IDs separados por coma)') }}</label>
+                    <input type="text" id="lineup-order-input" placeholder="11,7,3,22,..." class="w-full bg-wv-bg border border-wv-border rounded-card text-wv-text px-3 py-2 font-mono">
+                </div>
+                <div x-show="lineupError" class="text-sm text-wv-alert" x-text="lineupError"></div>
+                <p class="text-xs text-wv-text-secondary">
+                    {{ __('Tip: abre el Roster del juego para ver los IDs de los atletas del lineup.') }}
+                </p>
+            </div>
+            <div class="p-4 border-t border-wv-border flex gap-2 flex-shrink-0">
+                <button type="button" @click="closeModal()" class="flex-1 py-3 bg-wv-surface-hover hover:bg-wv-surface text-wv-text font-bold rounded-card">{{ __('Cancelar') }}</button>
+                <button type="button" @click="
+                        const v = document.getElementById('lineup-order-input').value;
+                        const order = v.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                        if (order.length === 0) { this.lineupError = 'Ingresa al menos un ID'; return; }
+                        submitLineupReorder(order);
+                    " :disabled="lineupBusy" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-card">
+                    <span x-show="!lineupBusy">{{ __('Guardar orden') }}</span>
+                    <span x-show="lineupBusy">{{ __('Guardando...') }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal: Stats del juego --}}
+    <div x-show="modal==='stats'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeModal()">
+            <div class="bg-indigo-600 text-white px-5 py-3 flex items-center justify-between flex-shrink-0">
+                <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Stats del juego') }}</h3>
+                <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-5 overflow-y-auto">
+                <div x-show="statsLoading" class="text-center text-wv-text-secondary py-8">
+                    {{ __('Cargando...') }}
+                </div>
+                <div x-show="!statsLoading && statsError" class="text-center text-wv-alert py-8" x-text="statsError"></div>
+                <div x-show="!statsLoading && statsData" class="space-y-3">
+                    <div class="text-xs text-wv-text-secondary">
+                        {{ __('Line score + box score resumido. Para ver el detalle completo visita la pagina Box Score.') }}
+                    </div>
+                    <div class="flex gap-1 border-b border-wv-border text-xs">
+                        <button type="button" @click="statsTab='batting'"
+                                :class="statsTab==='batting' ? 'border-wv-accent text-wv-accent font-bold' : 'border-transparent text-wv-text-secondary'"
+                                class="px-3 py-1 border-b-2">{{ __('Bateo') }}</button>
+                        <button type="button" @click="statsTab='pitching'"
+                                :class="statsTab==='pitching' ? 'border-wv-accent text-wv-accent font-bold' : 'border-transparent text-wv-text-secondary'"
+                                class="px-3 py-1 border-b-2">{{ __('Pitcheo') }}</button>
+                    </div>
+                    <div x-show="statsTab==='batting'">
+                        <div class="text-[10px] uppercase tracking-wider text-wv-text-secondary font-semibold mb-1">{{ __('Bateo') }}</div>
+                        <pre class="bg-wv-bg rounded-card p-3 text-[11px] overflow-x-auto" x-text="JSON.stringify(statsData?.batting ?? statsData?.line_score ?? statsData, null, 2)"></pre>
+                    </div>
+                    <div x-show="statsTab==='pitching'">
+                        <div class="text-[10px] uppercase tracking-wider text-wv-text-secondary font-semibold mb-1">{{ __('Pitcheo') }}</div>
+                        <pre class="bg-wv-bg rounded-card p-3 text-[11px] overflow-x-auto" x-text="JSON.stringify(statsData?.pitching ?? {}, null, 2)"></pre>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-wv-border flex-shrink-0">
+                <a :href="statsUrl" target="_blank" class="block w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-card text-center">
+                    {{ __('Abrir Box Score completo') }}
+                </a>
             </div>
         </div>
     </div>

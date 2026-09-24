@@ -389,6 +389,9 @@ class ScoreboardController extends Controller
             'homeColor' => $game->homeTeam->home_color,
             'awayColor' => $game->awayTeam->away_color,
             'runnerUrl' => route('games.plays.runner', $game),
+            'substituteUrl' => route('games.plays.substitute', $game),
+            'lineupReorderUrl' => route('games.lineup.reorder', $game),
+            'statsUrl' => route('games.scoreboard.stats', $game),
         ];
 
         return view('games.scoreboard-v2', compact(
@@ -443,6 +446,11 @@ class ScoreboardController extends Controller
             'batter_stats' => $batterStats,
             'on_deck' => $onDeck ? $this->athleteToArray($onDeck) : null,
             'runners' => $this->runners($state),
+            // Tambien incluir 'bases' con atletas completos para el scoreboard-v2
+            // (que consume payload.bases directamente). El base usa payload.runners;
+            // mandamos ambos para que ambos scoreboards puedan aplicar el state
+            // sin saber del otro.
+            'bases' => $this->runners($state),
             // DISI-33: flag derivado de $game->isCompleted() para que Alpine
             // pueda detectar reactivamente cuando el juego se finaliza durante
             // la sesion (sin recargar la pagina). state.is_game_over solo es

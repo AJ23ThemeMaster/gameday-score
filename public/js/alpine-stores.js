@@ -268,6 +268,25 @@ document.addEventListener('alpine:init', () => {
         runnerActionBusy: false,
         // URL del endpoint de acciones de corredor (avanzar, robar, anotar, etc.)
         runnerUrl: config.runnerUrl,
+        // URLs de los EXTRAS del scoreboard base migrados al v2.
+        substituteUrl: config.substituteUrl,
+        lineupReorderUrl: config.lineupReorderUrl,
+        statsUrl: config.statsUrl,
+        // Modal Sustituir (alterna atleta saliente / entrante).
+        substituteKind: 'pitcher', // 'pitcher' | 'batter' | 'runner'
+        substituteBase: 'first', // base del corredor (solo si kind=runner)
+        substituteOutId: '',
+        substituteInId: '',
+        substituteBusy: false,
+        substituteError: '',
+        // Modal Reordenar lineup (drag/drop local + PATCH al lineupReorderUrl).
+        lineupBusy: false,
+        lineupError: '',
+        // Modal Stats del juego (carga statsUrl como JSON).
+        statsLoading: false,
+        statsError: '',
+        statsData: null,
+        statsTab: 'batting', // 'batting' | 'pitching'
 
         toast(message, level = 'success') {
             window.dispatchEvent(
@@ -324,6 +343,12 @@ document.addEventListener('alpine:init', () => {
                     this.base1 = normalize(payload.bases.first);
                     this.base2 = normalize(payload.bases.second);
                     this.base3 = normalize(payload.bases.third);
+                } else if (payload.runners && typeof payload.runners === 'object') {
+                    // Fallback: el endpoint /poll del base usa 'runners' en vez de
+                    // 'bases'. Mapeamos para que el v2 actualice sin re-fetch.
+                    this.base1 = payload.runners.first ?? null;
+                    this.base2 = payload.runners.second ?? null;
+                    this.base3 = payload.runners.third ?? null;
                 } else {
                     // Fallback: el payload solo trae IDs (state.bases). Conservamos
                     // el objeto cacheado si coincide con el ID, si no, queda el ID
@@ -622,6 +647,119 @@ document.addEventListener('alpine:init', () => {
             } finally {
                 this.busy = false;
                 this.runnerActionBusy = false;
+            }
+        },
+
+        // ===== EXTRAS migrados del scoreboard base =====
+        openSubstituteModal(kind = 'pitcher', base = 'first') {
+            this.substituteKind = kind;
+            this.substituteBase = base;
+            this.substituteOutId = '';
+            this.substituteInId = '';
+            this.substituteError = '';
+            this.modal = 'substitute';
+        },
+        async sendSubstitute() {
+            if (this.busy || this.substituteBusy) return;
+            if (!this.substituteOutId || !this.substituteInId) {
+                this.substituteError = 'Selecciona atleta saliente y entrante';
+                return;
+            }
+            this.substituteBusy = true;
+            this.substituteError = '';
+            try {
+                const fd = new FormData();
+                fd.append('kind', this.substituteKind);
+                fd.append('out_athlete_id', this.substituteOutId);
+                fd.append('in_athlete_id', this.substituteInId);
+                if (this.substituteKind === 'runner') {
+                    fd.append('base', this.substituteBase);
+                }
+                fd.append('_token', this.csrf);
+                const res = await fetch(this.substituteUrl, {
+                    method: 'POST',
+                    body: fd,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    this.substituteError = data.message || data.error || 'Error al sustituir';
+                    return;
+                }
+                this.toast('Sustitucion registrada', 'success');
+                this.closeModal();
+                await this.refreshSnapshot();
+            } catch (e) {
+                this.substituteError = 'Error de red: ' + e.message;
+            } finally {
+                this.substituteBusy = false;
+            }
+        },
+
+        openLineupModal() {
+            this.lineupError = '';
+            this.modal = 'lineup';
+        },
+        async submitLineupReorder(order) {
+            // order = [athleteId, athleteId, ...] en el orden deseado.
+            if (this.busy || this.lineupBusy) return;
+            this.lineupBusy = true;
+            this.lineupError = '';
+            try {
+                const fd = new FormData();
+                order.forEach((id, idx) => fd.append('order[' + idx + ']', id));
+                fd.append('_token', this.csrf);
+                const res = await fetch(this.lineupReorderUrl, {
+                    method: 'POST',
+                    body: fd,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'X-HTTP-Method-Override': 'PATCH',
+                    },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    this.lineupError = data.message || data.error || 'Error al reordenar';
+                    return;
+                }
+                this.toast('Lineup actualizado', 'success');
+                this.closeModal();
+                await this.refreshSnapshot();
+            } catch (e) {
+                this.lineupError = 'Error de red: ' + e.message;
+            } finally {
+                this.lineupBusy = false;
+            }
+        },
+
+        async openStatsModal() {
+            this.statsLoading = true;
+            this.statsError = '';
+            this.statsData = null;
+            this.modal = 'stats';
+            try {
+                const res = await fetch(this.statsUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) {
+                    this.statsError = 'Error al cargar stats';
+                    return;
+                }
+                this.statsData = await res.json();
+            } catch (e) {
+                this.statsError = 'Error de red: ' + e.message;
+            } finally {
+                this.statsLoading = false;
             }
         },
 
