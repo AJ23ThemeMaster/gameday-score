@@ -384,6 +384,10 @@ class ScoreboardController extends Controller
             'batterStats' => $batterStats ?: ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0, 'avg' => 0],
             'isFinalized' => in_array($game->status, ['completed', 'finalized'], true),
             'gameStatus' => $game->status,
+            'homeLogoUrl' => $game->homeTeam->logoUrl,
+            'awayLogoUrl' => $game->awayTeam->logoUrl,
+            'homeColor' => $game->homeTeam->home_color,
+            'awayColor' => $game->awayTeam->away_color,
         ];
 
         return view('games.scoreboard-v2', compact(

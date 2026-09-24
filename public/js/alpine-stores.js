@@ -257,6 +257,10 @@ document.addEventListener('alpine:init', () => {
         // Identidad de equipos y contexto del juego (pasado desde la vista)
         homeShort: config.homeShort ?? '',
         awayShort: config.awayShort ?? '',
+        homeLogoUrl: config.homeLogoUrl ?? null,
+        awayLogoUrl: config.awayLogoUrl ?? null,
+        homeColor: config.homeColor ?? null,
+        awayColor: config.awayColor ?? null,
         categoryName: config.categoryName ?? '',
         stadiumName: config.stadiumName ?? '',
 
@@ -296,9 +300,20 @@ document.addEventListener('alpine:init', () => {
                 this.strikes = s.strikes ?? this.strikes;
                 this.outs = s.outs ?? this.outs;
                 const bases = s.bases || {};
-                this.base1 = bases.first ?? null;
-                this.base2 = bases.second ?? null;
-                this.base3 = bases.third ?? null;
+                // El servidor puede devolver athlete IDs (integer) u objetos completos.
+                // Si devuelve un ID y ya tenemos al atleta con ese ID en cache, conservamos
+                // el objeto completo (con name/number/photo_url) para no perder los datos
+                // visuales en el diamante. Solo limpiamos si el ID es null.
+                const resolveBase = (current, newVal) => {
+                    if (newVal === null || newVal === undefined) return null;
+                    if (typeof newVal === 'object') return newVal;
+                    // newVal es un ID numerico: mantener el objeto actual si coincide
+                    if (current && current.id === newVal) return current;
+                    return newVal; // fallback: el ID (la vista mostrara solo el ID)
+                };
+                this.base1 = resolveBase(this.base1, bases.first);
+                this.base2 = resolveBase(this.base2, bases.second);
+                this.base3 = resolveBase(this.base3, bases.third);
             }
             // Players (objetos simples con id/name/number/position/initials)
             if (payload.pitcher !== undefined) this.pitcher = payload.pitcher;
@@ -387,6 +402,37 @@ document.addEventListener('alpine:init', () => {
             const filled = i < this.outs;
             const bg = filled ? '#ef4444' : 'transparent';
             return `background: ${bg}; border-color: #ef4444;`;
+        },
+        // Nombres de los corredores en base para mostrar en las bases del diamante.
+        // Cada base (base1/base2/base3) puede contener un athlete array {id, name, number, ...}
+        // o null. Devuelve un objeto {first, second, third} con los nombres o ''.
+        runnersLabel() {
+            return {
+                first: this.base1?.name ?? '',
+                second: this.base2?.name ?? '',
+                third: this.base3?.name ?? '',
+            };
+        },
+        // Numero del corredor en la base (para mostrar en el tag amarillo).
+        runnersNumber() {
+            return {
+                first: this.base1?.number ?? '',
+                second: this.base2?.number ?? '',
+                third: this.base3?.number ?? '',
+            };
+        },
+        // Etiqueta legible del estado del juego.
+        gameStatusLabel() {
+            const map = {
+                scheduled: 'Programado',
+                in_progress: 'En vivo',
+                paused: 'Pausado',
+                completed: 'Completado',
+                finalized: 'Finalizado',
+                suspended: 'Suspendido',
+                cancelled: 'Cancelado',
+            };
+            return map[this.gameStatus] ?? this.gameStatus;
         },
 
         // ===== STRIKE =====
