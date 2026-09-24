@@ -199,6 +199,121 @@ document.addEventListener('alpine:init', () => {
         },
     });
 
+    // Scoreboard V2 component: vista paralela experimental del scoreboard.
+    // Reusa los mismos endpoints que el scoreboard base (pitch, end-inning,
+    // end-game) pero con una UI reducida. Despues de cada accion exitosa,
+    // recarga la pagina para mantener sincronia con el server (no replica
+    // toda la logica reactiva del scoreboardApp original).
+    window.Alpine.data('scoreboardV2App', (config) => ({
+        pitchUrl: config.pitchUrl,
+        endInningUrl: config.endInningUrl,
+        endGameUrl: config.endGameUrl,
+        csrf: config.csrf,
+        isFinalized: config.isFinalized ?? false,
+        gameStatus: config.gameStatus ?? 'scheduled',
+        tab: 'pitch',
+        busy: false,
+
+        toast(message, level = 'success') {
+            window.dispatchEvent(
+                new CustomEvent('toast', { detail: { message, level, timeout: 3500 } })
+            );
+        },
+
+        async sendPitch(type, subtype = null) {
+            if (this.busy) return;
+            this.busy = true;
+            try {
+                const fd = new FormData();
+                fd.append('type', type);
+                if (subtype) fd.append('subtype', subtype);
+                fd.append('_token', this.csrf);
+                const res = await fetch(this.pitchUrl, {
+                    method: 'POST',
+                    body: fd,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    this.toast(data.message || 'Error al registrar la jugada', 'error');
+                    return;
+                }
+                this.toast('Jugada registrada', 'success');
+                // Recarga la pagina para reflejar el state actualizado
+                // (outs, bases, score, inning/half, pitcher/batter).
+                setTimeout(() => window.location.reload(), 350);
+            } catch (e) {
+                this.toast('Error de red: ' + e.message, 'error');
+            } finally {
+                this.busy = false;
+            }
+        },
+
+        async endInning() {
+            if (this.busy) return;
+            if (!window.confirm('¿Cerrar la media entrada actual?')) return;
+            this.busy = true;
+            try {
+                const fd = new FormData();
+                fd.append('_token', this.csrf);
+                const res = await fetch(this.endInningUrl, {
+                    method: 'POST',
+                    body: fd,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    this.toast(data.message || 'Error al cerrar la entrada', 'error');
+                    return;
+                }
+                this.toast('Inning cerrado', 'success');
+                setTimeout(() => window.location.reload(), 350);
+            } catch (e) {
+                this.toast('Error de red: ' + e.message, 'error');
+            } finally {
+                this.busy = false;
+            }
+        },
+
+        async endGame() {
+            if (this.busy) return;
+            if (!window.confirm('¿Finalizar el juego? Esta accion no se puede deshacer.')) return;
+            this.busy = true;
+            try {
+                const fd = new FormData();
+                fd.append('_token', this.csrf);
+                const res = await fetch(this.endGameUrl, {
+                    method: 'POST',
+                    body: fd,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    this.toast(data.message || 'Error al finalizar el juego', 'error');
+                    return;
+                }
+                this.toast('Juego finalizado', 'success');
+                setTimeout(() => window.location.reload(), 500);
+            } catch (e) {
+                this.toast('Error de red: ' + e.message, 'error');
+            } finally {
+                this.busy = false;
+            }
+        },
+    }));
+
     // Scoreboard live-poll component (DISI-12)
     window.Alpine.data('scoreboardApp', (config) => ({
         gameId: config.gameId,

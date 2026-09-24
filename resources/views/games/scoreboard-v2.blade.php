@@ -398,6 +398,128 @@
                     </div>
                 </div>
 
+                {{-- Actions: same endpoints as the base scoreboard, condensed panel. --}}
+                <div class="mt-4"
+                     x-data="scoreboardV2App({
+                        pitchUrl: @js(route('games.plays.pitch', $game)),
+                        endInningUrl: @js(route('games.plays.end-inning', $game)),
+                        endGameUrl: @js(route('games.plays.end-game', $game)),
+                        pollUrl: @js(route('games.scoreboard.poll', $game)),
+                        csrf: @js(csrf_token()),
+                        isFinalized: @js(in_array($game->status, ['completed', 'finalized'], true)),
+                        gameStatus: @js($game->status),
+                     })">
+
+                    {{-- Tabs --}}
+                    <div class="flex gap-1 border-b border-wv-border mb-3">
+                        <button type="button" @click="tab='pitch'"
+                                :class="tab==='pitch' ? 'border-wv-accent text-wv-accent' : 'border-transparent text-wv-text-secondary hover:text-wv-text'"
+                                class="px-4 py-2 text-sm font-bold border-b-2 transition">
+                            {{ __('Pitcheo') }}
+                        </button>
+                        <button type="button" @click="tab='hit'"
+                                :class="tab==='hit' ? 'border-wv-accent text-wv-accent' : 'border-transparent text-wv-text-secondary hover:text-wv-text'"
+                                class="px-4 py-2 text-sm font-bold border-b-2 transition">
+                            {{ __('Bateo') }}
+                        </button>
+                        <button type="button" @click="tab='extra'"
+                                :class="tab==='extra' ? 'border-wv-accent text-wv-accent' : 'border-transparent text-wv-text-secondary hover:text-wv-text'"
+                                class="px-4 py-2 text-sm font-bold border-b-2 transition">
+                            {{ __('Extras') }}
+                        </button>
+                    </div>
+
+                    {{-- PITCH tab --}}
+                    <div x-show="tab==='pitch' && !isFinalized && gameStatus==='in_progress'" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button type="button" @click="sendPitch('ball')" :disabled="busy"
+                                class="py-4 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-lg font-black rounded-card transition">
+                            {{ __('Ball') }}
+                        </button>
+                        <button type="button" @click="sendPitch('strike')" :disabled="busy"
+                                class="py-4 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-lg font-black rounded-card transition">
+                            {{ __('Strike') }}
+                        </button>
+                        <button type="button" @click="sendPitch('foul')" :disabled="busy"
+                                class="py-4 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-lg font-black rounded-card transition">
+                            {{ __('Foul') }}
+                        </button>
+                        <button type="button" @click="sendPitch('out')" :disabled="busy"
+                                class="py-4 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white text-lg font-black rounded-card transition">
+                            {{ __('Out') }}
+                        </button>
+                    </div>
+
+                    {{-- HIT tab --}}
+                    <div x-show="tab==='hit' && !isFinalized && gameStatus==='in_progress'" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button type="button" @click="sendPitch('hit','single')" :disabled="busy"
+                                class="py-4 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-base font-black rounded-card transition">
+                            {{ __('Sencillo') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-0.5">1B</div>
+                        </button>
+                        <button type="button" @click="sendPitch('hit','double')" :disabled="busy"
+                                class="py-4 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-base font-black rounded-card transition">
+                            {{ __('Doble') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-0.5">2B</div>
+                        </button>
+                        <button type="button" @click="sendPitch('hit','triple')" :disabled="busy"
+                                class="py-4 bg-violet-500 hover:bg-violet-600 disabled:opacity-50 text-white text-base font-black rounded-card transition">
+                            {{ __('Triple') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-0.5">3B</div>
+                        </button>
+                        <button type="button" @click="sendPitch('hit','hr')" :disabled="busy"
+                                class="py-4 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-base font-black rounded-card transition">
+                            {{ __('HR') }}
+                            <div class="text-[10px] font-normal opacity-80 mt-0.5">Home Run</div>
+                        </button>
+                    </div>
+
+                    {{-- EXTRAS tab --}}
+                    <div x-show="tab==='extra'">
+                        <div x-show="!isFinalized && gameStatus==='in_progress'" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <button type="button" @click="sendPitch('balk')" :disabled="busy"
+                                    class="py-3 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white text-sm font-bold rounded-card transition">
+                                {{ __('Balk') }}
+                                <div class="text-[9px] font-normal opacity-80 mt-0.5">{{ __('Corredores avanzan 1 base') }}</div>
+                            </button>
+                            <button type="button" @click="endInning()" :disabled="busy"
+                                    class="py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-bold rounded-card transition">
+                                {{ __('Cerrar inning') }}
+                                <div class="text-[9px] font-normal opacity-80 mt-0.5">{{ __('Terminar la media entrada actual') }}</div>
+                            </button>
+                            <button type="button" @click="endGame()" :disabled="busy"
+                                    class="py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold rounded-card transition">
+                                {{ __('Finalizar juego') }}
+                                <div class="text-[9px] font-normal opacity-80 mt-0.5">{{ __('Cerrar el juego por completo') }}</div>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                            <a href="{{ route('games.box-score', $game) }}"
+                               class="py-3 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-card transition text-center block">
+                                📋 {{ __('Box Score') }}
+                            </a>
+                            <a href="{{ route('games.roster.index', $game) }}"
+                               class="py-3 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-card transition text-center block">
+                                👥 {{ __('Roster del juego') }}
+                            </a>
+                            <a href="{{ route('games.scoreboard', $game) }}"
+                               class="py-3 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-card transition text-center block">
+                                ⚙️ {{ __('Scoreboard clasico') }}
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- Toast feedback --}}
+                    <div class="fixed top-4 right-4 z-[60] space-y-2 pointer-events-none" x-data="toastStack()" @toast.window="show($event.detail.message, $event.detail.level || 'success', $event.detail.timeout)">
+                        <template x-for="t in items" :key="t.id">
+                            <div x-show="t.visible" x-transition
+                                 :class="t.level === 'error' ? 'bg-red-600 text-white' : 'bg-emerald-500 text-white'"
+                                 class="px-4 py-2 rounded-card shadow-lg text-sm font-semibold pointer-events-auto">
+                                <span x-text="t.message"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
                 <div class="text-center text-xs text-wv-text-secondary mt-4">
                     Vista paralela (scoreboard-v2). Mismos datos que el scoreboard clásico; diseño experimental.
                 </div>
