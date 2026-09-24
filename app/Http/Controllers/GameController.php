@@ -25,7 +25,7 @@ use Illuminate\View\View;
 
 class GameController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         // DISI-15: admin y anotador pueden ver juegos.
         // Admin: ve todos los juegos.
@@ -33,7 +33,11 @@ class GameController extends Controller
         //          apunta a un scorekeeper cuyo user_id == Auth::id()).
         abort_unless(Gate::allows('view games'), 403);
 
-        $query = Game::with(['category', 'stadium', 'homeTeam', 'awayTeam']);
+        $query = Game::with([
+            'category', 'stadium', 'homeTeam', 'awayTeam',
+            'tournament', 'user', 'scorekeepers', 'referees',
+        ]);
+
         if (Auth::user()->hasRole('anotador')) {
             $scorekeeperIds = Scorekeeper::where('user_id', Auth::id())->pluck('id');
             $gameIds = \DB::table('game_scorekeeper')
@@ -44,10 +48,65 @@ class GameController extends Controller
             // Otros: solo sus propios juegos
             $query->where('user_id', Auth::id());
         }
+
+        // Filtros (todos opcionales):
+        // - fecha_desde / fecha_hasta: rango sobre scheduled_at
+        // - home_team_id / away_team_id: equipos
+        // - category_id: categoria
+        // - stadium_id: estadio
+        // - tournament_id: torneo
+        // - scorekeeper_id: anotador (M2M game_scorekeeper)
+        // - referee_id: arbitro (M2M game_referee)
+        $filters = [
+            'fecha_desde' => $request->query('fecha_desde'),
+            'fecha_hasta' => $request->query('fecha_hasta'),
+            'home_team_id' => $request->query('home_team_id'),
+            'away_team_id' => $request->query('away_team_id'),
+            'category_id' => $request->query('category_id'),
+            'stadium_id' => $request->query('stadium_id'),
+            'tournament_id' => $request->query('tournament_id'),
+            'scorekeeper_id' => $request->query('scorekeeper_id'),
+            'referee_id' => $request->query('referee_id'),
+        ];
+
+        if (! empty($filters['fecha_desde'])) {
+            $query->where('scheduled_at', '>=', $filters['fecha_desde'].' 00:00:00');
+        }
+        if (! empty($filters['fecha_hasta'])) {
+            $query->where('scheduled_at', '<=', $filters['fecha_hasta'].' 23:59:59');
+        }
+        if (! empty($filters['home_team_id'])) {
+            $query->where('home_team_id', (int) $filters['home_team_id']);
+        }
+        if (! empty($filters['away_team_id'])) {
+            $query->where('away_team_id', (int) $filters['away_team_id']);
+        }
+        if (! empty($filters['category_id'])) {
+            $query->where('category_id', (int) $filters['category_id']);
+        }
+        if (! empty($filters['stadium_id'])) {
+            $query->where('stadium_id', (int) $filters['stadium_id']);
+        }
+        if (! empty($filters['tournament_id'])) {
+            $query->where('tournament_id', (int) $filters['tournament_id']);
+        }
+        if (! empty($filters['scorekeeper_id'])) {
+            $gameIdsByScorekeeper = \DB::table('game_scorekeeper')
+                ->where('scorekeeper_id', (int) $filters['scorekeeper_id'])
+                ->pluck('game_id');
+            $query->whereIn('id', $gameIdsByScorekeeper);
+        }
+        if (! empty($filters['referee_id'])) {
+            $gameIdsByReferee = \DB::table('game_referee')
+                ->where('referee_id', (int) $filters['referee_id'])
+                ->pluck('game_id');
+            $query->whereIn('id', $gameIdsByReferee);
+        }
+
         $games = $query
-            ->ownedBy(Auth::id())
             ->orderByDesc('scheduled_at')
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
         $stats = [
             'total' => Game::ownedBy(Auth::id())->count(),
@@ -57,7 +116,18 @@ class GameController extends Controller
             'public' => Game::ownedBy(Auth::id())->public()->count(),
         ];
 
-        return view('games.index', compact('games', 'stats'));
+        // Listas para los dropdowns de filtros.
+        $teams = Team::active()->orderBy('name')->get(['id', 'name', 'short_name']);
+        $categories = Category::active()->orderBy('name')->get(['id', 'name']);
+        $stadiums = Stadium::active()->orderBy('name')->get(['id', 'name']);
+        $tournaments = Tournament::active()->orderBy('name')->get(['id', 'name']);
+        $scorekeepers = Scorekeeper::active()->orderBy('last_name')->orderBy('first_name')->get(['id', 'first_name', 'last_name']);
+        $referees = Referee::active()->orderBy('last_name')->orderBy('first_name')->get(['id', 'first_name', 'last_name']);
+
+        return view('games.index', compact(
+            'games', 'stats', 'filters',
+            'teams', 'categories', 'stadiums', 'tournaments', 'scorekeepers', 'referees',
+        ));
     }
 
     public function create(): View
