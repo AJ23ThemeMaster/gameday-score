@@ -332,6 +332,10 @@ class ScoreboardController extends Controller
      * fondo oscuro, tarjeta "is-batting" para el equipo al bate,
      * diamante SVG en lugar de texto, meter de strike% del pitcher.
      * Sirve para evaluar el rediseño sin tocar la vista clasica.
+     *
+     * Adicionalmente, pasa los datos en formato JSON-friendly a la vista
+     * para que el componente Alpine scoreboardV2App mantenga el state
+     * reactivo y se actualice via applyState() sin recargar la pagina.
      */
     public function v2(Request $request, Game $game): View|JsonResponse
     {
@@ -354,9 +358,37 @@ class ScoreboardController extends Controller
         $score = Play::scoreboard($game->id);
         $runners = $this->runners($state);
 
+        // Datos en formato JSON-friendly para inicializar el state Alpine
+        // reactivo (scoreboardV2App.applyState() los re-aplica en cada
+        // respuesta AJAX sin recargar la pagina).
+        $initialState = [
+            'homeRuns' => (int) ($score['home'] ?? 0),
+            'awayRuns' => (int) ($score['away'] ?? 0),
+            'homeHits' => (int) ($score['home_hits'] ?? 0),
+            'awayHits' => (int) ($score['away_hits'] ?? 0),
+            'homeErrors' => (int) ($score['home_errors'] ?? 0),
+            'awayErrors' => (int) ($score['away_errors'] ?? 0),
+            'lineScore' => $score['line'] ?? [],
+            'inning' => (int) ($state['inning'] ?? 1),
+            'half' => $state['half'] ?? 'top',
+            'balls' => (int) ($state['balls'] ?? 0),
+            'strikes' => (int) ($state['strikes'] ?? 0),
+            'outs' => (int) ($state['outs'] ?? 0),
+            'base1' => $runners['first'] ?? null,
+            'base2' => $runners['second'] ?? null,
+            'base3' => $runners['third'] ?? null,
+            'pitcher' => $pitcher ? $this->athleteToArray($pitcher) : null,
+            'batter' => $batter ? $this->athleteToArray($batter) : null,
+            'onDeck' => $onDeck ? $this->athleteToArray($onDeck) : null,
+            'pitcherStats' => $pitcherStats ?: ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0],
+            'batterStats' => $batterStats ?: ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0, 'avg' => 0],
+            'isFinalized' => in_array($game->status, ['completed', 'finalized'], true),
+            'gameStatus' => $game->status,
+        ];
+
         return view('games.scoreboard-v2', compact(
             'game', 'state', 'score', 'pitcher', 'batter', 'onDeck', 'runners',
-            'pitcherStats', 'batterStats',
+            'pitcherStats', 'batterStats', 'initialState',
         ));
     }
 
@@ -492,6 +524,7 @@ class ScoreboardController extends Controller
             'first_name' => $a->first_name,
             'last_name' => $a->last_name,
             'number' => $a->number,
+            'position' => $a->position,
             'team_id' => $a->team?->id,
             'photo_url' => $a->photoUrl,
             'initials' => $firstInitial . $lastInitial,

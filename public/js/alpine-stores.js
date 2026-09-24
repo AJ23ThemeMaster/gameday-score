@@ -201,9 +201,10 @@ document.addEventListener('alpine:init', () => {
 
     // Scoreboard V2 component: vista paralela experimental del scoreboard.
     // Reusa los mismos endpoints que el scoreboard base (pitch, end-inning,
-    // end-game) pero con una UI reducida. Despues de cada accion exitosa,
-    // recarga la pagina para mantener sincronia con el server (no replica
-    // toda la logica reactiva del scoreboardApp original).
+    // end-game) y mantiene el state reactivo en Alpine sin recargar la
+    // pagina. Despues de cada accion, captura el state del response JSON
+    // y lo aplica via applyState() para actualizar score, outs, bases,
+    // inning/half, pitcher, batter y on-deck en vivo.
     //
     // Modales soportados (paridad con el scoreboard base):
     //  - strike: 3 subtipos (Mirando / Swing / Foul Tip)
@@ -227,6 +228,38 @@ document.addEventListener('alpine:init', () => {
         hitSubtype: null,        // 'single' | 'double' | 'triple' | 'hr' | 'inside_park' | null
         hitConfig: { label: '', description: '', preview: '' },
 
+        // ===== STATE reactivo (se inicializa desde el server, se actualiza via applyState) =====
+        // Score
+        homeRuns: config.homeRuns ?? 0,
+        awayRuns: config.awayRuns ?? 0,
+        homeHits: config.homeHits ?? 0,
+        awayHits: config.awayHits ?? 0,
+        homeErrors: config.homeErrors ?? 0,
+        awayErrors: config.awayErrors ?? 0,
+        // Inning/half/count/outs
+        inning: config.inning ?? 1,
+        half: config.half ?? 'top',  // 'top' | 'bottom'
+        balls: config.balls ?? 0,
+        strikes: config.strikes ?? 0,
+        outs: config.outs ?? 0,
+        // Bases (athleteId en cada base, o null)
+        base1: config.base1 ?? null,
+        base2: config.base2 ?? null,
+        base3: config.base3 ?? null,
+        // Line score (carreras por inning de cada equipo)
+        lineScore: config.lineScore ?? {},
+        // Players
+        pitcher: config.pitcher ?? null,    // { id, name, number, position, initials }
+        pitcherStats: config.pitcherStats ?? { pitches: 0, strikes: 0, balls: 0, strikeouts: 0, hits: 0, walks: 0 },
+        batter: config.batter ?? null,
+        batterStats: config.batterStats ?? { at_bats: 0, hits: 0, strikeouts: 0, walks: 0, avg: 0 },
+        onDeck: config.onDeck ?? null,
+        // Identidad de equipos y contexto del juego (pasado desde la vista)
+        homeShort: config.homeShort ?? '',
+        awayShort: config.awayShort ?? '',
+        categoryName: config.categoryName ?? '',
+        stadiumName: config.stadiumName ?? '',
+
         toast(message, level = 'success') {
             window.dispatchEvent(
                 new CustomEvent('toast', { detail: { message, level, timeout: 3500 } })
@@ -239,6 +272,121 @@ document.addEventListener('alpine:init', () => {
             this.defensiveSequence = [];
             this.hitSubtype = null;
             this.hitConfig = { label: '', description: '', preview: '' };
+        },
+
+        // ===== applyState: actualiza todo el state reactivo desde la respuesta AJAX =====
+        applyState(payload) {
+            if (!payload) return;
+            // Score
+            if (payload.score) {
+                this.homeRuns = payload.score.home ?? this.homeRuns;
+                this.awayRuns = payload.score.away ?? this.awayRuns;
+                this.homeHits = payload.score.home_hits ?? this.homeHits;
+                this.awayHits = payload.score.away_hits ?? this.awayHits;
+                this.homeErrors = payload.score.home_errors ?? this.homeErrors;
+                this.awayErrors = payload.score.away_errors ?? this.awayErrors;
+                this.lineScore = payload.score.line ?? this.lineScore;
+            }
+            // State (inning/half/count/outs/bases)
+            if (payload.state) {
+                const s = payload.state;
+                this.inning = s.inning ?? this.inning;
+                this.half = s.half ?? this.half;
+                this.balls = s.balls ?? this.balls;
+                this.strikes = s.strikes ?? this.strikes;
+                this.outs = s.outs ?? this.outs;
+                const bases = s.bases || {};
+                this.base1 = bases.first ?? null;
+                this.base2 = bases.second ?? null;
+                this.base3 = bases.third ?? null;
+            }
+            // Players (objetos simples con id/name/number/position/initials)
+            if (payload.pitcher !== undefined) this.pitcher = payload.pitcher;
+            if (payload.batter !== undefined) this.batter = payload.batter;
+            if (payload.on_deck !== undefined) this.onDeck = payload.on_deck;
+            if (payload.pitcher_stats) {
+                this.pitcherStats = {
+                    pitches: payload.pitcher_stats.pitches ?? 0,
+                    strikes: payload.pitcher_stats.strikes ?? 0,
+                    balls: payload.pitcher_stats.balls ?? 0,
+                    strikeouts: payload.pitcher_stats.strikeouts ?? 0,
+                    hits: payload.pitcher_stats.hits ?? 0,
+                    walks: payload.pitcher_stats.walks ?? 0,
+                };
+            }
+            if (payload.batter_stats) {
+                this.batterStats = {
+                    at_bats: payload.batter_stats.at_bats ?? 0,
+                    hits: payload.batter_stats.hits ?? 0,
+                    strikeouts: payload.batter_stats.strikeouts ?? 0,
+                    walks: payload.batter_stats.walks ?? 0,
+                    avg: payload.batter_stats.avg ?? 0,
+                };
+            }
+            // Game-level flags
+            if (payload.is_completed !== undefined) {
+                this.isFinalized = payload.is_completed;
+                if (payload.is_completed) this.gameStatus = 'completed';
+            }
+        },
+
+        // Helpers para el template
+        isHomeBatting() { return this.half === 'bottom'; },
+        isAwayBatting() { return this.half === 'top'; },
+        halfLabel() { return this.half === 'top' ? 'TOP' : 'BOTTOM'; },
+        initials(name) {
+            if (!name) return '?';
+            const parts = name.trim().split(/\s+/);
+            return (parts[0]?.[0] || '').toUpperCase() + (parts[parts.length - 1]?.[0] || '').toUpperCase();
+        },
+        fmtRuns(n) { return n ?? 0; },
+        fmtAvg(n) { return Number(n ?? 0).toFixed(3).replace(/^0/, ''); },
+        strikePct() {
+            const total = Math.max(1, this.pitcherStats.pitches || 1);
+            return Math.round(((this.pitcherStats.strikes || 0) / total) * 100);
+        },
+        outsArr() {
+            return [0, 1, 2].map(i => i < this.outs);
+        },
+        onFirst() { return this.base1 !== null && this.base1 !== undefined; },
+        onSecond() { return this.base2 !== null && this.base2 !== undefined; },
+        onThird() { return this.base3 !== null && this.base3 !== undefined; },
+
+        // ===== Helpers para el shell del scoreboard (header + team cards + diamond + outs) =====
+        outsLabel() {
+            return this.outs + ' ' + (this.outs === 1 ? 'out' : 'outs');
+        },
+        categoryStadium() {
+            return (this.categoryName || '—') + ' · ' + (this.stadiumName || '—');
+        },
+        inningCols() {
+            return Math.max(9, Number(this.inning || 1));
+        },
+        inningLineStyle() {
+            return `grid-template-columns: 1fr repeat(${this.inningCols()}, minmax(2rem, 1fr)) 1fr`;
+        },
+        lineInnings() {
+            return Array.from({ length: this.inningCols() }, (_, i) => i + 1);
+        },
+        lineCellClass(i) {
+            const cell = (this.lineScore || {})[i] || {};
+            const isCurrent = i === this.inning && !cell.final;
+            const isFinal = !!cell.final;
+            const parts = [];
+            if (isCurrent) parts.push('is-active');
+            if (isFinal) parts.push('is-r');
+            return parts.join(' ');
+        },
+        lineCellText(i) {
+            const cell = (this.lineScore || {})[i] || {};
+            if (cell.final) return String(cell.away ?? 0);
+            if (i === this.inning) return '●';
+            return '·';
+        },
+        outsDotStyle(i) {
+            const filled = i < this.outs;
+            const bg = filled ? '#ef4444' : 'transparent';
+            return `background: ${bg}; border-color: #ef4444;`;
         },
 
         // ===== STRIKE =====
@@ -344,8 +492,16 @@ document.addEventListener('alpine:init', () => {
                     this.toast(data.message || 'Error al registrar la jugada', 'error');
                     return;
                 }
-                this.toast('Jugada registrada', 'success');
-                setTimeout(() => window.location.reload(), 350);
+                // Aplica el state del response INMEDIATAMENTE (sin recargar):
+                // outs, balls, strikes, bases, inning/half, score, pitcher,
+                // batter, on-deck. El servidor devuelve { state, score,
+                // pitcher, batter, on_deck, pitcher_stats, batter_stats,
+                // is_completed } en la respuesta JSON.
+                this.applyState(data);
+                if (data.walk) this.toast('Base por bolas', 'info');
+                else if (data.strikeout) this.toast('Ponche', 'info');
+                else if (data.end_half) this.toast('Fin del inning', 'warning');
+                else this.toast('Jugada registrada', 'success');
             } catch (e) {
                 this.toast('Error de red: ' + e.message, 'error');
             } finally {
@@ -373,8 +529,8 @@ document.addEventListener('alpine:init', () => {
                     this.toast(data.message || 'Error al cerrar la entrada', 'error');
                     return;
                 }
+                this.applyState(data);
                 this.toast('Inning cerrado', 'success');
-                setTimeout(() => window.location.reload(), 350);
             } catch (e) {
                 this.toast('Error de red: ' + e.message, 'error');
             } finally {
@@ -402,8 +558,8 @@ document.addEventListener('alpine:init', () => {
                     this.toast(data.message || 'Error al finalizar el juego', 'error');
                     return;
                 }
+                this.applyState(data);
                 this.toast('Juego finalizado', 'success');
-                setTimeout(() => window.location.reload(), 500);
             } catch (e) {
                 this.toast('Error de red: ' + e.message, 'error');
             } finally {

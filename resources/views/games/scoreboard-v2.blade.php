@@ -87,7 +87,7 @@
         }
         .sb-inning-line {
             display: grid;
-            grid-template-columns: 1fr repeat({{ max(9, (int) ($state['inning'] ?? 1)) }}, minmax(2rem, 1fr)) 1fr;
+            grid-template-columns: 1fr repeat(9, minmax(2rem, 1fr)) 1fr;
             gap: .35rem;
             align-items: center;
             background: var(--sb-bg-soft);
@@ -203,55 +203,37 @@
         }
     </style>
 
-    @php
-        $inningCount = max(9, (int) ($state['inning'] ?? 1));
-        $lineScore = $score['line'] ?? [];
-        $homeRuns = (int) ($score['home'] ?? 0);
-        $awayRuns = (int) ($score['away'] ?? 0);
-        $hitsH = (int) ($score['home_hits'] ?? 0);
-        $hitsA = (int) ($score['away_hits'] ?? 0);
-        $errH = (int) ($score['home_errors'] ?? 0);
-        $errA = (int) ($score['away_errors'] ?? 0);
-        $isHomeBatting = ($state['half'] ?? 'top') === 'bottom';
-        $onFirst = !empty($runners['first']);
-        $onSecond = !empty($runners['second']);
-        $onThird = !empty($runners['third']);
-        $outs = (int) ($state['outs'] ?? 0);
-        $balls = (int) ($state['balls'] ?? 0);
-        $strikes = (int) ($state['strikes'] ?? 0);
-        $inningNum = (int) ($state['inning'] ?? 1);
-        $halfLabel = ($state['half'] ?? 'top') === 'top' ? 'TOP' : 'BOTTOM';
-        $homeShort = $game->homeTeam->short_name ?? $game->homeTeam->name;
-        $awayShort = $game->awayTeam->short_name ?? $game->awayTeam->name;
-    @endphp
-
     <div class="py-8">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
 
-            <div class="sb-shell">
+            <div class="sb-shell"
+                 x-data="scoreboardV2App({
+                    ...@js($initialState),
+                    homeShort: @js($game->homeTeam->short_name ?? $game->homeTeam->name),
+                    awayShort: @js($game->awayTeam->short_name ?? $game->awayTeam->name),
+                    categoryName: @js($game->category->name ?? ''),
+                    stadiumName: @js($game->stadium->name ?? ''),
+                    pitchUrl: @js(route('games.plays.pitch', $game)),
+                    endInningUrl: @js(route('games.plays.end-inning', $game)),
+                    endGameUrl: @js(route('games.plays.end-game', $game)),
+                    pollUrl: @js(route('games.scoreboard.poll', $game)),
+                    csrf: @js(csrf_token()),
+                 })">
 
                 {{-- Top: inning line score --}}
                 <div class="mb-5">
                     <div class="flex items-center gap-2 mb-2">
                         <span class="sb-pill accent">Live</span>
-                        <span class="sb-pill warn">{{ $halfLabel }} · Inning {{ $inningNum }}</span>
-                        <span class="sb-pill">{{ $outs }} {{ $outs === 1 ? 'out' : 'outs' }}</span>
-                        <span class="sb-pill">{{ $balls }}-{{ $strikes }}</span>
-                        <span class="sb-pill" style="margin-left:auto;">{{ $game->category->name ?? '—' }} · {{ $game->stadium->name ?? '—' }}</span>
+                        <span class="sb-pill warn" x-text="halfLabel() + ' · Inning ' + inning"></span>
+                        <span class="sb-pill" x-text="outsLabel()"></span>
+                        <span class="sb-pill" x-text="balls + '-' + strikes"></span>
+                        <span class="sb-pill" style="margin-left:auto;" x-text="categoryStadium()"></span>
                     </div>
-                    <div class="sb-inning-line">
-                        <div class="label">{{ $awayShort }}</div>
-                        @for ($i = 1; $i <= $inningCount; $i++)
-                            @php
-                                $cellAway = $lineScore[$i]['away'] ?? null;
-                                $cellHome = $lineScore[$i]['home'] ?? null;
-                                $isCurrent = $i === $inningNum && !($lineScore[$i]['final'] ?? false);
-                                $isFinal = ($lineScore[$i]['final'] ?? false);
-                            @endphp
-                            <div class="{{ $isCurrent ? 'is-active' : '' }} {{ $isFinal ? 'is-r' : '' }}" title="Inning {{ $i }}">
-                                {{ $isFinal ? (string)($cellAway ?? 0) : ($isCurrent ? '●' : '·') }}
-                            </div>
-                        @endfor
+                    <div class="sb-inning-line" :style="inningLineStyle()">
+                        <div class="label" x-text="awayShort"></div>
+                        <template x-for="i in lineInnings()" :key="i">
+                            <div :class="lineCellClass(i)" :title="'Inning ' + i" x-text="lineCellText(i)"></div>
+                        </template>
                         <div class="label">R</div>
                     </div>
                 </div>
@@ -260,19 +242,19 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
 
                     {{-- Away team --}}
-                    <div class="sb-card {{ !$isHomeBatting ? 'is-batting' : '' }}">
+                    <div class="sb-card" :class="{ 'is-batting': !isHomeBatting() }">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="sb-pill">{{ $isHomeBatting ? 'DEF' : 'BAT' }}</span>
+                            <span class="sb-pill" x-text="isHomeBatting() ? 'DEF' : 'BAT'"></span>
                             <span class="sb-batting-tag sb-pill accent">▶ Bateando</span>
                         </div>
-                        <div class="text-xs text-wv-text-secondary uppercase tracking-wider mb-1">{{ $awayShort }} · Visitante</div>
+                        <div class="text-xs text-wv-text-secondary uppercase tracking-wider mb-1" x-text="awayShort + ' · Visitante'"></div>
                         <div class="flex items-baseline gap-3 mb-3">
-                            <span class="sb-score">{{ $awayRuns }}</span>
+                            <span class="sb-score" x-text="awayRuns"></span>
                             <span class="text-sm text-wv-text-secondary">Carreras</span>
                         </div>
                         <div class="grid grid-cols-2 gap-2 text-xs text-wv-text-secondary">
-                            <div>Hits: <strong class="text-wv-text">{{ $hitsA }}</strong></div>
-                            <div>Errores: <strong class="text-wv-text">{{ $errA }}</strong></div>
+                            <div>Hits: <strong class="text-wv-text" x-text="awayHits"></strong></div>
+                            <div>Errores: <strong class="text-wv-text" x-text="awayErrors"></strong></div>
                         </div>
                     </div>
 
@@ -281,57 +263,50 @@
                         <div class="text-xs text-wv-text-secondary uppercase tracking-wider mb-2 text-center">Bases</div>
                         <div class="sb-diamond-wrap">
                             <svg viewBox="0 0 120 120" preserveAspectRatio="xMidYMid meet">
-                                {{-- Diamond shape: home at bottom, 1B right, 2B top, 3B left --}}
-                                @php
-                                    $second = ['cx' => 60, 'cy' => 22];
-                                    $first  = ['cx' => 102, 'cy' => 60];
-                                    $third  = ['cx' => 18, 'cy' => 60];
-                                    $home   = ['cx' => 60, 'cy' => 98];
-                                @endphp
-                                <line x1="{{ $second['cx'] }}" y1="{{ $second['cy'] }}" x2="{{ $first['cx'] }}" y2="{{ $first['cy'] }}" stroke="#2a3247" stroke-width="1.2"/>
-                                <line x1="{{ $first['cx'] }}" y1="{{ $first['cy'] }}" x2="{{ $home['cx'] }}" y2="{{ $home['cy'] }}" stroke="#2a3247" stroke-width="1.2"/>
-                                <line x1="{{ $home['cx'] }}" y1="{{ $home['cy'] }}" x2="{{ $third['cx'] }}" y2="{{ $third['cy'] }}" stroke="#2a3247" stroke-width="1.2"/>
-                                <line x1="{{ $third['cx'] }}" y1="{{ $third['cy'] }}" x2="{{ $second['cx'] }}" y2="{{ $second['cy'] }}" stroke="#2a3247" stroke-width="1.2"/>
+                                <line x1="60" y1="22" x2="102" y2="60" stroke="#2a3247" stroke-width="1.2"/>
+                                <line x1="102" y1="60" x2="60" y2="98" stroke="#2a3247" stroke-width="1.2"/>
+                                <line x1="60" y1="98" x2="18" y2="60" stroke="#2a3247" stroke-width="1.2"/>
+                                <line x1="18" y1="60" x2="60" y2="22" stroke="#2a3247" stroke-width="1.2"/>
 
                                 <g>
-                                    <circle class="sb-diamond-base {{ $onSecond ? 'is-on' : '' }}" cx="{{ $second['cx'] }}" cy="{{ $second['cy'] }}" r="10"/>
-                                    <text x="{{ $second['cx'] }}" y="{{ $second['cy'] + 4 }}" text-anchor="middle">2B</text>
+                                    <circle :class="onSecond() ? 'sb-diamond-base is-on' : 'sb-diamond-base'" cx="60" cy="22" r="10"/>
+                                    <text x="60" y="26" text-anchor="middle">2B</text>
                                 </g>
                                 <g>
-                                    <circle class="sb-diamond-base {{ $onFirst ? 'is-on' : '' }}" cx="{{ $first['cx'] }}" cy="{{ $first['cy'] }}" r="10"/>
-                                    <text x="{{ $first['cx'] }}" y="{{ $first['cy'] + 4 }}" text-anchor="middle">1B</text>
+                                    <circle :class="onFirst() ? 'sb-diamond-base is-on' : 'sb-diamond-base'" cx="102" cy="60" r="10"/>
+                                    <text x="102" y="64" text-anchor="middle">1B</text>
                                 </g>
                                 <g>
-                                    <circle class="sb-diamond-base {{ $onThird ? 'is-on' : '' }}" cx="{{ $third['cx'] }}" cy="{{ $third['cy'] }}" r="10"/>
-                                    <text x="{{ $third['cx'] }}" y="{{ $third['cy'] + 4 }}" text-anchor="middle">3B</text>
+                                    <circle :class="onThird() ? 'sb-diamond-base is-on' : 'sb-diamond-base'" cx="18" cy="60" r="10"/>
+                                    <text x="18" y="64" text-anchor="middle">3B</text>
                                 </g>
                                 <g>
-                                    <circle class="sb-diamond-base" cx="{{ $home['cx'] }}" cy="{{ $home['cy'] }}" r="10"/>
-                                    <text x="{{ $home['cx'] }}" y="{{ $home['cy'] + 4 }}" text-anchor="middle">H</text>
+                                    <circle class="sb-diamond-base" cx="60" cy="98" r="10"/>
+                                    <text x="60" y="102" text-anchor="middle">H</text>
                                 </g>
                             </svg>
                         </div>
                         <div class="flex justify-center gap-1.5 mt-2">
-                            @for ($i = 0; $i < 3; $i++)
-                                <span class="inline-block w-3 h-3 rounded-full border" style="background: {{ $i < $outs ? '#ef4444' : 'transparent' }}; border-color: #ef4444;"></span>
-                            @endfor
+                            <template x-for="i in [0,1,2]" :key="i">
+                                <span class="inline-block w-3 h-3 rounded-full border" :style="outsDotStyle(i)"></span>
+                            </template>
                         </div>
                     </div>
 
                     {{-- Home team --}}
-                    <div class="sb-card {{ $isHomeBatting ? 'is-batting' : '' }}">
+                    <div class="sb-card" :class="{ 'is-batting': isHomeBatting() }">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="sb-pill">{{ $isHomeBatting ? 'BAT' : 'DEF' }}</span>
+                            <span class="sb-pill" x-text="isHomeBatting() ? 'BAT' : 'DEF'"></span>
                             <span class="sb-batting-tag sb-pill accent">▶ Bateando</span>
                         </div>
-                        <div class="text-xs text-wv-text-secondary uppercase tracking-wider mb-1">{{ $homeShort }} · Local</div>
+                        <div class="text-xs text-wv-text-secondary uppercase tracking-wider mb-1" x-text="homeShort + ' · Local'"></div>
                         <div class="flex items-baseline gap-3 mb-3">
-                            <span class="sb-score">{{ $homeRuns }}</span>
+                            <span class="sb-score" x-text="homeRuns"></span>
                             <span class="text-sm text-wv-text-secondary">Carreras</span>
                         </div>
                         <div class="grid grid-cols-2 gap-2 text-xs text-wv-text-secondary">
-                            <div>Hits: <strong class="text-wv-text">{{ $hitsH }}</strong></div>
-                            <div>Errores: <strong class="text-wv-text">{{ $errH }}</strong></div>
+                            <div>Hits: <strong class="text-wv-text" x-text="homeHits"></strong></div>
+                            <div>Errores: <strong class="text-wv-text" x-text="homeErrors"></strong></div>
                         </div>
                     </div>
                 </div>
@@ -342,73 +317,74 @@
                     {{-- Pitcher --}}
                     <div class="sb-card">
                         <div class="text-xs text-wv-text-secondary uppercase tracking-wider mb-3">Pitcher</div>
-                        @if ($pitcher)
-                            <div class="sb-player mb-2">
-                                <span class="avatar">{{ mb_strtoupper(mb_substr($pitcher->first_name ?? '', 0, 1) . mb_substr($pitcher->last_name ?? '', 0, 1)) }}</span>
-                                <div class="meta">
-                                    <div class="name">{{ $pitcher->full_name }}</div>
-                                    <div class="role">#{{ $pitcher->number ?? '—' }} · {{ $pitcher->position ?? '—' }}</div>
+                        <template x-if="pitcher">
+                            <div>
+                                <div class="sb-player mb-2">
+                                    <span class="avatar" x-text="initials(pitcher.name)"></span>
+                                    <div class="meta">
+                                        <div class="name" x-text="pitcher.name"></div>
+                                        <div class="role">
+                                            <span x-text="'#' + (pitcher.number ?? '—')"></span>
+                                            <span> · </span>
+                                            <span x-text="pitcher.position ?? '—'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="sb-stats">
+                                    <div class="sb-stat"><div class="v" x-text="pitcherStats.pitches ?? 0"></div><div class="l">Pitches</div></div>
+                                    <div class="sb-stat"><div class="v" x-text="pitcherStats.strikes ?? 0"></div><div class="l">Strikes</div></div>
+                                    <div class="sb-stat"><div class="v" x-text="pitcherStats.balls ?? 0"></div><div class="l">Balls</div></div>
+                                    <div class="sb-stat"><div class="v" x-text="pitcherStats.strikeouts ?? 0"></div><div class="l">K</div></div>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="text-xs text-wv-text-secondary mb-1" x-text="'Strike %: ' + strikePct() + '%'"></div>
+                                    <div class="sb-meter"><span :style="'width: ' + strikePct() + '%'"></span></div>
                                 </div>
                             </div>
-                            <div class="sb-stats">
-                                <div class="sb-stat"><div class="v">{{ $pitcherStats['pitches'] ?? 0 }}</div><div class="l">Pitches</div></div>
-                                <div class="sb-stat"><div class="v">{{ $pitcherStats['strikes'] ?? 0 }}</div><div class="l">Strikes</div></div>
-                                <div class="sb-stat"><div class="v">{{ $pitcherStats['balls'] ?? 0 }}</div><div class="l">Balls</div></div>
-                                <div class="sb-stat"><div class="v">{{ $pitcherStats['strikeouts'] ?? 0 }}</div><div class="l">K</div></div>
-                            </div>
-                            @php
-                                $pitchesTotal = max(1, (int)($pitcherStats['pitches'] ?? 1));
-                                $strikePct = round(((int)($pitcherStats['strikes'] ?? 0)) / $pitchesTotal * 100);
-                            @endphp
-                            <div class="mt-3">
-                                <div class="text-xs text-wv-text-secondary mb-1">Strike %: {{ $strikePct }}%</div>
-                                <div class="sb-meter"><span style="width: {{ $strikePct }}%"></span></div>
-                            </div>
-                        @else
+                        </template>
+                        <template x-if="!pitcher">
                             <div class="text-sm text-wv-text-secondary italic">Sin pitcher asignado</div>
-                        @endif
+                        </template>
                     </div>
 
                     {{-- Batter + on deck --}}
                     <div class="sb-card">
                         <div class="text-xs text-wv-text-secondary uppercase tracking-wider mb-3">Bateador</div>
-                        @if ($batter)
-                            <div class="sb-player mb-2">
-                                <span class="avatar">{{ mb_strtoupper(mb_substr($batter->first_name ?? '', 0, 1) . mb_substr($batter->last_name ?? '', 0, 1)) }}</span>
-                                <div class="meta">
-                                    <div class="name">{{ $batter->full_name }}</div>
-                                    <div class="role">#{{ $batter->number ?? '—' }} · {{ $batter->position ?? '—' }}</div>
+                        <template x-if="batter">
+                            <div>
+                                <div class="sb-player mb-2">
+                                    <span class="avatar" x-text="initials(batter.name)"></span>
+                                    <div class="meta">
+                                        <div class="name" x-text="batter.name"></div>
+                                        <div class="role">
+                                            <span x-text="'#' + (batter.number ?? '—')"></span>
+                                            <span> · </span>
+                                            <span x-text="batter.position ?? '—'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="sb-stats">
+                                    <div class="sb-stat"><div class="v" x-text="batterStats.at_bats ?? 0"></div><div class="l">AB</div></div>
+                                    <div class="sb-stat"><div class="v" x-text="batterStats.hits ?? 0"></div><div class="l">H</div></div>
+                                    <div class="sb-stat"><div class="v" x-text="batterStats.walks ?? 0"></div><div class="l">BB</div></div>
+                                    <div class="sb-stat"><div class="v" x-text="fmtAvg(batterStats.avg)"></div><div class="l">AVG</div></div>
+                                </div>
+                                <div class="mt-3 text-xs text-wv-text-secondary">
+                                    <span class="sb-pill" x-text="'Count ' + balls + '-' + strikes"></span>
+                                    <template x-if="onDeck">
+                                        <span class="sb-pill" style="margin-left:.35rem;" x-text="'On deck: ' + onDeck.name"></span>
+                                    </template>
                                 </div>
                             </div>
-                            <div class="sb-stats">
-                                <div class="sb-stat"><div class="v">{{ $batterStats['at_bats'] ?? 0 }}</div><div class="l">AB</div></div>
-                                <div class="sb-stat"><div class="v">{{ $batterStats['hits'] ?? 0 }}</div><div class="l">H</div></div>
-                                <div class="sb-stat"><div class="v">{{ $batterStats['walks'] ?? 0 }}</div><div class="l">BB</div></div>
-                                <div class="sb-stat"><div class="v">{{ number_format((float)($batterStats['avg'] ?? 0), 3, '.', '') }}</div><div class="l">AVG</div></div>
-                            </div>
-                            <div class="mt-3 text-xs text-wv-text-secondary">
-                                <span class="sb-pill">Count {{ $balls }}-{{ $strikes }}</span>
-                                @if ($onDeck)
-                                    <span class="sb-pill" style="margin-left:.35rem;">On deck: {{ $onDeck->full_name }}</span>
-                                @endif
-                            </div>
-                        @else
+                        </template>
+                        <template x-if="!batter">
                             <div class="text-sm text-wv-text-secondary italic">Sin bateador en turno</div>
-                        @endif
+                        </template>
                     </div>
                 </div>
 
                 {{-- Actions: same endpoints as the base scoreboard, condensed panel. --}}
-                <div class="mt-4"
-                     x-data="scoreboardV2App({
-                        pitchUrl: @js(route('games.plays.pitch', $game)),
-                        endInningUrl: @js(route('games.plays.end-inning', $game)),
-                        endGameUrl: @js(route('games.plays.end-game', $game)),
-                        pollUrl: @js(route('games.scoreboard.poll', $game)),
-                        csrf: @js(csrf_token()),
-                        isFinalized: @js(in_array($game->status, ['completed', 'finalized'], true)),
-                        gameStatus: @js($game->status),
-                     })">
+                <div class="mt-4">
 
                     {{-- Tabs --}}
                     <div class="flex gap-1 border-b border-wv-border mb-3">
