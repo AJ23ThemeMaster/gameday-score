@@ -694,15 +694,18 @@
                         {{-- =====================================================
                              FORMA DEL CAMPO (abanico amplio, aspect 3:2):
                                M (30,90)   -> esquina izquierda superior del green
-                               A 250x85 0 0 1 (450,90) -> arco convexo arriba
-                                                          (semicirculo amplio)
+                               A 220x85 0 0 1 (450,90) -> arco convexo arriba
+                                                          (semicirculo amplio,
+                                                          rx=220 del ultimo
+                                                          ajuste de navegador:
+                                                          arco menos pronunciado)
                                L (240,300) -> vertice inferior (home plate)
                                Z
                              Esto entrega el "abanico" caracteristico del campo
                              de beisbol visto desde home: arco arriba amplio +
                              lineas rectas hacia abajo convergiendo al vertice.
                              ===================================================== --}}
-                        <path d="M 30 90 A 250 85 0 0 1 450 90 L 240 300 Z"
+                        <path d="M 30 90 A 220 85 0 0 1 450 90 L 240 300 Z"
                               fill="url(#grassStripes)"
                               stroke="#a17a55" stroke-width="2.5"/>
 
