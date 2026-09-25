@@ -495,25 +495,62 @@
         </div>
     </div>
 
-    {{-- DIAMOND: bases con corredores (DISI-piloto: mini-diamond SVG, dos
-                 tonos de verde como el SVG adjunto). --}}
+    {{-- DIAMOND: bases con corredores (SVG adjunto como referencia).
+         Emula el diseno del SVG compartido:
+           - Marco exterior naranja (#F19E57) en forma de diamante.
+           - Cuadrado interior verde oscuro (#32572A) tambien en diamante.
+           - 3 bases blancas en las esquinas del verde (top=2B, right=1B, left=3B).
+           - Circulo naranja con pentagono blanco = home plate (abajo, fuera
+             del diamante).
+           - Circulo naranja con home-plate symbol = monticulo (centro). --}}
     <div class="sb-field mt-4" x-show="!isFinalized" x-cloak>
         <div class="sb-field-grid">
-            {{-- SVG con dos capas verdes: marco exterior mas claro (#32572A)
-                 + cuadro interior mas oscuro (#1a3d20) inset 18px con rx=6.
-                 ViewBox 280x280 (igual al tamano del contenedor). Replica
-                 el look "highlight cuadrado" del SVG adjunto de referencia. --}}
+            {{-- SVG decorativo del diamante + bases + monticulo + home plate.
+                 Los botones interactivos (2B/1B/3B/HOME/P) se renderizan
+                 ENCIMA y muestran el estado del corredor. --}}
             <svg viewBox="0 0 280 280" class="sb-field-bg" preserveAspectRatio="none" aria-hidden="true">
-                <rect width="280" height="280" fill="#32572A"/>
-                <rect x="20" y="20" width="240" height="240" rx="6" fill="#1a3d20"/>
+                {{-- Marco exterior naranja, cuadrado rotado 45deg con
+                     esquinas redondeadas (rx=14). Lado = 190, centro (140,140). --}}
+                <rect x="45" y="45" width="190" height="190" rx="14"
+                      fill="#F19E57" transform="rotate(45 140 140)"/>
+
+                {{-- Cuadrado interior verde oscuro, mas pequeno (lado 164). --}}
+                <rect x="58" y="58" width="164" height="164" rx="10"
+                      fill="#32572A" transform="rotate(45 140 140)"/>
+
+                {{-- 3 bases blancas en las esquinas del verde (forma diamante
+                     tambien: rect 18x18 rx=3 rotado 45deg).
+                         2B = top    (140, 30)
+                         1B = right  (250, 140)
+                         3B = left   (30, 140) --}}
+                <rect x="131" y="21" width="18" height="18" rx="3" fill="#FFFAF1"
+                      transform="rotate(45 140 30)"/>
+                <rect x="241" y="131" width="18" height="18" rx="3" fill="#FFFAF1"
+                      transform="rotate(45 250 140)"/>
+                <rect x="21" y="131" width="18" height="18" rx="3" fill="#FFFAF1"
+                      transform="rotate(45 30 140)"/>
+
+                {{-- Monticulo del pitcher: circulo naranja (#F19E57) con
+                     pentagono blanco (home plate symbol) en el centro del
+                     diamante. --}}
+                <circle cx="140" cy="140" r="15" fill="#F19E57"/>
+                <polygon points="131,132 149,132 149,135 140,142 131,135"
+                         fill="#FFFAF1"/>
+
+                {{-- Home plate: circulo naranja con pentagono blanco, debajo
+                     del diamante (centro y=250, r=22). El vertice inferior
+                     del diamante (140,250) cae dentro de este circulo. --}}
+                <circle cx="140" cy="250" r="22" fill="#F19E57"/>
+                <polygon points="140,237 148,247 140,262 132,247"
+                         fill="#FFFAF1"/>
             </svg>
 
-            {{-- 2B (arriba, sobre el fondo verde) --}}
+            {{-- 2B (esquina superior del diamante, top ~10.7%) --}}
             <button type="button"
                     @click="openRunnerModal('second')"
                     :disabled="!onSecond() || !isHomeBatting() && isFinalized"
                     class="sb-base sb-base-btn"
-                    style="top: 8%; left: 50%; transform: translate(-50%, 0); background: transparent; border: 0; padding: 0; cursor: pointer;">
+                    style="top: 10.7%; left: 50%; transform: translate(-50%, -50%); background: transparent; border: 0; padding: 0; cursor: pointer;">
                 <div :class="onSecond() ? 'sb-base-tag is-on' : 'sb-base-tag'">
                     <span>2B</span>
                     <strong x-show="onSecond()" x-text="base2?.number"></strong>
@@ -521,12 +558,12 @@
                 <div class="sb-base-label" x-show="onSecond()" x-text="base2?.name"></div>
             </button>
 
-            {{-- 3B (izquierda, vertical center) --}}
+            {{-- 3B (esquina izquierda del diamante, left ~10.7%) --}}
             <button type="button"
                     @click="openRunnerModal('third')"
                     :disabled="!onThird()"
                     class="sb-base sb-base-btn"
-                    style="top: 50%; left: 4%; transform: translate(0, -50%); background: transparent; border: 0; padding: 0; cursor: pointer;">
+                    style="top: 50%; left: 10.7%; transform: translate(-50%, -50%); background: transparent; border: 0; padding: 0; cursor: pointer;">
                 <div :class="onThird() ? 'sb-base-tag is-on' : 'sb-base-tag'">
                     <span>3B</span>
                     <strong x-show="onThird()" x-text="base3?.number"></strong>
@@ -534,17 +571,16 @@
                 <div class="sb-base-label" x-show="onThird()" x-text="base3?.name"></div>
             </button>
 
-            {{-- PITCHER (centro del diamante, encima del SVG como
-                 boton decorativo amarillo). Replica el estilo del SVG
-                 adjunto: circulo amarillo grande con "P" adentro. --}}
+            {{-- PITCHER (centro del diamante, encima del SVG). Replica
+                 el estilo del SVG adjunto: circulo amarillo grande con "P". --}}
             <div class="sb-pitcher-mound">P</div>
 
-            {{-- 1B (derecha, vertical center) --}}
+            {{-- 1B (esquina derecha del diamante, left ~89.3%) --}}
             <button type="button"
                     @click="openRunnerModal('first')"
                     :disabled="!onFirst()"
                     class="sb-base sb-base-btn"
-                    style="top: 50%; right: 4%; transform: translate(0, -50%); background: transparent; border: 0; padding: 0; cursor: pointer;">
+                    style="top: 50%; left: 89.3%; transform: translate(-50%, -50%); background: transparent; border: 0; padding: 0; cursor: pointer;">
                 <div :class="onFirst() ? 'sb-base-tag is-on' : 'sb-base-tag'">
                     <span>1B</span>
                     <strong x-show="onFirst()" x-text="base1?.number"></strong>
@@ -552,8 +588,10 @@
                 <div class="sb-base-label" x-show="onFirst()" x-text="base1?.name"></div>
             </button>
 
-            {{-- HOME (abajo, centro) --}}
-            <div class="sb-base" style="bottom: 8%; left: 50%; transform: translate(-50%, 0);">
+            {{-- HOME (boton/label dentro del circulo naranja del SVG). El
+                 vertice inferior del diamante verde (140,250) cae dentro
+                 del circulo home plate. --}}
+            <div class="sb-base sb-base-home" style="top: 89.3%; left: 50%; transform: translate(-50%, -50%);">
                 <div class="sb-base-tag">
                     <span>HOME</span>
                 </div>
