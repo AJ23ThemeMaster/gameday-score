@@ -13,9 +13,14 @@
                     @endauth
                 </p>
             </div>
-            <a href="{{ route('athletes.create') }}" class="inline-flex items-center px-4 py-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-sm font-semibold rounded-card">
-                + {{ __('Nuevo atleta') }}
-            </a>
+            {{-- DISI-piloto: el boton "+ Nuevo atleta" aparece si el user tiene via
+                 abierta para crear (admin / gestor con team / delegado con scope).
+                 Coincide con EnsureAdminOrGestorOrDelegado middleware. --}}
+            @if (auth()->user()?->canCreateAthletes())
+                <a href="{{ route('athletes.create') }}" class="inline-flex items-center px-4 py-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-sm font-semibold rounded-card">
+                    + {{ __('Nuevo atleta') }}
+                </a>
+            @endif
         </div>
     </x-slot>
 
@@ -85,7 +90,9 @@
                             <a href="{{ route('athletes.index') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Limpiar filtros') }}</a>
                         @else
                             <p class="mb-4">{{ __('AÃºn no hay atletas registrados.') }}</p>
-                            <a href="{{ route('athletes.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Registrar el primer atleta') }}</a>
+                            @if (auth()->user()?->canCreateAthletes())
+                                <a href="{{ route('athletes.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Registrar el primer atleta') }}</a>
+                            @endif
                         @endif
                     </div>
                 @else

@@ -19,13 +19,14 @@ class AthleteController extends Controller
     public function __construct()
     {
         // DISI-81 + DISI-delegado:
-        //   index/show/edit/update: admin + gestor + delegado (con scope fino)
-        //   create/store: admin + gestor (delegado NO crea)
-        //   destroy: admin + gestor (delegado NO elimina)
-        $this->middleware('admin_or_gestor_or_delegado')->except(['show', 'create', 'store', 'destroy']);
-        // destroy va SOLO con admin_or_gestor: el delegado NO puede
-        // eliminar atletas aunque el atleta sea de su (equipo, categoria).
-        $this->middleware('admin_or_gestor')->only(['create', 'store', 'destroy']);
+        //   index/show/edit/update/create/store: admin + gestor + delegado con scope.
+        //     El delegado con scope (team_id + category_id no nulos) puede
+        //     crear/editar atletas de su (equipo, categoria). El chequeo fino
+        //     se hace dentro de store/update con User::isDelegadoOf().
+        //   destroy: admin + gestor. El delegado NO elimina atletas.
+        $this->middleware('admin_or_gestor_or_delegado')->except(['show', 'destroy']);
+        // destroy queda restringido a admin + gestor (delegado no elimina).
+        $this->middleware('admin_or_gestor')->only(['destroy']);
     }
 
     /**
@@ -172,12 +173,25 @@ class AthleteController extends Controller
     {
         $user = \Illuminate\Support\Facades\Auth::user();
         // DISI-81: gestor solo puede crear atletas para su equipo asociado.
-        $teams = $user->isGestor()
-            ? Team::where('id', $user->team_id)->get()
-            : Team::orderBy('name')->get();
-        $categories = Category::orderBy('name')->get();
+        // DISI-piloto: delegado con scope (team + cat) ve solo su equipo +
+        // su categoria en los dropdowns, pre-seleccionados para que el
+        // form no le pida inventar valores.
+        if ($user->isDelegado()) {
+            $teams = Team::where('id', (int) $user->team_id)->get();
+            $categories = Category::where('id', (int) $user->category_id)->get();
+            $defaults = ['team_id' => (int) $user->team_id, 'category_id' => (int) $user->category_id];
+        } elseif ($user->isGestor()) {
+            $teams = Team::where('id', (int) $user->team_id)->get();
+            $categories = Category::orderBy('name')->get();
+            $defaults = ['team_id' => (int) $user->team_id];
+        } else {
+            $teams = Team::orderBy('name')->get();
+            $categories = Category::orderBy('name')->get();
+            $defaults = [];
+        }
 
-        return view('athletes.create', compact('teams', 'categories'));
+        return view('athletes.create', array_merge(compact('teams', 'categories'),
+            $defaults ? ['defaults' => $defaults] : []));
     }
 
     public function store(StoreAthleteRequest $request): RedirectResponse
@@ -188,10 +202,25 @@ class AthleteController extends Controller
         $data['team_id'] = isset($data['team_id']) && $data['team_id'] !== null ? (int) $data['team_id'] : null;
         $data['category_id'] = isset($data['category_id']) && $data['category_id'] !== null ? (int) $data['category_id'] : null;
 
-        // DISI-81: gestor solo puede crear atletas para su equipo asociado.
+        // DISI-81 + DISI-piloto:
+        // - gestor solo puede crear atletas para SU equipo.
+        // - delegado con scope: solo atletas de (su equipo, su categoria).
+        //   Si intenta team/cat fuera del scope, abort 403 (defense in depth:
+        //   aunque la UI bloquee los selects con disabled, server-side se valida).
         $user = \Illuminate\Support\Facades\Auth::user();
         if ($user && $user->isGestor()) {
-            $data['team_id'] = $user->team_id;
+            $data['team_id'] = (int) $user->team_id;
+        }
+        if ($user && $user->isDelegado()) {
+            $data['team_id'] = (int) $user->team_id;
+            $data['category_id'] = (int) $user->category_id;
+
+            // Validacion server-side de scope por si alguien manipula el form.
+            $sentTeam = (int) ($request->input('team_id') ?? 0);
+            $sentCat = (int) ($request->input('category_id') ?? 0);
+            if ($sentTeam !== (int) $user->team_id || $sentCat !== (int) $user->category_id) {
+                abort(403, 'Como delegado solo puedes crear atletas de tu equipo y tu categoria.');
+            }
         }
 
         if ($request->hasFile('photo')) {

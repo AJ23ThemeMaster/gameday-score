@@ -161,8 +161,10 @@ class User extends Authenticatable
      * categoria del delegado. Es la version "stricter" de
      * isGestorOwning (que solo chequea team_id).
      *
-     * Nota: como el rol delegado no tiene create/destroy, este check
-     * se usa principalmente en edit/update de atletas.
+     * DISI-piloto: el delegado con scope (team + cat) ahora tambien
+     * puede crear atletas de su (equipo, categoria). La validacion
+     * fina de scope en create/store la hace el controller. Aqui solo
+     * confirmamos que el atleta guardado esta dentro del scope.
      */
     public function isDelegadoOf($athlete): bool
     {
@@ -175,6 +177,17 @@ class User extends Authenticatable
 
         return (int) $athlete->team_id === (int) $this->team_id
             && (int) $athlete->category_id === (int) $this->category_id;
+    }
+
+    /**
+     * DISI-piloto: helper para la UI (boton "+ Nuevo atleta" en
+     * athletes/index). Indica si el user tiene via abierta para crear
+     * atletas: admin + gestor con team + delegado con (team + cat).
+     * Coincide con EnsureAdminOrGestorOrDelegado middleware.
+     */
+    public function canCreateAthletes(): bool
+    {
+        return $this->isAdmin() || $this->isGestor() || $this->isDelegado();
     }
 
     /**
