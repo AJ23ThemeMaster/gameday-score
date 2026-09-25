@@ -709,10 +709,14 @@
                         {{-- INFIELD con la misma forma (abanico) a menor escala
                              y un poco mas adentro. Tan/brown claro.
                              Centered horizontalmente en x=240.
-                             Ajuste desde navegador: y de 170 a 180 (baja el
-                             arco convexo del infield, mas cerca del
-                             monticulo). --}}
-                        <path d="M 130 180 A 130 60 0 0 1 350 180 L 240 290 Z"
+                             Ajuste desde navegador (segundo pase):
+                               - y de 180 a 190 (baja un poco mas el arco).
+                               - rx del arco de 60 a 90 (arco convexo mas
+                                 amplio, infield ocupa mas superficie).
+                               - vertice L de 240,290 a 240,300 (el infield
+                                 llega hasta el home plate, no a 10 px
+                                 arriba de este). --}}
+                        <path d="M 130 190 A 130 90 0 0 1 350 190 L 240 300 Z"
                               fill="url(#infieldGrad)"
                               stroke="#8a6233" stroke-width="1.5"/>
 
