@@ -495,14 +495,17 @@
         </div>
     </div>
 
-    {{-- DIAMOND: bases con corredores (DISI-piloto: mini-diamond SVG) --}}
+    {{-- DIAMOND: bases con corredores (DISI-piloto: mini-diamond SVG, dos
+                 tonos de verde como el SVG adjunto). --}}
     <div class="sb-field mt-4" x-show="!isFinalized" x-cloak>
         <div class="sb-field-grid">
-            {{-- Fondo verde oscuro del diamante: viewBox 280x280 (match con
-                 el tamano del contenedor). Color verde exacto del SVG
-                 adjunto (#32572A). --}}
+            {{-- SVG con dos capas verdes: marco exterior mas claro (#32572A)
+                 + cuadro interior mas oscuro (#1a3d20) inset 18px con rx=6.
+                 ViewBox 280x280 (igual al tamano del contenedor). Replica
+                 el look "highlight cuadrado" del SVG adjunto de referencia. --}}
             <svg viewBox="0 0 280 280" class="sb-field-bg" preserveAspectRatio="none" aria-hidden="true">
                 <rect width="280" height="280" fill="#32572A"/>
+                <rect x="20" y="20" width="240" height="240" rx="6" fill="#1a3d20"/>
             </svg>
 
             {{-- 2B (arriba, sobre el fondo verde) --}}
