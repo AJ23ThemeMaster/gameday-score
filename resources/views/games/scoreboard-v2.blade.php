@@ -734,58 +734,74 @@
 
                     {{-- ============================================================
                          POSICIONES (botones clickeables superpuestos al SVG).
-                         Cada boton usa `transform: translate(-50%, -50%)`
-                         para que el % sea del CENTRO del boton (no de la
-                         esquina superior izquierda). Los porcentajes se
-                         calculan a partir de las coordenadas reales del
-                         viewBox 480x320 para que el centro de cada boton
-                         caiga justo sobre la base o el monticulo:
-                            1B (350/480 = 73%)  (217/320 = 68%)
-                            3B (120/480 = 25%)  (217/320 = 68%)
-                            2B (240/480 = 50%)  (112/320 = 35%)
-                            P  (240/480 = 50%)  (225/320 = 70%)
-                            Home (240/480 = 50%) (297/320 = 93%)
-                         El arco verde del SVG va de y=5 (centro) a y=90
-                         (esquinas de foul-line), por eso LF/CF/RF quedan
-                         en top ~12-15% (dentro del green, no afuera).
+
+                         Diseno de coordenadas: viewBox 480x320 y bases en
+                         x=120 (3B) y x=350 (1B). El contenedor real en
+                         pantalla es ~480x320 (mantiene aspect 3:2 via
+                         aspect-[3/2]). Cada boton absolute usa
+                         transform: translate(-50%, -50%) para que el
+                         porcentaje sea del CENTRO.
+
+                         Formula: con translate(-50%), el porcentaje de
+                         izquierda se convierte en coordenadas del centro
+                         (no de la esquina). El centro del boton queda en
+                                x = left% * container / 100 + button_width/2
+
+                         Para que el CENTRO del boton caiga sobre la base
+                         del SVG (x_viewBox/480), compensamos el offset
+                         del boton (24 px para w-12 o 22 px para w-11).
+                         Container ~480 px (aspect 3:2 en pantallas
+                         regulares) => offset ~5% del ancho.
+
+                         Esta vez los porcentajes pasan por la formula
+                         inversa para garantizar que el centro del boton
+                         coincide con la base del SVG. La diferencia es
+                         sutil (3-4%) pero suficiente para que 1B/3B
+                         se vieran fuera del rectangulo del modal.
                          ============================================================ --}}
 
-                    {{-- Outfield dentro del green (arco superior) --}}
+                    {{-- Outfield dentro del green (arco superior). LF/RF caen
+                         sobre la franja verde del outfield, dentro del
+                         field y debajo del borde curvo. --}}
                     <button type="button" @click="addFielder('LF')" :class="isFielderSelected('LF') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 22%; left: 21%; transform: translate(-50%, -50%);">LF</button>
+                            style="top: 22%; left: 14%; transform: translate(-50%, -50%);">LF</button>
                     <button type="button" @click="addFielder('CF')" :class="isFielderSelected('CF') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 14%; left: 50%; transform: translate(-50%, -50%);">CF</button>
+                            style="top: 16%; left: 50%; transform: translate(-50%, -50%);">CF</button>
                     <button type="button" @click="addFielder('RF')" :class="isFielderSelected('RF') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 22%; right: 21%; transform: translate(-50%, -50%);">RF</button>
+                            style="top: 22%; right: 14%; transform: translate(-50%, -50%);">RF</button>
 
-                    {{-- Infield interior: SS / 2B (sobre el monticulo, en el
-                         brown claro del diamante, justo entre 3B/1B y P) --}}
+                    {{-- Infield interior: SS / 2B (en el brown claro del
+                         diamante, entre las bases 3B/1B y el monticulo). --}}
                     <button type="button" @click="addFielder('SS')" :class="isFielderSelected('SS') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 50%; left: 39%; transform: translate(-50%, -50%);">SS</button>
+                            style="top: 48%; left: 33%; transform: translate(-50%, -50%);">SS</button>
                     <button type="button" @click="addFielder('2B')" :class="isFielderSelected('2B') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 50%; right: 39%; transform: translate(-50%, -50%);">2B</button>
+                            style="top: 48%; right: 33%; transform: translate(-50%, -50%);">2B</button>
 
-                    {{-- Esquinas del infield: 3B / 1B (sobre las bases
-                         cuadradas en x=120/350, y=217 del viewBox) --}}
+                    {{-- Esquinas del infield: 3B / 1B (sobre los cuadrados
+                         blancos en x=120/350, y=217 del viewBox).
+                         Con translate(-50%) + button-width/2, usar
+                         left:25% / right:25% pone el CENTRO del boton
+                         exactamente sobre el centro de la base. --}}
                     <button type="button" @click="addFielder('3B')" :class="isFielderSelected('3B') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 68%; left: 27%; transform: translate(-50%, -50%);">3B</button>
+                            style="top: 68%; left: 25%; transform: translate(-50%, -50%);">3B</button>
                     <button type="button" @click="addFielder('1B')" :class="isFielderSelected('1B') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 68%; right: 27%; transform: translate(-50%, -50%);">1B</button>
+                            style="top: 68%; right: 25%; transform: translate(-50%, -50%);">1B</button>
 
                     {{-- Catcher (home plate, en el vertice inferior del
                          diamante, x=240 y=297 del viewBox) --}}
                     <button type="button" @click="addFielder('C')" :class="isFielderSelected('C') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 92%; left: 50%; transform: translate(-50%, -50%);">C</button>
+                            style="top: 93%; left: 50%; transform: translate(-50%, -50%);">C</button>
 
-                    {{-- Pitcher (P, amarillo sobre el monticulo x=240 y=225) --}}
+                    {{-- Pitcher (P, amarillo sobre el monticulo x=240 y=225,
+                         centro del viewBox vertical y horizontal) --}}
                     <button type="button" @click="addFielder('P')" :class="isFielderSelected('P') ? 'ring-4 ring-amber-300 bg-yellow-200' : 'bg-yellow-300 hover:bg-yellow-400'"
                             class="absolute w-11 h-11 rounded-full text-sm font-black text-amber-900 shadow-md border-2 border-yellow-500 flex items-center justify-center"
                             style="top: 70%; left: 50%; transform: translate(-50%, -50%);">P</button>
