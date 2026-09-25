@@ -999,71 +999,6 @@
                 </div>
             </div>
 
-            {{-- Mini-diamond SVG (campo sintetico con la base actual del
-                 corredor resaltada). Replica del SVG del modal Jugada
-                 Defensiva (mismo patron: rombo verde + borde grueso +
-                 bases en las esquinas + circulo del monticulo + home
-                 plate en el vertice), en una vista mucho mas
-                 compacta (viewBox 200x180, aspect ~10:9) adecuada al
-                 primer scroll del modal corredor. --}}
-            <div class="px-5 py-4 bg-wv-bg border-b border-wv-border flex-shrink-0">
-                <div class="relative mx-auto w-full max-w-[260px] aspect-[10/9] rounded-card overflow-hidden shadow-inner">
-                    <svg viewBox="0 0 200 180" class="absolute inset-0 w-full h-full" preserveAspectRatio="none" aria-hidden="true">
-                        {{-- Rombo del campo de juego: verde oscuro dentro de un
-                             contorno naranja grueso. --}}
-                        <path d="M 100 20 L 180 90 L 100 170 L 20 90 Z"
-                              fill="#1f4d2c"
-                              stroke="#e57c3a"
-                              stroke-width="6"
-                              stroke-linejoin="round"/>
-
-                        {{-- Bases (mini rombos blancos en las 4 esquinas del
-                             diamante). 2B arriba, 1B a la derecha, home
-                             abajo, 3B a la izquierda. --}}
-                        <rect x="96"  y="6"  width="8" height="8" fill="white" transform="rotate(45 100 10)"/>
-                        <rect x="176" y="86" width="8" height="8" fill="white" transform="rotate(45 180 90)"/>
-                        <rect x="96"  y="166" width="8" height="8" fill="white" transform="rotate(45 100 170)"/>
-                        <rect x="16"  y="86" width="8" height="8" fill="white" transform="rotate(45 20 90)"/>
-
-                        {{-- Monticulo del pitcher: circulo naranja en el
-                             centro del diamante con un aro blanco. --}}
-                        <circle cx="100" cy="90" r="11" fill="#e57c3a"/>
-                        <circle cx="100" cy="90" r="9"  fill="#fff" fill-opacity="0.85"/>
-
-                        {{-- Home plate dentro de un circulo naranja en la
-                             punta inferior. El pentagono blanco se ve
-                             apenas sobre el circulo. --}}
-                        <circle cx="100" cy="170" r="0" fill="#e57c3a"/>
-                    </svg>
-
-                    {{-- Etiquetas de las 4 esquinas (x-bind al corredor seleccionado).
-                         Cada esquina tiene una base mini-rombo del SVG + un
-                         dot blanco arriba (decorativo). Cuando coinciden con
-                         runnerBase, el dot se pinta en color amber para
-                         indicar donde esta anclado el corredor. --}}
-                    <span class="absolute w-2 h-2 rounded-full"
-                          :class="runnerBase === 'second' ? 'bg-amber-400 ring-2 ring-amber-300' : 'bg-white/70'"
-                          style="top: 12%; left: 50%; transform: translate(-50%, -50%);"></span>
-                    <span class="absolute w-2 h-2 rounded-full"
-                          :class="runnerBase === 'first'  ? 'bg-amber-400 ring-2 ring-amber-300' : 'bg-white/70'"
-                          style="top: 50%; right: 8%; transform: translate(50%, -50%);"></span>
-                    <span class="absolute w-2 h-2 rounded-full"
-                          :class="runnerBase === 'third' ? 'bg-amber-400 ring-2 ring-amber-300' : 'bg-white/70'"
-                          style="top: 50%; left: 8%; transform: translate(-50%, -50%);"></span>
-                    <span class="absolute w-2 h-2 rounded-full"
-                          :class="runnerBase === 'home'  ? 'bg-amber-400 ring-2 ring-amber-300' : 'bg-white/70'"
-                          style="bottom: 5%; left: 50%; transform: translate(-50%, 50%);"></span>
-
-                    {{-- Etiqueta con la base actual del corredor (badge
-                         dorado abajo del diamante, anade contexto al
-                         anotador). --}}
-                    <div class="absolute left-0 right-0 -bottom-1 text-center">
-                        <span class="inline-block px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider shadow"
-                              x-text="runnerBase === 'first' ? 'En 1B' : runnerBase === 'second' ? 'En 2B' : runnerBase === 'third' ? 'En 3B' : ''"></span>
-                    </div>
-                </div>
-            </div>
-
             {{-- Grid de acciones --}}
             <div class="p-4 overflow-y-auto flex-1">
                 <div class="grid grid-cols-2 gap-2">
@@ -1556,7 +1491,7 @@
     </div>
 
     <div class="text-center text-xs mt-3" style="color: var(--sb-text-dim);">
-    
+        Vista paralela · scoreboard-v2 · mismos datos que el scoreboard clásico, diseño experimental
     </div>
 </div>
 </div>
