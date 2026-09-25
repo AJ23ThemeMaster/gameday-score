@@ -625,9 +625,9 @@
 
     {{-- MODALES (mismas acciones que el scoreboard base) --}}
 
-    <div x-show="modal==='strike'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+    <div x-show="modal==='strike'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-4"
          @keydown.escape.window="closeModal()">
-        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+        <div class="bg-wv-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
             <div class="bg-rose-600 text-white px-5 py-3 flex items-center justify-between">
                 <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Tipo de ponche') }}</h3>
                 <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
@@ -640,9 +640,9 @@
         </div>
     </div>
 
-    <div x-show="modal==='out-step1'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+    <div x-show="modal==='out-step1'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-4"
          @keydown.escape.window="closeModal()">
-        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+        <div class="bg-wv-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
             <div class="bg-slate-700 text-white px-5 py-3 flex items-center justify-between">
                 <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Tipo de out') }}</h3>
                 <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
@@ -656,9 +656,9 @@
         </div>
     </div>
 
-    <div x-show="modal==='out-step2'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+    <div x-show="modal==='out-step2'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-4"
          @keydown.escape.window="closeModal()">
-        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" @click.outside="closeModal()">
+        <div class="bg-wv-surface rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" @click.outside="closeModal()">
             <div class="bg-slate-800 text-white px-5 py-3 flex items-center justify-between">
                 <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Jugada defensiva') }}</h3>
                 <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
@@ -701,9 +701,9 @@
         </div>
     </div>
 
-    <div x-show="modal==='hit'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+    <div x-show="modal==='hit'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-4"
          @keydown.escape.window="closeModal()">
-        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+        <div class="bg-wv-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
             <div class="bg-emerald-600 text-white px-5 py-3 flex items-center justify-between">
                 <h3 class="text-lg font-black uppercase tracking-wider" x-text="hitConfig.label"></h3>
                 <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
@@ -722,9 +722,9 @@
         </div>
     </div>
 
-    <div x-show="modal==='bunt'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+    <div x-show="modal==='bunt'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-4"
          @keydown.escape.window="closeModal()">
-        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+        <div class="bg-wv-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
             <div class="bg-amber-600 text-white px-5 py-3 flex items-center justify-between">
                 <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Toque de bolas') }}</h3>
                 <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
@@ -743,9 +743,9 @@
         </div>
     </div>
 
-    <div x-show="modal==='end-inning'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+    <div x-show="modal==='end-inning'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-4"
          @keydown.escape.window="closeModal()">
-        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+        <div class="bg-wv-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
             <div class="bg-orange-600 text-white px-5 py-3 flex items-center justify-between">
                 <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Cerrar inning') }}</h3>
                 <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
@@ -760,9 +760,9 @@
         </div>
     </div>
 
-    <div x-show="modal==='end-game'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+    <div x-show="modal==='end-game'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-4"
          @keydown.escape.window="closeModal()">
-        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+        <div class="bg-wv-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
             <div class="bg-red-700 text-white px-5 py-3 flex items-center justify-between">
                 <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Finalizar juego') }}</h3>
                 <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
@@ -778,9 +778,9 @@
     </div>
 
     {{-- Modal: Gestionar corredor (DISI-20 migrado al v2) --}}
-    <div x-show="modal==='inning-summary'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+    <div x-show="modal==='inning-summary'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-4"
          @keydown.escape.window="closeModal()">
-        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
+        <div class="bg-wv-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.outside="closeModal()">
             <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-5 py-3 flex items-center justify-between">
                 <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Inning finalizado') }}</h3>
                 <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
@@ -812,7 +812,7 @@
                         <div class="text-[9px] text-wv-text-secondary mt-0.5 opacity-70">LOB</div>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3 text-center">
-                        <div class="text-3xl font-black text-wv-info leading-none" x-text="inningSummary?.pitcher_pitches ?? 0"></div>
+                        <div class="text-3xl font-black text-wv-accent leading-none" x-text="inningSummary?.pitcher_pitches ?? 0"></div>
                         <div class="text-[10px] text-wv-text-secondary uppercase font-bold tracking-wider mt-1.5">{{ __('Lanzamientos') }}</div>
                         <div class="text-[9px] text-wv-text-secondary mt-0.5 opacity-70" x-text="inningSummary?.pitcher_name ? 'de ' + inningSummary.pitcher_name : 'del pitcher'"></div>
                     </div>
@@ -830,9 +830,9 @@
     </div>
 
     {{-- Modal: Gestionar corredor (DISI-20 migrado al v2) --}}
-    <div x-show="modal==='runner'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+    <div x-show="modal==='runner'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-4"
          @keydown.escape.window="closeRunnerModal()">
-        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeRunnerModal()">
+        <div class="bg-wv-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeRunnerModal()">
             <div class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-5 py-3 flex items-center justify-between flex-shrink-0">
                 <h3 class="text-lg font-black uppercase tracking-wider" x-text="runnerModalTitle()"></h3>
                 <button type="button" @click="closeRunnerModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
@@ -852,7 +852,7 @@
                         <div class="text-base font-bold text-wv-text truncate" x-text="runnerModalRunner()?.name"></div>
                         <div class="text-xs text-wv-text-secondary mt-0.5">
                             <span class="font-semibold" x-text="'#' + (runnerModalRunner()?.number ?? '—')"></span>
-                            <span class="text-wv-text-dim"> · </span>
+                            <span class="text-wv-text-secondary"> · </span>
                             <span x-text="runnerModalRunner()?.position ?? '—'"></span>
                         </div>
                     </div>
@@ -962,9 +962,9 @@
     </div>
 
     {{-- Modal: Sustituir (alterna pitcher/bateador/corredor) --}}
-    <div x-show="modal==='substitute'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+    <div x-show="modal==='substitute'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-4"
          @keydown.escape.window="closeModal()">
-        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeModal()">
+        <div class="bg-wv-surface rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeModal()">
             <div class="bg-sky-600 text-white px-5 py-3 flex items-center justify-between flex-shrink-0">
                 <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Sustituir') }}</h3>
                 <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
@@ -1013,9 +1013,9 @@
     </div>
 
     {{-- Modal: Reordenar lineup --}}
-    <div x-show="modal==='lineup'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+    <div x-show="modal==='lineup'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-4"
          @keydown.escape.window="closeModal()">
-        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeModal()">
+        <div class="bg-wv-surface rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeModal()">
             <div class="bg-emerald-600 text-white px-5 py-3 flex items-center justify-between flex-shrink-0">
                 <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Reordenar lineup') }}</h3>
                 <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
@@ -1048,45 +1048,170 @@
         </div>
     </div>
 
-    {{-- Modal: Stats del juego --}}
-    <div x-show="modal==='stats'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4"
+    {{-- Modal: Stats del juego (migrado exacto del scoreboard base, MEJ-3) --}}
+    <div x-show="modal==='stats'" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-4"
          @keydown.escape.window="closeModal()">
-        <div class="bg-wv-card rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeModal()">
+        <div class="bg-wv-surface rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col" @click.outside="closeModal()">
             <div class="bg-indigo-600 text-white px-5 py-3 flex items-center justify-between flex-shrink-0">
                 <h3 class="text-lg font-black uppercase tracking-wider">{{ __('Stats del juego') }}</h3>
                 <button type="button" @click="closeModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
             </div>
-            <div class="p-5 overflow-y-auto">
-                <div x-show="statsLoading" class="text-center text-wv-text-secondary py-8">
-                    {{ __('Cargando...') }}
-                </div>
-                <div x-show="!statsLoading && statsError" class="text-center text-wv-alert py-8" x-text="statsError"></div>
-                <div x-show="!statsLoading && statsData" class="space-y-3">
-                    <div class="text-xs text-wv-text-secondary">
-                        {{ __('Line score + box score resumido. Para ver el detalle completo visita la pagina Box Score.') }}
-                    </div>
-                    <div class="flex gap-1 border-b border-wv-border text-xs">
-                        <button type="button" @click="statsTab='batting'"
-                                :class="statsTab==='batting' ? 'border-wv-accent text-wv-accent font-bold' : 'border-transparent text-wv-text-secondary'"
-                                class="px-3 py-1 border-b-2">{{ __('Bateo') }}</button>
-                        <button type="button" @click="statsTab='pitching'"
-                                :class="statsTab==='pitching' ? 'border-wv-accent text-wv-accent font-bold' : 'border-transparent text-wv-text-secondary'"
-                                class="px-3 py-1 border-b-2">{{ __('Pitcheo') }}</button>
-                    </div>
-                    <div x-show="statsTab==='batting'">
-                        <div class="text-[10px] uppercase tracking-wider text-wv-text-secondary font-semibold mb-1">{{ __('Bateo') }}</div>
-                        <pre class="bg-wv-bg rounded-card p-3 text-[11px] overflow-x-auto" x-text="JSON.stringify(statsData?.batting ?? statsData?.line_score ?? statsData, null, 2)"></pre>
-                    </div>
-                    <div x-show="statsTab==='pitching'">
-                        <div class="text-[10px] uppercase tracking-wider text-wv-text-secondary font-semibold mb-1">{{ __('Pitcheo') }}</div>
-                        <pre class="bg-wv-bg rounded-card p-3 text-[11px] overflow-x-auto" x-text="JSON.stringify(statsData?.pitching ?? {}, null, 2)"></pre>
-                    </div>
+
+            {{-- Line score (carreras por inning) --}}
+            <div class="px-5 py-3 bg-wv-bg border-b border-wv-border flex-shrink-0" x-show="statsData && !statsLoading">
+                <div class="text-[10px] uppercase tracking-wider text-wv-text-secondary font-semibold mb-2">{{ __('Line score') }}</div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="text-wv-text-secondary">
+                                <th class="text-left font-semibold pb-1 pr-2">{{ __('Equipo') }}</th>
+                                <template x-for="i in statsData?.total_innings || 7" :key="i">
+                                    <th class="text-center font-semibold pb-1 px-1" x-text="i"></th>
+                                </template>
+                                <th class="text-center font-bold text-wv-text pb-1 pl-2 border-l border-wv-border">{{ __('C') }}</th>
+                                <th class="text-center font-bold text-wv-text pb-1 pl-1">{{ __('H') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-t border-wv-border">
+                                <td class="py-1 pr-2 font-bold text-wv-text" x-text="statsData?.away_team?.short || awayShort"></td>
+                                <template x-for="(r, idx) in lineScoreAway()" :key="'a' + idx">
+                                    <td class="text-center py-1 px-1 text-wv-text" x-text="r"></td>
+                                </template>
+                                <td class="text-center font-black text-base pl-2 border-l border-wv-border text-wv-text" x-text="lineScoreTotal('away')"></td>
+                                <td class="text-center font-bold pl-1 text-wv-text" x-text="filteredBatting().filter(b => b.team_id === awayTeamId).reduce((s, b) => s + b.hits, 0)"></td>
+                            </tr>
+                            <tr class="border-t border-wv-border">
+                                <td class="py-1 pr-2 font-bold text-wv-text" x-text="statsData?.home_team?.short || homeShort"></td>
+                                <template x-for="(r, idx) in lineScoreHome()" :key="'h' + idx">
+                                    <td class="text-center py-1 px-1 text-wv-text" x-text="r"></td>
+                                </template>
+                                <td class="text-center font-black text-base pl-2 border-l border-wv-border text-wv-text" x-text="lineScoreTotal('home')"></td>
+                                <td class="text-center font-bold pl-1 text-wv-text" x-text="filteredBatting().filter(b => b.team_id === homeTeamId).reduce((s, b) => s + b.hits, 0)"></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div class="p-4 border-t border-wv-border flex-shrink-0">
-                <a :href="statsUrl" target="_blank" class="block w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-card text-center">
-                    {{ __('Abrir Box Score completo') }}
-                </a>
+
+            {{-- Tabs Pitcheo / Bateo + filtro de equipo --}}
+            <div class="border-b border-wv-border flex items-center px-5 pt-3 flex-shrink-0 bg-wv-surface">
+                <button type="button" @click="statsTab='batting'"
+                        :class="statsTab==='batting' ? 'border-b-2 border-indigo-500 text-wv-text font-bold' : 'text-wv-text-secondary'"
+                        class="px-3 py-2 text-sm">{{ __('Bateo') }}</button>
+                <button type="button" @click="statsTab='pitching'"
+                        :class="statsTab==='pitching' ? 'border-b-2 border-indigo-500 text-wv-text font-bold' : 'text-wv-text-secondary'"
+                        class="px-3 py-2 text-sm">{{ __('Pitcheo') }}</button>
+                <div class="ml-auto flex gap-1 pb-1">
+                    <button type="button" @click="statsFilter='all'"
+                            :class="statsFilter==='all' ? 'bg-indigo-600 text-white' : 'bg-wv-surface-hover text-wv-text'"
+                            class="px-2 py-1 text-[10px] font-bold rounded">{{ __('Todos') }}</button>
+                    <button type="button" @click="statsFilter='home'"
+                            :class="statsFilter==='home' ? 'bg-indigo-600 text-white' : 'bg-wv-surface-hover text-wv-text'"
+                            class="px-2 py-1 text-[10px] font-bold rounded" x-text="homeShort"></button>
+                    <button type="button" @click="statsFilter='away'"
+                            :class="statsFilter==='away' ? 'bg-indigo-600 text-white' : 'bg-wv-surface-hover text-wv-text'"
+                            class="px-2 py-1 text-[10px] font-bold rounded" x-text="awayShort"></button>
+                </div>
+            </div>
+
+            {{-- Contenido scrollable --}}
+            <div class="flex-1 overflow-y-auto p-5 bg-wv-surface">
+                <div x-show="statsLoading" class="text-center text-sm text-wv-text-secondary py-8">{{ __('Cargando...') }}</div>
+                <div x-show="!statsLoading && statsError" class="text-center text-sm text-wv-alert py-8" x-text="statsError"></div>
+
+                {{-- Bateo --}}
+                <div x-show="!statsLoading && statsTab==='batting' && !statsError" class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="text-wv-text-secondary text-[10px] uppercase">
+                                <th class="text-left font-semibold pb-2 pr-2">#</th>
+                                <th class="text-left font-semibold pb-2 pr-2">{{ __('Bateador') }}</th>
+                                <th class="text-center font-semibold pb-2 px-1">AB</th>
+                                <th class="text-center font-semibold pb-2 px-1">H</th>
+                                <th class="text-center font-semibold pb-2 px-1">2B</th>
+                                <th class="text-center font-semibold pb-2 px-1">3B</th>
+                                <th class="text-center font-semibold pb-2 px-1">HR</th>
+                                <th class="text-center font-semibold pb-2 px-1">BB</th>
+                                <th class="text-center font-semibold pb-2 px-1">K</th>
+                                <th class="text-center font-semibold pb-2 px-1">RBI</th>
+                                <th class="text-center font-semibold pb-2 px-1">R</th>
+                                <th class="text-center font-semibold pb-2 px-1">AVG</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="b in filteredBatting()" :key="b.batter_id">
+                                <tr class="border-t border-wv-border">
+                                    <td class="py-1.5 pr-2 font-bold text-indigo-400" x-text="b.number ?? '-'"></td>
+                                    <td class="py-1.5 pr-2 font-medium text-wv-text" x-text="b.name"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="b.at_bats"></td>
+                                    <td class="text-center py-1.5 px-1 font-bold text-wv-text" x-text="b.hits"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="b.doubles"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="b.triples"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="b.hr"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="b.walks"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="b.strikeouts"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="b.rbi"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="b.runs"></td>
+                                    <td class="text-center py-1.5 px-1 font-bold text-wv-text" x-text="formatAvg(b.avg)"></td>
+                                </tr>
+                            </template>
+                            <tr x-show="!statsLoading && filteredBatting().length === 0">
+                                <td colspan="12" class="text-center text-wv-text-secondary py-4">{{ __('Sin bateadores aun') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Pitcheo --}}
+                <div x-show="!statsLoading && statsTab==='pitching' && !statsError" class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="text-wv-text-secondary text-[10px] uppercase">
+                                <th class="text-left font-semibold pb-2 pr-2">#</th>
+                                <th class="text-left font-semibold pb-2 pr-2">{{ __('Pitcher') }}</th>
+                                <th class="text-center font-semibold pb-2 px-1">IP</th>
+                                <th class="text-center font-semibold pb-2 px-1">P</th>
+                                <th class="text-center font-semibold pb-2 px-1">S</th>
+                                <th class="text-center font-semibold pb-2 px-1">B</th>
+                                <th class="text-center font-semibold pb-2 px-1">K</th>
+                                <th class="text-center font-semibold pb-2 px-1">BB</th>
+                                <th class="text-center font-semibold pb-2 px-1">H</th>
+                                <th class="text-center font-semibold pb-2 px-1">R</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="p in filteredPitching()" :key="p.pitcher_id">
+                                <tr class="border-t border-wv-border">
+                                    <td class="py-1.5 pr-2 font-bold text-indigo-400" x-text="p.number ?? '-'"></td>
+                                    <td class="py-1.5 pr-2 font-medium text-wv-text" x-text="p.name"></td>
+                                    <td class="text-center py-1.5 px-1 font-bold text-wv-text" x-text="p.ip"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="p.pitches"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="p.strikes"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="p.balls"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="p.strikeouts"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="p.walks_allowed"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="p.hits_allowed"></td>
+                                    <td class="text-center py-1.5 px-1 text-wv-text" x-text="p.runs_allowed"></td>
+                                </tr>
+                            </template>
+                            <tr x-show="!statsLoading && filteredPitching().length === 0">
+                                <td colspan="10" class="text-center text-wv-text-secondary py-4">{{ __('Sin pitchers aun') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="border-t border-wv-border p-3 flex gap-2 flex-shrink-0 bg-wv-surface">
+                <button type="button" @click="loadStats()"
+                        class="px-3 py-2 bg-wv-surface-hover hover:bg-wv-surface-deep text-wv-text text-sm font-bold rounded-lg">
+                    {{ __('Recargar') }}
+                </button>
+                <button type="button" @click="closeModal()"
+                        class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg">
+                    {{ __('Cerrar') }}
+                </button>
             </div>
         </div>
     </div>
