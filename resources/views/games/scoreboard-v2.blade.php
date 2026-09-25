@@ -1029,9 +1029,9 @@
                         <label class="text-xs text-wv-text-secondary uppercase font-semibold">{{ __('Base') }}</label>
                         <select x-model="subBase"
                                 class="w-full mt-1 px-3 py-2 bg-wv-bg border border-wv-border rounded-lg focus:border-sky-500 focus:outline-none text-wv-text">
-                            <option value="first" x-show="lastBases?.first">1B: <span x-text="runnerLabel(lastBases?.first)"></span></option>
-                            <option value="second" x-show="lastBases?.second">2B: <span x-text="runnerLabel(lastBases?.second)"></span></option>
-                            <option value="third" x-show="lastBases?.third">3B: <span x-text="runnerLabel(lastBases?.third)"></span></option>
+                            <option value="first" x-show="base1">1B: <span x-text="runnerLabel('first')"></span></option>
+                            <option value="second" x-show="base2">2B: <span x-text="runnerLabel('second')"></span></option>
+                            <option value="third" x-show="base3">3B: <span x-text="runnerLabel('third')"></span></option>
                         </select>
                     </div>
                     <div>

@@ -393,6 +393,8 @@ class ScoreboardController extends Controller
             'balls' => (int) ($state['balls'] ?? 0),
             'strikes' => (int) ($state['strikes'] ?? 0),
             'outs' => (int) ($state['outs'] ?? 0),
+            'homeTeamId' => (int) $game->home_team_id,
+            'awayTeamId' => (int) $game->away_team_id,
             'base1' => $runners['first'] ?? null,
             'base2' => $runners['second'] ?? null,
             'base3' => $runners['third'] ?? null,

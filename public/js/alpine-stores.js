@@ -294,6 +294,10 @@ document.addEventListener('alpine:init', () => {
         statsError: '',
         statsData: null,
         statsTab: 'batting', // 'batting' | 'pitching'
+        statsFilter: 'all', // 'home' | 'away' | 'all'
+        // Identidad de los equipos del juego (necesaria para los filtros del box score).
+        homeTeamId: config.homeTeamId ?? null,
+        awayTeamId: config.awayTeamId ?? null,
 
         toast(message, level = 'success') {
             window.dispatchEvent(
@@ -698,10 +702,15 @@ document.addEventListener('alpine:init', () => {
         },
 
         async openStatsModal() {
+            this.modal = 'stats';
+            this.statsTab = 'batting';
+            this.statsFilter = 'all';
+            this.statsError = '';
+            await this.loadStats();
+        },
+        async loadStats() {
             this.statsLoading = true;
             this.statsError = '';
-            this.statsData = null;
-            this.modal = 'stats';
             try {
                 const res = await fetch(this.statsUrl, {
                     headers: {
@@ -710,16 +719,44 @@ document.addEventListener('alpine:init', () => {
                     },
                     credentials: 'same-origin',
                 });
-                if (!res.ok) {
-                    this.statsError = 'Error al cargar stats';
-                    return;
-                }
+                if (!res.ok) throw new Error('HTTP ' + res.status);
                 this.statsData = await res.json();
             } catch (e) {
-                this.statsError = 'Error de red: ' + e.message;
+                this.statsError = 'Error al cargar stats: ' + e.message;
             } finally {
                 this.statsLoading = false;
             }
+        },
+        filteredBatting() {
+            if (!this.statsData || !this.statsData.batting) return [];
+            if (this.statsFilter === 'all') return this.statsData.batting;
+            const tid = this.statsFilter === 'home' ? this.homeTeamId : this.awayTeamId;
+            return this.statsData.batting.filter(b => b.team_id === tid);
+        },
+        filteredPitching() {
+            if (!this.statsData || !this.statsData.pitching) return [];
+            if (this.statsFilter === 'all') return this.statsData.pitching;
+            const tid = this.statsFilter === 'home' ? this.homeTeamId : this.awayTeamId;
+            return this.statsData.pitching.filter(p => p.team_id === tid);
+        },
+        lineScoreAway() {
+            if (!this.statsData || !this.statsData.line_score) return [];
+            return Object.values(this.statsData.line_score.away || {});
+        },
+        lineScoreHome() {
+            if (!this.statsData || !this.statsData.line_score) return [];
+            return Object.values(this.statsData.line_score.home || {});
+        },
+        lineScoreTotal(team) {
+            if (!this.statsData || !this.statsData.line_score) return 0;
+            const arr = this.statsData.line_score[team] || {};
+            return Object.values(arr).reduce((a, b) => a + b, 0);
+        },
+        formatAvg(avg) {
+            if (avg === 0 || avg === '0' || avg === null || avg === undefined) return '.000';
+            const num = parseFloat(avg);
+            if (isNaN(num) || num === 0) return '.000';
+            return '.' + Math.round(num * 1000).toString().padStart(3, '0');
         },
 
         // ===== SEND (genericos) =====
