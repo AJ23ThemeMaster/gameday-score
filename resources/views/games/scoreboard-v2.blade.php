@@ -191,6 +191,17 @@
         max-width: 100%;
         height: 280px;
         margin: 0 auto;
+        overflow: hidden;
+        /* DISI-piloto: el fondo del diamante se renderiza desde el SVG inline
+             (color verde oscuro #32572A). Dejamos el gradiente por si
+             el SVG no carga, pero por defecto el SVG siempre gana. */
+        background: transparent;
+    }
+    .sb-field-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
     }
     .sb-base {
         position: absolute;
@@ -484,49 +495,62 @@
         </div>
     </div>
 
-    {{-- DIAMOND: bases con corredores --}}
+    {{-- DIAMOND: bases con corredores (DISI-piloto: mini-diamond SVG) --}}
     <div class="sb-field mt-4" x-show="!isFinalized" x-cloak>
         <div class="sb-field-grid">
-            {{-- 2B (arriba) --}}
+            {{-- Fondo verde oscuro del diamante: viewBox 280x280 (match con
+                 el tamano del contenedor). Color verde exacto del SVG
+                 adjunto (#32572A). --}}
+            <svg viewBox="0 0 280 280" class="sb-field-bg" preserveAspectRatio="none" aria-hidden="true">
+                <rect width="280" height="280" fill="#32572A"/>
+            </svg>
+
+            {{-- 2B (arriba, sobre el fondo verde) --}}
             <button type="button"
                     @click="openRunnerModal('second')"
                     :disabled="!onSecond() || !isHomeBatting() && isFinalized"
-                    :class="onSecond() ? 'sb-base sb-base-btn is-on' : 'sb-base sb-base-btn'"
-                    style="top: 0; left: 50%; transform: translateX(-50%); background: transparent; border: 0; padding: 0; cursor: pointer;">
+                    class="sb-base sb-base-btn"
+                    style="top: 8%; left: 50%; transform: translate(-50%, 0); background: transparent; border: 0; padding: 0; cursor: pointer;">
                 <div :class="onSecond() ? 'sb-base-tag is-on' : 'sb-base-tag'">
                     <span>2B</span>
                     <strong x-show="onSecond()" x-text="base2?.number"></strong>
                 </div>
                 <div class="sb-base-label" x-show="onSecond()" x-text="base2?.name"></div>
             </button>
-            {{-- 3B (izquierda) --}}
+
+            {{-- 3B (izquierda, vertical center) --}}
             <button type="button"
                     @click="openRunnerModal('third')"
                     :disabled="!onThird()"
-                    :class="onThird() ? 'sb-base sb-base-btn is-on' : 'sb-base sb-base-btn'"
-                    style="top: 50%; left: 0; transform: translateY(-50%); background: transparent; border: 0; padding: 0; cursor: pointer;">
+                    class="sb-base sb-base-btn"
+                    style="top: 50%; left: 4%; transform: translate(0, -50%); background: transparent; border: 0; padding: 0; cursor: pointer;">
                 <div :class="onThird() ? 'sb-base-tag is-on' : 'sb-base-tag'">
                     <span>3B</span>
                     <strong x-show="onThird()" x-text="base3?.number"></strong>
                 </div>
                 <div class="sb-base-label" x-show="onThird()" x-text="base3?.name"></div>
             </button>
-            {{-- P (centro) --}}
+
+            {{-- PITCHER (centro del diamante, encima del SVG como
+                 boton decorativo amarillo). Replica el estilo del SVG
+                 adjunto: circulo amarillo grande con "P" adentro. --}}
             <div class="sb-pitcher-mound">P</div>
-            {{-- 1B (derecha) --}}
+
+            {{-- 1B (derecha, vertical center) --}}
             <button type="button"
                     @click="openRunnerModal('first')"
                     :disabled="!onFirst()"
-                    :class="onFirst() ? 'sb-base sb-base-btn is-on' : 'sb-base sb-base-btn'"
-                    style="top: 50%; right: 0; transform: translateY(-50%); background: transparent; border: 0; padding: 0; cursor: pointer;">
+                    class="sb-base sb-base-btn"
+                    style="top: 50%; right: 4%; transform: translate(0, -50%); background: transparent; border: 0; padding: 0; cursor: pointer;">
                 <div :class="onFirst() ? 'sb-base-tag is-on' : 'sb-base-tag'">
                     <span>1B</span>
                     <strong x-show="onFirst()" x-text="base1?.number"></strong>
                 </div>
                 <div class="sb-base-label" x-show="onFirst()" x-text="base1?.name"></div>
             </button>
-            {{-- HOME (abajo) --}}
-            <div class="sb-base" style="bottom: 0; left: 50%; transform: translateX(-50%);">
+
+            {{-- HOME (abajo, centro) --}}
+            <div class="sb-base" style="bottom: 8%; left: 50%; transform: translate(-50%, 0);">
                 <div class="sb-base-tag">
                     <span>HOME</span>
                 </div>
