@@ -240,10 +240,14 @@
                                                         <span class="material-symbols-outlined !text-[16px]">sports_baseball</span>
                                                     </a>
                                                 @endif
+                                                {{-- DISI-piloto: el boton Editar aparece si la policy `update` pasa;
+                                                     Eliminar requiere policy `delete` (admin-only en este piloto). --}}
                                                 <x-action-buttons
                                                     :show="route('games.show', $g)"
                                                     :edit="route('games.edit', $g)"
                                                     :delete="route('games.destroy', $g)"
+                                                    :canEdit="\Illuminate\Support\Facades\Gate::check('update', $g)"
+                                                    :canDelete="\Illuminate\Support\Facades\Gate::check('delete', $g)"
                                                     :deleteMessage="__('¿Eliminar el juego «:title»?', ['title' => $g->title ?? '#' . $g->id])"
                                                 />
                                             </div>

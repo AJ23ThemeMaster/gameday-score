@@ -2,6 +2,8 @@
     'show' => null,             // URL para ver (null = no mostrar boton)
     'edit' => null,             // URL para editar (null = no mostrar boton)
     'delete' => null,           // URL para eliminar (null = no mostrar boton)
+    'canEdit' => true,          // DISI-piloto: si false, oculta el boton Editar aunque se pase URL
+    'canDelete' => true,        // DISI-piloto: si false, oculta el boton Eliminar aunque se pase URL
     'deleteMessage' => null,    // Mensaje del swal de confirm; null = mensaje default
 ])
 
@@ -26,13 +28,13 @@
         </a>
     @endif
 
-    @if ($edit)
+    @if ($edit && $canEdit)
         <a href="{{ $edit }}" title="{{ __('Editar') }}" aria-label="{{ __('Editar') }}" class="{{ $editBtn }}">
             <span class="material-symbols-outlined !text-[16px]">edit</span>
         </a>
     @endif
 
-    @if ($delete)
+    @if ($delete && $canDelete)
         <form action="{{ $delete }}" method="POST" class="inline"
               data-confirm="'{{ $msg }}'" data-confirm-danger="true" data-loader
               data-loader-icon-only="true">
