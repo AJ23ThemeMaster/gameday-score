@@ -708,8 +708,11 @@
 
                         {{-- INFIELD con la misma forma (abanico) a menor escala
                              y un poco mas adentro. Tan/brown claro.
-                             Centered horizontalmente en x=240. --}}
-                        <path d="M 130 170 A 130 60 0 0 1 350 170 L 240 290 Z"
+                             Centered horizontalmente en x=240.
+                             Ajuste desde navegador: y de 170 a 180 (baja el
+                             arco convexo del infield, mas cerca del
+                             monticulo). --}}
+                        <path d="M 130 180 A 130 60 0 0 1 350 180 L 240 290 Z"
                               fill="url(#infieldGrad)"
                               stroke="#8a6233" stroke-width="1.5"/>
 
@@ -722,11 +725,15 @@
 
                         {{-- BASES cuadradas (estilo referencia: home y 1B/3B
                              como cuadrados pequenos; 2B como diamante).
-                             Coordenadas en el viewBox 480x320. --}}
+                             Coordenadas en el viewBox 480x320, ajustadas
+                             desde el navegador:
+                              - 1B: x=315 (antes 350, mas hacia el centro)
+                              - 3B: x=155 (antes 120, mas hacia el centro)
+                              - 2B: y=160 (antes 108, baja dentro del brown) --}}
                         <rect x="234" y="294" width="12" height="6" fill="white"/>             {{-- Home --}}
-                        <rect x="350" y="217" width="9"  height="9" fill="white"/>             {{-- 1B --}}
-                        <rect x="120" y="217" width="9"  height="9" fill="white"/>             {{-- 3B --}}
-                        <rect x="236" y="108" width="8"  height="8" fill="white" transform="rotate(45 240 112)"/> {{-- 2B (diamante) --}}
+                        <rect x="315" y="217" width="9"  height="9" fill="white"/>             {{-- 1B --}}
+                        <rect x="155" y="217" width="9"  height="9" fill="white"/>             {{-- 3B --}}
+                        <rect x="236" y="160" width="8"  height="8" fill="white" transform="rotate(45 240 164)"/> {{-- 2B (diamante) --}}
 
                         {{-- MONTICULO del pitcher: circulo tan claro + pequena
                              goma blanca rectangular en el centro (la "rubber"). --}}
@@ -759,36 +766,40 @@
                           - C: x=240 y=297 (50% / 93%)               target exacto
                          ============================================================ --}}
 
-                    {{-- Outfield dentro del green (arco superior). LF/RF
-                         caen sobre la franja verde del outfield, dentro
-                         del field y debajo del borde curvo del arco. --}}
+                    {{-- Outfield dentro del green (arco superior). Valores ajustados
+                         desde el navegador: top 32% para LF/RF y 25% para CF,
+                         alineados con las nuevas coordenadas de las bases
+                         (1B/3B mas hacia el centro del SVG). --}}
                     <button type="button" @click="addFielder('LF')" :class="isFielderSelected('LF') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 25%; left: 21%; transform: translate(-50%, -50%);">LF</button>
+                            style="top: 32%; left: 28%; transform: translate(-50%, -50%);">LF</button>
                     <button type="button" @click="addFielder('CF')" :class="isFielderSelected('CF') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
                             style="top: 25%; left: 50%; transform: translate(-50%, -50%);">CF</button>
                     <button type="button" @click="addFielder('RF')" :class="isFielderSelected('RF') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 25%; right: 21%; transform: translate(-50%, -50%);">RF</button>
+                            style="top: 32%; right: 18%; transform: translate(-50%, -50%);">RF</button>
 
-                    {{-- Infield interior: SS / 2B (en el brown claro del
-                         diamante, entre las bases 3B/1B y el monticulo). --}}
+                    {{-- Infield interior: SS / 2B. Ajuste de navegador:
+                         top 50% (antes 48%), left 40% para SS / right 31%
+                         para 2B. --}}
                     <button type="button" @click="addFielder('SS')" :class="isFielderSelected('SS') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 48%; left: 35%; transform: translate(-50%, -50%);">SS</button>
+                            style="top: 50%; left: 40%; transform: translate(-50%, -50%);">SS</button>
                     <button type="button" @click="addFielder('2B')" :class="isFielderSelected('2B') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 48%; right: 35%; transform: translate(-50%, -50%);">2B</button>
+                            style="top: 50%; right: 31%; transform: translate(-50%, -50%);">2B</button>
 
-                    {{-- Esquinas del infield: 3B / 1B sobre los cuadrados
-                         blancos en x=120/350, y=217 del viewBox. --}}
+                    {{-- Esquinas del infield: 3B / 1B. Coordenadas nuevas:
+                         left 28% para 3B (antes 20%, ahora mas hacia el
+                         centro porque la base 3B del SVG esta en x=155) y
+                         right 19% para 1B (antes 22%, base en x=315). --}}
                     <button type="button" @click="addFielder('3B')" :class="isFielderSelected('3B') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 63%; left: 20%; transform: translate(-50%, -50%);">3B</button>
+                            style="top: 63%; left: 28%; transform: translate(-50%, -50%);">3B</button>
                     <button type="button" @click="addFielder('1B')" :class="isFielderSelected('1B') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 63%; right: 22%; transform: translate(-50%, -50%);">1B</button>
+                            style="top: 63%; right: 19%; transform: translate(-50%, -50%);">1B</button>
 
                     {{-- Catcher (home plate, en el vertice inferior del
                          diamante, x=240 y=297 del viewBox) --}}
@@ -796,11 +807,12 @@
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
                             style="top: 92%; left: 50%; transform: translate(-50%, -50%);">C</button>
 
-                    {{-- Pitcher (P, amarillo sobre el monticulo x=240 y=225,
-                         centro del viewBox vertical y horizontal). --}}
+                    {{-- Pitcher (P, amarillo sobre el monticulo x=240 y=225).
+                         Ajuste de navegador: top 63% (antes 64%) para alinearse
+                         con el nuevo infield que arranca a y=180. --}}
                     <button type="button" @click="addFielder('P')" :class="isFielderSelected('P') ? 'ring-4 ring-amber-300 bg-yellow-200' : 'bg-yellow-300 hover:bg-yellow-400'"
                             class="absolute w-11 h-11 rounded-full text-sm font-black text-amber-900 shadow-md border-2 border-yellow-500 flex items-center justify-center"
-                            style="top: 64%; left: 50%; transform: translate(-50%, -50%);">P</button>
+                            style="top: 63%; left: 50%; transform: translate(-50%, -50%);">P</button>
                 </div>
                 <div class="mt-4 p-3 bg-wv-bg rounded-card min-h-[60px]">
                     <div class="text-xs text-wv-text-secondary uppercase font-semibold mb-1">{{ __('Secuencia') }}</div>
