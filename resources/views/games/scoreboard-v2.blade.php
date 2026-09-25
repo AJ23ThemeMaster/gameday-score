@@ -666,7 +666,10 @@
             <div class="p-5">
                 <p class="text-sm text-wv-text-secondary mb-3">{{ __('Toca los fildeadores en el orden que participaron.') }}</p>
                 <div class="relative mx-auto w-full max-w-[320px] aspect-square rounded-card overflow-hidden shadow-inner">
-                    {{-- Campo SVG decorativo (franjas verdes + infield brown + bases + monticulo).
+                    {{-- Campo SVG en forma de abanico: arco convexo arriba (el green
+                         del outfield), dos foul-lines rectas bajando al vertice
+                         (home plate), infield brown con el mismo patron de arco +
+                         foul-lines, bases cuadradas y un monticulo del pitcher.
                          Las posiciones se renderizan como botones absolutos encima. --}}
                     <svg viewBox="0 0 320 320" class="absolute inset-0 w-full h-full" preserveAspectRatio="none" aria-hidden="true">
                         <defs>
@@ -676,87 +679,96 @@
                             </linearGradient>
                             <pattern id="grassStripes" patternUnits="userSpaceOnUse" width="32" height="320">
                                 <rect width="32" height="320" fill="url(#grassGrad)"/>
-                                <rect x="0" width="16" height="320" fill="#84cc16" fill-opacity="0.45"/>
+                                <rect x="0" width="16" height="320" fill="#84cc16" fill-opacity="0.55"/>
                             </pattern>
                             <linearGradient id="infieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stop-color="#b45309"/>
-                                <stop offset="100%" stop-color="#854d0e"/>
+                                <stop offset="0%" stop-color="#d4a574"/>
+                                <stop offset="100%" stop-color="#b0885e"/>
                             </linearGradient>
                         </defs>
 
-                        {{-- Cesped en forma de abanico con dos curvas convexas
-                             (vista desde home plate). --}}
-                        <path d="M 32 92 Q 160 -8 288 92 L 296 232 Q 160 312 24 232 Z"
+                        {{-- =====================================================
+                             FORMA DEL CAMPO (abanico):
+                               M (20,90)  -> esquina izquierda superior del green
+                               A 170x95   -> arco convexo arriba (semicirculo)
+                                     (300,90)  -> esquina derecha superior del green
+                               L (160,300) -> vertice inferior (home plate)
+                               Z
+                             Esto entrega el "abanico" caracteristico del campo
+                             de beisbol visto desde home: arco arriba + lineas rectas
+                             hacia abajo convergiendo al vertice.
+                             ===================================================== --}}
+                        <path d="M 20 95 A 170 95 0 0 1 300 95 L 160 300 Z"
                               fill="url(#grassStripes)"
-                              stroke="#b45309" stroke-width="3"/>
-                        {{-- Borde interno sutil del outfield --}}
-                        <path d="M 32 92 Q 160 -8 288 92 L 296 232 Q 160 312 24 232 Z"
-                              fill="none" stroke="#b45309" stroke-width="1" stroke-opacity="0.5" transform="scale(0.96) translate(6.4 6.4)"/>
+                              stroke="#b0885e" stroke-width="2"/>
 
-                        {{-- Infield en forma de rombo + semicirculo. Cobertura entre
-                             3B y 1B con arco convexo arriba; debajo del rombo el
-                             semicirculo devuelve al area verde. --}}
-                        <path d="M 160 92
-                                 L 256 200
-                                 L 160 296
-                                 L 64 200
-                                 Q 160 130 160 92 Z"
-                              fill="url(#infieldGrad)"/>
+                        {{-- INFIELD con la misma forma (abanico) a menor escala
+                             y un poco mas adentro. Brown/tan claro. --}}
+                        <path d="M 70 165 A 100 65 0 0 1 250 165 L 160 290 Z"
+                              fill="url(#infieldGrad)"
+                              stroke="#7a5a2f" stroke-width="1.5"/>
 
-                        {{-- Bases (mini rombos blancos) --}}
-                        {{-- Home plate (5 lados tradicional, simplificado) --}}
-                        <polygon points="155,288 165,288 170,283 165,278 155,278" fill="white"/>
-                        {{-- 1B (der) --}}
-                        <rect x="248" y="194" width="10" height="10" fill="white" transform="rotate(45 253 199)"/>
-                        {{-- 2B (arriba, sobre el diamante) --}}
-                        <rect x="155" y="86" width="10" height="10" fill="white" transform="rotate(45 160 91)"/>
-                        {{-- 3B (izq) --}}
-                        <rect x="62" y="194" width="10" height="10" fill="white" transform="rotate(45 67 199)"/>
+                        {{-- FOUL LINES blancas: dos polilineas desde home hasta
+                             los extremos del campo, separando el foul del fair. --}}
+                        <line x1="160" y1="300" x2="20" y2="95"  stroke="white" stroke-width="2"/>
+                        <line x1="160" y1="300" x2="300" y2="95" stroke="white" stroke-width="2"/>
 
-                        {{-- Monticulo del pitcher (P). Circulo cafe mas claro
-                             con borde y un punto interior. --}}
-                        <circle cx="160" cy="196" r="15" fill="#d97706"/>
-                        <circle cx="160" cy="196" r="13" fill="#b45309"/>
-                        <circle cx="160" cy="196" r="5" fill="#78350f"/>
+                        {{-- BASES cuadradas (estilo referencia: home y 1B/3B
+                             como cuadrados pequenos; 2B como diamante). --}}
+                        <rect x="155" y="294" width="10" height="6" fill="white"/>             {{-- Home --}}
+                        <rect x="244" y="222" width="9"  height="9" fill="white"/>             {{-- 1B --}}
+                        <rect x="67"  y="222" width="9"  height="9" fill="white"/>             {{-- 3B --}}
+                        <rect x="156" y="100" width="8"  height="8" fill="white" transform="rotate(45 160 104)"/> {{-- 2B (diamante) --}}
+
+                        {{-- MONTICULO del pitcher: circulo tan claro + pequena
+                             goma blanca rectangular en el centro (la "rubber"). --}}
+                        <circle cx="160" cy="232" r="11" fill="#d4a574"/>
+                        <rect x="156" y="230" width="8" height="4" fill="#faf6ee"/>
                     </svg>
 
-                    {{-- Posiciones (botones blancos con etiquetas) --}}
-                    {{-- Outfield: LF / CF / RF --}}
+                    {{-- ============================================================
+                         POSICIONES (botones clickeables superpuestos al SVG).
+                         Outfielders (LF / CF / RF) dentro del green, por encima
+                         del arco del infield. Coords con porcentajes para que
+                         escalen con el tamano del modal.
+                         ============================================================ --}}
+
+                    {{-- Outfield dentro del dibujo --}}
                     <button type="button" @click="addFielder('LF')" :class="isFielderSelected('LF') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 4%; left: 12%;">LF</button>
+                            style="top: 10%; left: 18%;">LF</button>
                     <button type="button" @click="addFielder('CF')" :class="isFielderSelected('CF') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 1%; left: 50%; transform: translateX(-50%);">CF</button>
+                            style="top: 8%; left: 50%; transform: translateX(-50%);">CF</button>
                     <button type="button" @click="addFielder('RF')" :class="isFielderSelected('RF') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 4%; right: 12%;">RF</button>
+                            style="top: 10%; right: 18%;">RF</button>
 
-                    {{-- Infield interior: SS (entre 3B y P), 2B (entre P y 1B) --}}
+                    {{-- Infield interior: SS / 2B --}}
                     <button type="button" @click="addFielder('SS')" :class="isFielderSelected('SS') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 36%; left: 30%;">SS</button>
+                            style="top: 38%; left: 31%;">SS</button>
                     <button type="button" @click="addFielder('2B')" :class="isFielderSelected('2B') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 36%; right: 30%;">2B</button>
+                            style="top: 38%; right: 31%;">2B</button>
 
                     {{-- Esquinas del infield: 3B / 1B --}}
                     <button type="button" @click="addFielder('3B')" :class="isFielderSelected('3B') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 58%; left: 6%;">3B</button>
+                            style="top: 60%; left: 13%;">3B</button>
                     <button type="button" @click="addFielder('1B')" :class="isFielderSelected('1B') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 58%; right: 6%;">1B</button>
+                            style="top: 60%; right: 13%;">1B</button>
 
                     {{-- Catcher (home plate) --}}
                     <button type="button" @click="addFielder('C')" :class="isFielderSelected('C') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
                             class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
-                            style="top: 82%; left: 50%; transform: translateX(-50%);">C</button>
+                            style="top: 84%; left: 50%; transform: translateX(-50%);">C</button>
 
-                    {{-- Pitcher (P, amarillo sobre el monticulo) --}}
+                    {{-- Pitcher (P, amarillo sobre el monticulo del SVG) --}}
                     <button type="button" @click="addFielder('P')" :class="isFielderSelected('P') ? 'ring-4 ring-amber-300 bg-yellow-200' : 'bg-yellow-300 hover:bg-yellow-400'"
                             class="absolute w-11 h-11 rounded-full text-sm font-black text-amber-900 shadow-md border-2 border-yellow-500 flex items-center justify-center"
-                            style="top: 55%; left: 50%; transform: translate(-50%, -50%);">P</button>
+                            style="top: 68%; left: 50%; transform: translate(-50%, -50%);">P</button>
                 </div>
                 <div class="mt-4 p-3 bg-wv-bg rounded-card min-h-[60px]">
                     <div class="text-xs text-wv-text-secondary uppercase font-semibold mb-1">{{ __('Secuencia') }}</div>
