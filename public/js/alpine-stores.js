@@ -282,6 +282,13 @@ document.addEventListener('alpine:init', () => {
         subBase: 'first',   // base del corredor saliente (solo si subKind === 'pr')
         subBusy: false,
         subError: '',
+        // MEJ-4 + DISI-31: Modal de Gestion de Lineup (drag&drop, posiciones, pitcher, agregar/quitar).
+        lineupTeam: 'away', // 'away' | 'home'
+        lineupAway: [],      // copia mutable del rosterAway con lineup_order/position/is_pitcher editables
+        lineupHome: [],      // copia mutable del rosterHome
+        lineupLoading: false,
+        lineupDirty: false,
+        lineupDragId: null,
         // Modal resumen tras finalizar inning (DISI-218 migrado al v2): el
         // pitch endpoint devuelve data.summary con {inning, half, runs, hits,
         // walks, strikeouts, errors, lob, pitcher_id, pitcher_name, pitcher_pitches}.
@@ -663,41 +670,193 @@ document.addEventListener('alpine:init', () => {
 
         // ===== EXTRAS migrados del scoreboard base =====
 
-        openLineupModal() {
-            this.lineupError = '';
+        // MEJ-4 + DISI-31: Modal de Gestion de Lineup (drag&drop, posiciones, pitcher, agregar/quitar).
+        async openLineupModal() {
             this.modal = 'lineup';
+            this.lineupTeam = 'away';
+            this.lineupDirty = false;
+            await this.loadLineup();
         },
-        async submitLineupReorder(order) {
-            // order = [athleteId, athleteId, ...] en el orden deseado.
-            if (this.busy || this.lineupBusy) return;
-            this.lineupBusy = true;
-            this.lineupError = '';
+        async loadLineup() {
+            this.lineupLoading = true;
             try {
-                const fd = new FormData();
-                order.forEach((id, idx) => fd.append('order[' + idx + ']', id));
-                fd.append('_token', this.csrf);
+                // Inicializar lineups desde roster (clonado profundo para no mutar el original).
+                // rosterAway/rosterHome vienen del config con lineup_order del pivot game_athlete.
+                if (!this.lineupAway.length) {
+                    this.lineupAway = JSON.parse(JSON.stringify(this.rosterAway || []));
+                }
+                if (!this.lineupHome.length) {
+                    this.lineupHome = JSON.parse(JSON.stringify(this.rosterHome || []));
+                }
+            } catch (e) {
+                this.toast('Error al cargar lineup: ' + e.message, 'error');
+            } finally {
+                this.lineupLoading = false;
+            }
+        },
+        // DISI-31: titulares del equipo activo (lineup_order 1-9).
+        currentLineup() {
+            const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            return all
+                .filter(a => a.lineup_order !== null && a.lineup_order !== undefined)
+                .sort((a, b) => (a.lineup_order || 0) - (b.lineup_order || 0));
+        },
+        // DISI-31: disponibles (sin lineup_order).
+        availableRoster() {
+            const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            return all
+                .filter(a => a.lineup_order === null || a.lineup_order === undefined)
+                .sort((a, b) => (a.number || 0) - (b.number || 0));
+        },
+        currentTeamId() {
+            return this.lineupTeam === 'away' ? this.awayTeamId : this.homeTeamId;
+        },
+        addToLineup(athleteId) {
+            const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            const lineup = this.currentLineup();
+            if (lineup.length >= 9) {
+                this.toast('El lineup ya tiene 9 jugadores. Quita uno antes de agregar otro.', 'warning');
+                return;
+            }
+            const athlete = all.find(a => Number(a.id) === Number(athleteId));
+            if (!athlete) return;
+            athlete.lineup_order = lineup.length + 1;
+            athlete.position = athlete.position || this.suggestPosition(lineup.length);
+            athlete.is_pitcher = false;
+            this.lineupDirty = true;
+            this.reindexLineup();
+        },
+        removeFromLineup(athleteId) {
+            const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            const athlete = all.find(a => Number(a.id) === Number(athleteId));
+            if (!athlete) return;
+            athlete.lineup_order = null;
+            athlete.position = null;
+            athlete.is_pitcher = false;
+            this.lineupDirty = true;
+            this.reindexLineup();
+        },
+        setLineupPosition(athleteId, position) {
+            const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            const athlete = all.find(a => Number(a.id) === Number(athleteId));
+            if (!athlete) return;
+            athlete.position = position;
+            this.lineupDirty = true;
+        },
+        setLineupPitcher(athleteId) {
+            const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
+            // Solo puede haber 1 pitcher. Limpiar el resto.
+            all.forEach(a => { a.is_pitcher = (Number(a.id) === Number(athleteId)); });
+            this.lineupDirty = true;
+        },
+        reindexLineup() {
+            const lineup = this.currentLineup();
+            lineup.forEach((a, i) => { a.lineup_order = i + 1; });
+        },
+        suggestPosition(idx) {
+            return ['P','C','1B','2B','3B','SS','LF','CF','RF'][idx] || '';
+        },
+        onDragStart(event, id) {
+            this.lineupDragId = id;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', String(id));
+            event.currentTarget.classList.add('opacity-40');
+        },
+        onDragEnd(event) {
+            event.currentTarget.classList.remove('opacity-40');
+            this.lineupDragId = null;
+            document.querySelectorAll('[data-lineup-drop]').forEach(el => {
+                el.classList.remove('border-wv-accent', 'bg-wv-surface-hover');
+            });
+        },
+        onDragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.classList.add('border-wv-accent', 'bg-wv-surface-hover');
+        },
+        onDragLeave(event) {
+            event.currentTarget.classList.remove('border-wv-accent', 'bg-wv-surface-hover');
+        },
+        onDrop(event, overId) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('border-wv-accent', 'bg-wv-surface-hover');
+            const fromId = this.lineupDragId ?? Number(event.dataTransfer.getData('text/plain'));
+            if (!fromId || fromId === overId) return;
+            const arr = this.currentLineup();
+            const fromIdx = arr.findIndex(a => Number(a.id) === Number(fromId));
+            const toIdx = arr.findIndex(a => Number(a.id) === Number(overId));
+            if (fromIdx < 0 || toIdx < 0) return;
+            const [moved] = arr.splice(fromIdx, 1);
+            arr.splice(toIdx, 0, moved);
+            arr.forEach((a, i) => { a.lineup_order = i + 1; });
+            this.lineupDirty = true;
+        },
+        moveUp(id) {
+            const arr = this.currentLineup();
+            const idx = arr.findIndex(a => Number(a.id) === Number(id));
+            if (idx <= 0) return;
+            [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+            arr.forEach((a, i) => { a.lineup_order = i + 1; });
+            this.lineupDirty = true;
+        },
+        moveDown(id) {
+            const arr = this.currentLineup();
+            const idx = arr.findIndex(a => Number(a.id) === Number(id));
+            if (idx < 0 || idx >= arr.length - 1) return;
+            [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+            arr.forEach((a, i) => { a.lineup_order = i + 1; });
+            this.lineupDirty = true;
+        },
+        async saveLineup() {
+            const lineup = this.currentLineup();
+            const teamId = this.currentTeamId();
+            if (lineup.length !== 9) {
+                this.toast('El lineup debe tener exactamente 9 jugadores. Actual: ' + lineup.length, 'error');
+                return;
+            }
+            const pitcherCount = lineup.filter(a => !!a.is_pitcher).length;
+            if (pitcherCount !== 1) {
+                this.toast('Debe haber exactamente 1 pitcher. Actual: ' + pitcherCount, 'error');
+                return;
+            }
+            const payload = {
+                team_id: teamId,
+                lineup: lineup.map(a => ({
+                    athlete_id: a.id,
+                    lineup_order: a.lineup_order,
+                    position: a.position || 'LF',
+                    is_pitcher: !!a.is_pitcher,
+                })),
+            };
+            try {
                 const res = await fetch(this.lineupReorderUrl, {
-                    method: 'POST',
-                    body: fd,
+                    method: 'PATCH',
                     headers: {
+                        'X-CSRF-TOKEN': this.csrf,
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json',
-                        'X-HTTP-Method-Override': 'PATCH',
+                        'Content-Type': 'application/json',
                     },
                     credentials: 'same-origin',
+                    body: JSON.stringify(payload),
                 });
                 const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    this.lineupError = data.message || data.error || 'Error al reordenar';
+                if (!res.ok || data.success === false) {
+                    this.toast(data.message || data.error || 'Error al guardar', 'error');
                     return;
                 }
-                this.toast('Lineup actualizado', 'success');
+                this.toast('Lineup guardado', 'success');
+                this.lineupDirty = false;
+                // Re-sincronizar caches rosterAway/Home desde los arrays del modal
+                if (this.lineupTeam === 'away') {
+                    this.rosterAway = JSON.parse(JSON.stringify(this.lineupAway));
+                } else {
+                    this.rosterHome = JSON.parse(JSON.stringify(this.lineupHome));
+                }
                 this.closeModal();
-                await this.refreshSnapshot();
+                await this.pollNow();
             } catch (e) {
-                this.lineupError = 'Error de red: ' + e.message;
-            } finally {
-                this.lineupBusy = false;
+                this.toast('Error de red: ' + e.message, 'error');
             }
         },
 
