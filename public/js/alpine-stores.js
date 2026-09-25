@@ -272,17 +272,20 @@ document.addEventListener('alpine:init', () => {
         substituteUrl: config.substituteUrl,
         lineupReorderUrl: config.lineupReorderUrl,
         statsUrl: config.statsUrl,
+        // Rosters por equipo (athletes con lineup_order del pivot) — alimentar
+        // los dropdowns del modal Sustituir (misma estructura que el scoreboard base).
+        rosterAway: config.rosterAway || [],
+        rosterHome: config.rosterHome || [],
+        // Modal Sustituir (migrado exacto del scoreboard base: dropdowns del roster).
+        subKind: 'pitcher', // 'pitcher' | 'batter' | 'pr'
+        subInId: '',        // athlete id entrante (string vacio = sin seleccionar)
+        subBase: 'first',   // base del corredor saliente (solo si subKind === 'pr')
+        subBusy: false,
+        subError: '',
         // Modal resumen tras finalizar inning (DISI-218 migrado al v2): el
         // pitch endpoint devuelve data.summary con {inning, half, runs, hits,
         // walks, strikeouts, errors, lob, pitcher_id, pitcher_name, pitcher_pitches}.
         inningSummary: null,
-        // Modal Sustituir (alterna atleta saliente / entrante).
-        substituteKind: 'pitcher', // 'pitcher' | 'batter' | 'runner'
-        substituteBase: 'first', // base del corredor (solo si kind=runner)
-        substituteOutId: '',
-        substituteInId: '',
-        substituteBusy: false,
-        substituteError: '',
         // Modal Reordenar lineup (drag/drop local + PATCH al lineupReorderUrl).
         lineupBusy: false,
         lineupError: '',
@@ -655,54 +658,6 @@ document.addEventListener('alpine:init', () => {
         },
 
         // ===== EXTRAS migrados del scoreboard base =====
-        openSubstituteModal(kind = 'pitcher', base = 'first') {
-            this.substituteKind = kind;
-            this.substituteBase = base;
-            this.substituteOutId = '';
-            this.substituteInId = '';
-            this.substituteError = '';
-            this.modal = 'substitute';
-        },
-        async sendSubstitute() {
-            if (this.busy || this.substituteBusy) return;
-            if (!this.substituteOutId || !this.substituteInId) {
-                this.substituteError = 'Selecciona atleta saliente y entrante';
-                return;
-            }
-            this.substituteBusy = true;
-            this.substituteError = '';
-            try {
-                const fd = new FormData();
-                fd.append('kind', this.substituteKind);
-                fd.append('out_athlete_id', this.substituteOutId);
-                fd.append('in_athlete_id', this.substituteInId);
-                if (this.substituteKind === 'runner') {
-                    fd.append('base', this.substituteBase);
-                }
-                fd.append('_token', this.csrf);
-                const res = await fetch(this.substituteUrl, {
-                    method: 'POST',
-                    body: fd,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                    },
-                    credentials: 'same-origin',
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    this.substituteError = data.message || data.error || 'Error al sustituir';
-                    return;
-                }
-                this.toast('Sustitucion registrada', 'success');
-                this.closeModal();
-                await this.refreshSnapshot();
-            } catch (e) {
-                this.substituteError = 'Error de red: ' + e.message;
-            } finally {
-                this.substituteBusy = false;
-            }
-        },
 
         openLineupModal() {
             this.lineupError = '';
@@ -904,6 +859,112 @@ document.addEventListener('alpine:init', () => {
                 this.toast('Error de red: ' + e.message, 'error');
             } finally {
                 this.busy = false;
+            }
+        },
+
+        // ===== Modal Sustituir (migrado exacto del scoreboard base) =====
+        openSubstituteModal(kind = 'pitcher') {
+            this.subKind = kind || 'pitcher';
+            this.subInId = '';
+            // Selecciona la primera base ocupada por defecto (first, second, third).
+            if (this.base1) this.subBase = 'first';
+            else if (this.base2) this.subBase = 'second';
+            else if (this.base3) this.subBase = 'third';
+            else this.subBase = 'first';
+            this.subError = '';
+            this.modal = 'substitute';
+        },
+        // Roster del equipo que esta bateando (half='top' => away, 'bottom' => home).
+        rosterForBattingTeam() {
+            return this.half === 'top' ? (this.rosterAway || []) : (this.rosterHome || []);
+        },
+        // Busca un atleta por id en la union de ambos rosters.
+        _findAthlete(id) {
+            if (id === null || id === undefined) return null;
+            const num = Number(id);
+            return [...(this.rosterAway || []), ...(this.rosterHome || [])].find(a => Number(a.id) === num) || null;
+        },
+        currentPitcherLabel() {
+            const p = this.pitcher;
+            if (!p) return '—';
+            return `#${p.number ?? '-'} ${p.first_name ?? ''} ${p.last_name ?? ''}`.trim();
+        },
+        currentBatterLabel() {
+            const b = this.batter;
+            if (!b) return '—';
+            return `#${b.number ?? '-'} ${b.first_name ?? ''} ${b.last_name ?? ''}`.trim();
+        },
+        // base = 'first' | 'second' | 'third'  (devuelve el objeto atleta en la base).
+        runnerLabel(base) {
+            const obj = ({first: this.base1, second: this.base2, third: this.base3})[base];
+            if (!obj) return '—';
+            if (typeof obj === 'object') {
+                // Si es un corredor placeholder ('corredor'), no tiene nombre real.
+                if (obj.id === 'corredor' || obj.id === 'runner') return 'Corredor';
+                return `${obj.first_name ?? ''} ${obj.last_name ?? obj.name ?? ''}`.trim() || obj.name || `ID ${obj.id}`;
+            }
+            return `ID ${obj}`;
+        },
+        canConfirmSubstitute() {
+            if (!this.subInId) return false;
+            if (this.subKind === 'pr') {
+                if (!this.subBase) return false;
+                const obj = ({first: this.base1, second: this.base2, third: this.base3})[this.subBase];
+                if (!obj) return false;
+                // No permitir pinch runner sobre un placeholder sin roster.
+                if (typeof obj !== 'object' || obj.id === 'corredor' || obj.id === 'runner') return false;
+            }
+            return true;
+        },
+        async confirmSubstitute() {
+            if (!this.canConfirmSubstitute()) {
+                this.subError = 'Selecciona el atleta entrante';
+                return;
+            }
+            // Determinar out_athlete_id segun el subKind.
+            let outId = null;
+            if (this.subKind === 'pitcher') {
+                outId = this.pitcher ? Number(this.pitcher.id) : null;
+            } else if (this.subKind === 'batter') {
+                outId = this.batter ? Number(this.batter.id) : null;
+            } else if (this.subKind === 'pr') {
+                const obj = ({first: this.base1, second: this.base2, third: this.base3})[this.subBase];
+                outId = obj && typeof obj === 'object' ? Number(obj.id) : (obj ? Number(obj) : null);
+            }
+            if (!outId) {
+                this.subError = 'No se puede identificar el atleta saliente';
+                return;
+            }
+            this.subBusy = true;
+            this.subError = '';
+            try {
+                const body = new FormData();
+                body.append('kind', this.subKind);
+                body.append('out_athlete_id', String(outId));
+                body.append('in_athlete_id', String(this.subInId));
+                if (this.subKind === 'pr') body.append('base', this.subBase);
+                body.append('_token', this.csrf);
+                const resp = await fetch(this.substituteUrl, {
+                    method: 'POST',
+                    body,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok || data.success === false) {
+                    this.subError = data.message || data.error || 'Error al sustituir';
+                    return;
+                }
+                this.toast('Sustitucion registrada', 'success');
+                this.closeModal();
+                await this.pollNow();
+            } catch (e) {
+                this.subError = 'Error de red: ' + e.message;
+            } finally {
+                this.subBusy = false;
             }
         },
     }));

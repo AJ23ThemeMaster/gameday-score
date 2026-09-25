@@ -358,6 +358,25 @@ class ScoreboardController extends Controller
         $score = Play::scoreboard($game->id);
         $runners = $this->runners($state);
 
+        // Rosters por equipo (con lineup_order del pivot game_athlete para este juego).
+        // Usado por el modal Sustituir del v2 (dropdowns del mismo patron que el scoreboard base).
+        $rosterFor = function (int $teamId) use ($game) {
+            return $game->athletes()
+                ->with('team')
+                ->wherePivot('team_id', $teamId)
+                ->orderBy('number')
+                ->get()
+                ->map(function ($a) {
+                    $arr = $this->athleteToArray($a);
+                    $arr['lineup_order'] = $a->pivot->lineup_order;
+                    return $arr;
+                })
+                ->values()
+                ->all();
+        };
+        $rosterAway = $rosterFor((int) $game->away_team_id);
+        $rosterHome = $rosterFor((int) $game->home_team_id);
+
         // Datos en formato JSON-friendly para inicializar el state Alpine
         // reactivo (scoreboardV2App.applyState() los re-aplica en cada
         // respuesta AJAX sin recargar la pagina).
@@ -388,6 +407,8 @@ class ScoreboardController extends Controller
             'awayLogoUrl' => $game->awayTeam->logoUrl,
             'homeColor' => $game->homeTeam->home_color,
             'awayColor' => $game->awayTeam->away_color,
+            'rosterAway' => $rosterAway,
+            'rosterHome' => $rosterHome,
             'runnerUrl' => route('games.plays.runner', $game),
             'substituteUrl' => route('games.plays.substitute', $game),
             'lineupReorderUrl' => route('games.lineup.reorder', $game),
