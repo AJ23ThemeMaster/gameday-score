@@ -47,7 +47,16 @@ class GamePolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('admin');
+        // Admin: crea donde quiera.
+        // Delegado con scope (team_id + category_id no nulos): puede crear
+        // juegos para su (equipo, categoria). El controller filtra los
+        // dropdowns y valida que home_team_id/away_team_id/category_id
+        // caigan dentro del scope; si no, devuelve 403 explicito.
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        return $user->hasRole('delegado') && $this->userHasDelegateScope($user);
     }
 
     public function update(User $user, Game $game): bool
@@ -59,6 +68,10 @@ class GamePolicy
 
     public function delete(User $user, Game $game): bool
     {
+        // DISI-piloto: por seguridad, eliminar juegos queda restringido a
+        // admin. Un delegado con scope NO debe borrar juegos (riesgo de
+        // borrado accidental). Si en el futuro se quiere habilitar,
+        // considerar soft-delete + workflow con audit trail.
         return $user->hasRole('admin');
     }
 
@@ -119,13 +132,24 @@ class GamePolicy
      */
     protected function userInDelegateScope(User $user, Game $game): bool
     {
-        if ($user->team_id === null || $user->category_id === null) {
+        if (! $this->userHasDelegateScope($user)) {
             return false;
         }
         $inTeamScope = (int) $game->home_team_id === (int) $user->team_id
             || (int) $game->away_team_id === (int) $user->team_id;
 
         return $inTeamScope && (int) $game->category_id === (int) $user->category_id;
+    }
+
+    /**
+     * Helper: el usuario tiene el rol 'delegado' con team_id + category_id
+     * no nulos (scope utilizable, sin importar para que juego).
+     */
+    protected function userHasDelegateScope(User $user): bool
+    {
+        return $user->hasRole('delegado')
+            && $user->team_id !== null
+            && $user->category_id !== null;
     }
 
     /**

@@ -5,7 +5,9 @@
                 <h2 class="font-semibold text-h-wv text-wv-text leading-tight">{{ __('Mis juegos') }}</h2>
                 <p class="text-sm text-wv-text-secondary mt-1">{{ __('Lista completa de juegos con su estado actual.') }}</p>
             </div>
-            <a href="{{ route('games.create') }}" class="inline-flex items-center px-4 py-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-sm font-semibold rounded-card">+ {{ __('Nuevo juego') }}</a>
+            @can('create', App\Models\Game::class)
+                <a href="{{ route('games.create') }}" class="inline-flex items-center px-4 py-2 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-sm font-semibold rounded-card">+ {{ __('Nuevo juego') }}</a>
+            @endcan
         </div>
     </x-slot>
 
@@ -122,7 +124,9 @@
                 @if ($games->isEmpty())
                     <div class="p-10 text-center">
                         <p class="mb-4 text-wv-text-secondary">{{ __('Aún no hay juegos para mostrar con los filtros activos.') }}</p>
-                        <a href="{{ route('games.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Crear el primer juego') }}</a>
+                        @can('create', App\Models\Game::class)
+                            <a href="{{ route('games.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Crear el primer juego') }}</a>
+                        @endcan
                     </div>
                 @else
                     <div class="overflow-x-auto">

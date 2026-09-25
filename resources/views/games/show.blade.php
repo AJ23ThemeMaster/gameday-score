@@ -12,7 +12,11 @@
                 @if (in_array($game->status, ['scheduled', 'in_progress', 'paused']))
                     <a href="{{ route('games.scoreboard', $game) }}" class="inline-flex items-center px-3 py-1.5 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-xs font-semibold rounded-card transition">{{ __('Scoreboard en vivo') }}</a>
                 @endif
-                <a href="{{ route('games.edit', $game) }}" class="inline-flex items-center px-3 py-1.5 border border-wv-border hover:bg-wv-surface-hover text-wv-text text-xs font-semibold rounded-card transition">{{ __('Editar') }}</a>
+                {{-- DISI-piloto: el delegado con scope puede editar; un gestor/owner
+                     sin scope tambien. La policy unifica esto. --}}
+                @can('update', $game)
+                    <a href="{{ route('games.edit', $game) }}" class="inline-flex items-center px-3 py-1.5 border border-wv-border hover:bg-wv-surface-hover text-wv-text text-xs font-semibold rounded-card transition">{{ __('Editar') }}</a>
+                @endcan
             </div>
         </div>
     </x-slot>
@@ -138,10 +142,14 @@
                 </div>
             </div>
 
-            <form action="{{ route('games.destroy', $game) }}" method="POST" class="mt-4 text-right" data-confirm="'¿Eliminar este juego?'" data-confirm-danger="true" data-loader>
-                @csrf @method('DELETE')
-                <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar juego') }}</button>
-            </form>
+            {{-- DISI-piloto: eliminar queda restringido a admin. El delegado con
+                 scope NO debe borrar juegos (riesgo de borrado accidental). --}}
+            @can('delete', $game)
+                <form action="{{ route('games.destroy', $game) }}" method="POST" class="mt-4 text-right" data-confirm="'¿Eliminar este juego?'" data-confirm-danger="true" data-loader>
+                    @csrf @method('DELETE')
+                    <button type="submit" class="text-sm text-wv-alert hover:text-wv-alert-hover">{{ __('Eliminar juego') }}</button>
+                </form>
+            @endcan
         </div>
     </div>
 </x-app-layout>

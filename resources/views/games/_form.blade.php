@@ -1,19 +1,36 @@
 @php
     $selectedScorekeepers = old('scorekeeper_ids', $game->exists ? $game->scorekeepers->pluck('id')->toArray() : []);
     $selectedReferees = old('referee_ids', $game->exists ? $game->referees->pluck('id')->toArray() : []);
+    // DISI-piloto: defaults que pasa GameController::create cuando el usuario
+    // es delegado con scope. Asi la categoria y el equipo local quedan
+    // pre-seleccionados en el formulario. Tambien ajustamos que para
+    // delegado estos 2 selects queden en disabled (no puede cambiarlos:
+    // cambiar el scope lo fuerza el controller con 403).
+    $defaults = $defaults ?? [];
+    $delegateLocked = ! empty($defaults);
+    $defaultCategoryId = old('category_id', $game->category_id ?? ($defaults['category_id'] ?? null));
+    $defaultHomeTeamId = old('home_team_id', $game->home_team_id ?? ($defaults['home_team_id'] ?? null));
 @endphp
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
     <div>
         <x-input-label for="category_id" :value="__('Categoría')" />
-        <select id="category_id" name="category_id" required class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
-            <option value="">— {{ __('Selecciona') }} —</option>
+        <select id="category_id" name="category_id" required {{ $delegateLocked ? 'disabled' : '' }}
+                class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm disabled:opacity-70 disabled:cursor-not-allowed">
+            @if (! $delegateLocked)
+                <option value="">— {{ __('Selecciona') }} —</option>
+            @endif
             @foreach ($categories as $c)
-                <option value="{{ $c->id }}" {{ (string) old('category_id', $game->category_id ?? '') === (string) $c->id ? 'selected' : '' }}>
+                <option value="{{ $c->id }}" {{ (string) $defaultCategoryId === (string) $c->id ? 'selected' : '' }}>
                     {{ $c->name }} ({{ $c->innings_count }} innings, mercy -{{ $c->mercy_rule_difference }})
                 </option>
             @endforeach
         </select>
+        @if ($delegateLocked)
+            {{-- Enviamos un hidden con el mismo valor para que llegue al POST
+                 aunque el select este disabled (los disabled no se envian). --}}
+            <input type="hidden" name="category_id" value="{{ $defaultCategoryId }}" />
+        @endif
         <x-input-error :messages="$errors->get('category_id')" class="mt-2" />
     </div>
 
@@ -40,14 +57,20 @@
 
     <div>
         <x-input-label for="home_team_id" :value="__('Equipo local')" />
-        <select id="home_team_id" name="home_team_id" required class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
-            <option value="">— {{ __('Selecciona') }} —</option>
+        <select id="home_team_id" name="home_team_id" required {{ $delegateLocked ? 'disabled' : '' }}
+                class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm disabled:opacity-70 disabled:cursor-not-allowed">
+            @if (! $delegateLocked)
+                <option value="">— {{ __('Selecciona') }} —</option>
+            @endif
             @foreach ($teams as $t)
-                <option value="{{ $t->id }}" {{ (string) old('home_team_id', $game->home_team_id ?? '') === (string) $t->id ? 'selected' : '' }}>
+                <option value="{{ $t->id }}" {{ (string) $defaultHomeTeamId === (string) $t->id ? 'selected' : '' }}>
                     {{ $t->name }}{{ $t->short_name ? ' (' . $t->short_name . ')' : '' }}
                 </option>
             @endforeach
         </select>
+        @if ($delegateLocked)
+            <input type="hidden" name="home_team_id" value="{{ $defaultHomeTeamId }}" />
+        @endif
         <x-input-error :messages="$errors->get('home_team_id')" class="mt-2" />
     </div>
 
