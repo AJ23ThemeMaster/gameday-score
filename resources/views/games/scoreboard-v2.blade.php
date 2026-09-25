@@ -899,8 +899,8 @@
                     </div>
                 </div>
                 <div class="mt-4 flex gap-2">
-                    <button type="button" @click="closeModal()" class="flex-1 py-3 bg-wv-surface-hover hover:bg-wv-surface text-wv-text font-bold rounded-card">{{ __('Cancelar') }}</button>
-                    <button type="button" @click="confirmOut()" :disabled="defensiveSequence.length === 0" class="flex-1 py-3 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-bold rounded-card">{{ __('Registrar out') }}</button>
+                    <button type="button" @click="closeModal()" class="flex-1 py-3 bg-[#f43f5e] hover:bg-[#e11d48] text-white font-bold rounded-card">{{ __('Cancelar') }}</button>
+                    <button type="button" @click="confirmOut()" :disabled="defensiveSequence.length === 0" class="flex-1 py-3 bg-[#10b981] hover:bg-[#059669] disabled:opacity-50 text-white font-bold rounded-card">{{ __('Registrar out') }}</button>
                 </div>
             </div>
         </div>
@@ -920,8 +920,8 @@
                     <div class="text-wv-text" x-text="hitConfig.preview"></div>
                 </div>
                 <div class="flex gap-2">
-                    <button type="button" @click="closeModal()" class="flex-1 py-3 bg-wv-surface-hover hover:bg-wv-surface text-wv-text font-bold rounded-card">{{ __('Cancelar') }}</button>
-                    <button type="button" @click="confirmHit()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-card">{{ __('Registrar hit') }}</button>
+                    <button type="button" @click="closeModal()" class="flex-1 py-3 bg-[#f43f5e] hover:bg-[#e11d48] text-white font-bold rounded-card">{{ __('Cancelar') }}</button>
+                    <button type="button" @click="confirmHit()" class="flex-1 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold rounded-card">{{ __('Registrar hit') }}</button>
                 </div>
             </div>
         </div>
@@ -958,8 +958,8 @@
             <div class="p-5 space-y-3">
                 <p class="text-sm text-wv-text-secondary">{{ __('Vas a cerrar la entrada actual antes de los 3 outs. Esta acción no se puede deshacer.') }}</p>
                 <div class="flex gap-2">
-                    <button type="button" @click="closeModal()" class="flex-1 py-3 bg-wv-surface-hover hover:bg-wv-surface text-wv-text font-bold rounded-card">{{ __('Cancelar') }}</button>
-                    <button type="button" @click="confirmEndInning()" class="flex-1 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-card">{{ __('Cerrar inning') }}</button>
+                    <button type="button" @click="closeModal()" class="flex-1 py-3 bg-[#f43f5e] hover:bg-[#e11d48] text-white font-bold rounded-card">{{ __('Cancelar') }}</button>
+                    <button type="button" @click="confirmEndInning()" class="flex-1 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold rounded-card">{{ __('Cerrar inning') }}</button>
                 </div>
             </div>
         </div>
@@ -975,8 +975,8 @@
             <div class="p-5 space-y-3">
                 <p class="text-sm text-wv-text-secondary">{{ __('Vas a finalizar el juego por completo. Esta acción no se puede deshacer.') }}</p>
                 <div class="flex gap-2">
-                    <button type="button" @click="closeModal()" class="flex-1 py-3 bg-wv-surface-hover hover:bg-wv-surface text-wv-text font-bold rounded-card">{{ __('Cancelar') }}</button>
-                    <button type="button" @click="confirmEndGame()" class="flex-1 py-3 bg-red-700 hover:bg-red-800 text-white font-bold rounded-card">{{ __('Finalizar') }}</button>
+                    <button type="button" @click="closeModal()" class="flex-1 py-3 bg-[#f43f5e] hover:bg-[#e11d48] text-white font-bold rounded-card">{{ __('Cancelar') }}</button>
+                    <button type="button" @click="confirmEndGame()" class="flex-1 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold rounded-card">{{ __('Finalizar') }}</button>
                 </div>
             </div>
         </div>
@@ -1159,7 +1159,7 @@
             </div>
 
             <div class="p-4 border-t border-wv-border">
-                <button type="button" @click="closeRunnerModal()" class="w-full py-3 bg-wv-surface-hover hover:bg-wv-surface text-wv-text font-bold rounded-card">
+                <button type="button" @click="closeRunnerModal()" class="w-full py-3 bg-[#f43f5e] hover:bg-[#e11d48] text-white font-bold rounded-card">
                     {{ __('Cancelar') }}
                 </button>
             </div>
@@ -1252,11 +1252,11 @@
                 </div>
             </div>
             <div class="p-4 border-t border-wv-border flex gap-2 flex-shrink-0">
-                <button type="button" @click="closeModal()" class="flex-1 py-3 bg-wv-surface-hover hover:bg-wv-surface-deep text-wv-text font-bold rounded-card">
+                <button type="button" @click="closeModal()" class="flex-1 py-3 bg-[#f43f5e] hover:bg-[#e11d48] text-white font-bold rounded-card">
                     {{ __('Cancelar') }}
                 </button>
                 <button type="button" @click="confirmSubstitute()" :disabled="!canConfirmSubstitute()"
-                        class="flex-1 py-3 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold rounded-card">
+                        class="flex-1 py-3 bg-[#10b981] hover:bg-[#059669] disabled:opacity-50 text-white font-bold rounded-card">
                     {{ __('Sustituir') }}
                 </button>
             </div>
@@ -1374,12 +1374,12 @@
 
             <div class="border-t border-wv-border p-3 flex gap-2 flex-shrink-0">
                 <button type="button" @click="closeModal()"
-                        class="px-4 py-2 bg-wv-surface-hover hover:bg-wv-border text-wv-text text-sm font-bold rounded-lg">
+                        class="px-4 py-2 bg-[#f43f5e] hover:bg-[#e11d48] text-white text-sm font-bold rounded-lg">
                     {{ __('Cancelar') }}
                 </button>
                 <button type="button" @click="saveLineup()"
                         :disabled="currentLineup().length !== 9 || lineupLoading"
-                        class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg">
+                        class="flex-1 py-2 bg-[#10b981] hover:bg-[#059669] disabled:opacity-50 text-white text-sm font-bold rounded-lg">
                     <span x-show="currentLineup().length === 9 && !lineupLoading">{{ __('Guardar lineup') }}</span>
                     <span x-show="currentLineup().length !== 9" x-text="'Faltan ' + (9 - currentLineup().length) + ' titulares'"></span>
                 </button>
