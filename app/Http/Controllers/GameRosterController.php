@@ -27,13 +27,21 @@ class GameRosterController extends Controller
 {
     use RespondsWithRosterPartial;
 
+    /**
+     * DISI-piloto: chequeo unificado contra GamePolicy.
+     * Antes (DISI-38) cada metodo repetia "admin OR owner" con abort_unless,
+     * excluyendo a anotadores y delegados con scope. Ahora la policy
+     * cubre: admin + owner + anotador (con scope o asignado) + delegado
+     * con scope automatico.
+     */
+    private function authorizeRosterManage(Game $game): void
+    {
+        $this->authorize('update', $game);
+    }
+
     public function index(Game $game): View
     {
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        $this->authorizeRosterManage($game);
 
         $game->load([
             'category', 'stadium', 'homeTeam', 'awayTeam',
@@ -62,11 +70,7 @@ class GameRosterController extends Controller
 
     public function store(AddAthleteToRosterRequest $request, Game $game): RedirectResponse|JsonResponse
     {
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        $this->authorizeRosterManage($game);
 
         $data = $request->validated();
         $data['is_starter'] = $request->boolean('is_starter', true);
@@ -104,11 +108,7 @@ class GameRosterController extends Controller
 
     public function update(UpdateRosterEntryRequest $request, Game $game, Athlete $athlete): RedirectResponse|JsonResponse
     {
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        $this->authorizeRosterManage($game);
 
         $pivot = $game->athletes()->where('athlete_id', $athlete->id)->first()?->pivot;
         if (! $pivot) {
@@ -145,11 +145,7 @@ class GameRosterController extends Controller
 
     public function destroy(\Illuminate\Http\Request $request, Game $game, Athlete $athlete): RedirectResponse|JsonResponse
     {
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        $this->authorizeRosterManage($game);
 
         $name = $athlete->full_name;
         $game->athletes()->detach($athlete->id);
@@ -163,11 +159,7 @@ class GameRosterController extends Controller
 
     public function substitute(SubstituteAthleteRequest $request, Game $game): RedirectResponse|JsonResponse
     {
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para gestionar el roster de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        $this->authorizeRosterManage($game);
 
         $data = $request->validated();
 

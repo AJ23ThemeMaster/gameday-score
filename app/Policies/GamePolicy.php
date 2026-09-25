@@ -12,22 +12,25 @@ use App\Models\User;
  *
  * Reglas:
  * - admin: gestiona todo (CRUD + anotar en cualquier juego).
- * - anotador: dos rutas de acceso (hibrido para piloto):
- *      (a) anotador con scope automatico: ademas de 'anotador' tiene rol
- *          'delegado' + team_id + category_id no nulos. En ese caso su scope
- *          es (su equipo, su categoria) y puede VER + ANOTAR cualquier juego
- *          donde (home_team_id == team_id OR away_team_id == team_id) Y
- *          category_id == category_id. No requiere asignacion game_scorekeeper.
+ * - delegado con scope automatico: rol 'delegado' con team_id + category_id
+ *   no nulos. Su scope es (su equipo, su categoria) y puede VER + ANOTAR +
+ *   GESTIONAR ROSTER de cualquier juego donde
+ *   (home_team_id == team_id OR away_team_id == team_id) Y
+ *   category_id == category_id. No requiere 'anotador' como segundo rol ni
+ *   asignacion manual game_scorekeeper.
+ * - anotador (con o sin scope automatico):
+ *      (a) anotador + delegado (con scope): cae en la rama delegado de arriba.
  *      (b) anotador puro: solo puede VER + ANOTAR los juegos donde esta
  *          asignado (game_scorekeeper.scorekeeper_id apunta a un scorekeeper
  *          cuyo user_id == $user->id).
  * - resto: solo lectura si son owner del juego.
  *
- * Piloto: el camino (a) existe para que un delegado del equipo pueda tomar
- * el rol anotador sin que el admin tenga que crear un Scorekeeper y
- * asignarlo a cada juego. El 'isDelegado()' exige AMBOS FK (team + cat)
- * no nulos, asi que un delegado "flotante" sin scope nunca habilita el
- * camino (a) por accidente.
+ * Piloto: la union (a)+(c) permite que un delegado del equipo gestione los
+ * juegos de su scope (roster, scoreboard, anotar jugadas, abrir live, etc.)
+ * ya sea con solo el rol 'delegado' (mas comodo) o sumandole 'anotador'
+ * (caso anotador+delegado del piloto previo). El 'isDelegado()' exige
+ * AMBOS FK (team + cat) no nulos, asi que un delegado "flotante" sin scope
+ * nunca habilita las ramas automaticas por accidente.
  */
 class GamePolicy
 {
@@ -62,10 +65,10 @@ class GamePolicy
     /**
      * Anotar jugadas en vivo (pitch, end-inning, end-game, substitute, runner action).
      *
-     * Admin: puede anotar cualquier juego.
-     * Anotador con scope automatico (delegado): juegos de (su equipo, su categoria).
+     * Admin: cualquier juego.
+     * Delegado con scope automatico: juegos de (su equipo, su categoria).
+     * Anotador con scope automatico: igual que delegado.
      * Anotador puro: solo donde esta asignado via game_scorekeeper.
-     * Otros: no.
      */
     public function score(User $user, Game $game): bool
     {
@@ -75,13 +78,12 @@ class GamePolicy
     /**
      * Chequeo unificado de acceso a juego.
      *
-     * @param bool $requireOwner Si true, un usuario con rol 'gestor' que no
-     *                           tenga scope de juego podra ver SOLO sus
-     *                           propios juegos (compat con el comportamiento
-     *                           anterior que permitia 'owner del juego').
-     *                           Para 'score' pasamos false porque los
-     *                           anotadores de scope ajeno al juego owner
-     *                           deben poder anotar igual.
+     * @param bool $requireOwner Si true, un usuario sin scope ni rol anotador
+     *                           podra acceder al juego SOLO si es owner
+     *                           (compat con el comportamiento anterior que
+     *                           permitia 'owner del juego'). Para 'score'
+     *                           pasamos false porque los anotadores de scope
+     *                           ajeno al juego owner deben poder anotar igual.
      */
     protected function userCanAccessGame(User $user, Game $game, bool $requireOwner): bool
     {
@@ -89,11 +91,14 @@ class GamePolicy
             return true;
         }
 
+        // (a) y (c): el delegadado con scope automatico es due\u00f1o logico de los
+        // juegos de su (equipo, categoria). Esto cubre anotador+delegado y
+        // delegado-puro.
+        if ($user->hasRole('delegado') && $this->userInDelegateScope($user, $game)) {
+            return true;
+        }
+
         if ($user->hasRole('anotador')) {
-            // (a) anotador con scope automatico por delegacion
-            if ($user->hasRole('delegado') && $this->userInDelegateScope($user, $game)) {
-                return true;
-            }
             // (b) anotador puro: asignado via game_scorekeeper
             if ($this->userIsAssignedToGame($user, $game)) {
                 return true;

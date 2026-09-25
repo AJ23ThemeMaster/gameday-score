@@ -58,6 +58,20 @@ class GameController extends Controller
                     ->pluck('game_id');
                 $query->whereIn('id', $gameIds);
             }
+        } elseif (Auth::user()->hasRole('delegado')) {
+            // Delegado solo (sin anotador): filtro por scope si tiene
+            // team_id + category_id; si le falta alguno de los dos FK,
+            // devolvemos lista vacia. Asi un delegado "flotante" sin
+            // scope nunca ve juegos por accidente.
+            $u = Auth::user();
+            if ($u->team_id !== null && $u->category_id !== null) {
+                $query->where(function ($q) use ($u) {
+                    $q->where('home_team_id', (int) $u->team_id)
+                        ->orWhere('away_team_id', (int) $u->team_id);
+                })->where('category_id', (int) $u->category_id);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
         } elseif (! Auth::user()->hasRole('admin')) {
             // Otros: solo sus propios juegos
             $query->where('user_id', Auth::id());

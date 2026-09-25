@@ -66,8 +66,14 @@ class RoleSeeder extends Seeder
         // DISI-delegado: permiso para que el sidebar pueda mostrar el modulo
         // Atletas. El scope fino (team_id + category_id) lo hace User::isDelegadoOf()
         // en cada controlador.
+        //
+        // DISI-piloto: el delegado con scope (team_id + category_id no nulos)
+        // tambien necesita acceder a /games para ver/anotar los juegos de su
+        // categoria. GameController::index aplica el filtro fino por scope;
+        // aqui solo sembramos el permiso de capacidad.
         $delegadoPermissions = [
             'manage assigned category athletes',
+            'view games',
         ];
         foreach ($delegadoPermissions as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
