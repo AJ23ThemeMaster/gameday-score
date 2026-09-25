@@ -272,6 +272,9 @@ document.addEventListener('alpine:init', () => {
         substituteUrl: config.substituteUrl,
         lineupReorderUrl: config.lineupReorderUrl,
         statsUrl: config.statsUrl,
+        // Live poll: refreshSnapshot() lo usa para refrescar bases + score + roster
+        // despues de acciones que no devuelven state completo (runner action, etc).
+        pollUrl: config.pollUrl,
         // Rosters por equipo (athletes con lineup_order del pivot) — alimentar
         // los dropdowns del modal Sustituir (misma estructura que el scoreboard base).
         rosterAway: config.rosterAway || [],
@@ -341,46 +344,40 @@ document.addEventListener('alpine:init', () => {
                 this.balls = s.balls ?? this.balls;
                 this.strikes = s.strikes ?? this.strikes;
                 this.outs = s.outs ?? this.outs;
-                // Si el payload trae `bases` con atletas completos (caso normal
-                // desde PlayController::pitch), los usamos directamente. Esto
-                // garantiza que cuando un bateador se embasa o un corredor
-                // avanza, el diamante del v2 muestre el nombre + dorsal nuevo
-                // sin recargar la pagina.
-                if (payload.bases && typeof payload.bases === 'object') {
-                    // Normalizar: si el server mando el placeholder Play::ANON_RUNNER
-                    // ('corredor') en vez de un athlete object, convertirlo a un
-                    // objeto minimo para que la UI muestre "Corredor" en la base.
-                    const normalize = (v) => {
-                        if (v === null || v === undefined) return null;
-                        if (typeof v === 'object') return v;
-                        if (v === 'corredor' || v === 'runner') {
-                            return { id: 'corredor', name: 'Corredor', number: '?', initials: '?' };
-                        }
-                        return null;
-                    };
+                // Prioridad 1: payload.bases como objeto NO-array (caso normal desde
+                // PlayController::pitch). Garantiza que cuando un bateador se embasa
+                // o un corredor avanza, el diamante del v2 muestre el nombre + dorsal
+                // nuevo sin recargar la pagina.
+                // Prioridad 2: payload.runners como objeto NO-array (caso base scoreboard).
+                // Prioridad 3: s.bases (state.bases del engine) que SIEMPRE tiene la
+                // forma {first, second, third} con IDs o nulls. ESTE es el caso del
+                // endpoint /poll que devuelve 'bases' y 'runners' como arrays vacios.
+                // Normalizar: si el server mando el placeholder Play::ANON_RUNNER
+                // ('corredor') en vez de un athlete object, convertirlo a un objeto
+                // minimo para que la UI muestre "Corredor" en la base.
+                const normalize = (v) => {
+                    if (v === null || v === undefined) return null;
+                    if (typeof v === 'object' && !Array.isArray(v)) return v;
+                    if (v === 'corredor' || v === 'runner') {
+                        return { id: 'corredor', name: 'Corredor', number: '?', initials: '?' };
+                    }
+                    return null;
+                };
+                if (payload.bases && typeof payload.bases === 'object' && !Array.isArray(payload.bases)) {
                     this.base1 = normalize(payload.bases.first);
                     this.base2 = normalize(payload.bases.second);
                     this.base3 = normalize(payload.bases.third);
-                } else if (payload.runners && typeof payload.runners === 'object') {
-                    // Fallback: el endpoint /poll del base usa 'runners' en vez de
-                    // 'bases'. Mapeamos para que el v2 actualice sin re-fetch.
-                    this.base1 = payload.runners.first ?? null;
-                    this.base2 = payload.runners.second ?? null;
-                    this.base3 = payload.runners.third ?? null;
+                } else if (payload.runners && typeof payload.runners === 'object' && !Array.isArray(payload.runners)) {
+                    this.base1 = normalize(payload.runners.first);
+                    this.base2 = normalize(payload.runners.second);
+                    this.base3 = normalize(payload.runners.third);
                 } else {
-                    // Fallback: el payload solo trae IDs (state.bases). Conservamos
-                    // el objeto cacheado si coincide con el ID, si no, queda el ID
-                    // solo (la UI mostrara un valor degradado hasta el proximo poll).
+                    // Fallback: payload solo trae IDs (state.bases) o bases/runners son
+                    // arrays. Usamos s.bases que SIEMPRE tiene {first, second, third}.
                     const bases = s.bases || {};
-                    const resolveBase = (current, newVal) => {
-                        if (newVal === null || newVal === undefined) return null;
-                        if (typeof newVal === 'object') return newVal;
-                        if (current && current.id === newVal) return current;
-                        return newVal;
-                    };
-                    this.base1 = resolveBase(this.base1, bases.first);
-                    this.base2 = resolveBase(this.base2, bases.second);
-                    this.base3 = resolveBase(this.base3, bases.third);
+                    this.base1 = normalize(bases.first);
+                    this.base2 = normalize(bases.second);
+                    this.base3 = normalize(bases.third);
                 }
             }
             // Players (objetos simples con id/name/number/position/initials)
