@@ -665,21 +665,98 @@
             </div>
             <div class="p-5">
                 <p class="text-sm text-wv-text-secondary mb-3">{{ __('Toca los fildeadores en el orden que participaron.') }}</p>
-                <div class="relative bg-emerald-700 rounded-card mx-auto" style="width: 320px; height: 320px;">
-                    <div class="absolute rounded-full bg-amber-200/30" style="top: 90px; left: 40px; right: 40px; bottom: 90px;"></div>
-                    <div class="absolute w-9 h-9 bg-white border-2 border-gray-300 rounded rotate-45" style="top: 70px; left: 50%; transform: translateX(-50%) rotate(45deg);"></div>
-                    <div class="absolute w-9 h-9 bg-white border-2 border-gray-300 rounded rotate-45" style="top: 50%; right: 8px; transform: translateY(-50%) rotate(45deg);"></div>
-                    <div class="absolute w-9 h-9 bg-white border-2 border-gray-300 rounded rotate-45" style="bottom: 8px; left: 50%; transform: translateX(-50%) rotate(45deg);"></div>
-                    <div class="absolute w-9 h-9 bg-white border-2 border-gray-300 rounded rotate-45" style="top: 50%; left: 8px; transform: translateY(-50%) rotate(45deg);"></div>
-                    <div class="absolute flex items-center justify-center text-xs font-black text-amber-900 bg-amber-200/90 rounded-full" style="top: 138px; left: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px;">P</div>
-                    <button type="button" @click="addFielder('LF')" style="top: 14px; left: 16px;" :class="isFielderSelected('LF') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'" class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">LF</button>
-                    <button type="button" @click="addFielder('CF')" style="top: 10px; left: 50%; transform: translateX(-50%);" :class="isFielderSelected('CF') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'" class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">CF</button>
-                    <button type="button" @click="addFielder('RF')" style="top: 14px; right: 16px;" :class="isFielderSelected('RF') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'" class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">RF</button>
-                    <button type="button" @click="addFielder('SS')" style="top: 102px; left: 50px;" :class="isFielderSelected('SS') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'" class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">SS</button>
-                    <button type="button" @click="addFielder('2B')" style="top: 102px; right: 50px;" :class="isFielderSelected('2B') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'" class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">2B</button>
-                    <button type="button" @click="addFielder('3B')" style="top: 178px; left: 28px;" :class="isFielderSelected('3B') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'" class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">3B</button>
-                    <button type="button" @click="addFielder('1B')" style="top: 178px; right: 28px;" :class="isFielderSelected('1B') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'" class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">1B</button>
-                    <button type="button" @click="addFielder('C')" style="bottom: 56px; left: 50%; transform: translateX(-50%);" :class="isFielderSelected('C') ? 'bg-amber-300 border-2 border-amber-500' : 'bg-slate-100 hover:bg-amber-200'" class="absolute w-14 h-10 rounded text-xs font-bold text-slate-800 shadow">C</button>
+                <div class="relative mx-auto w-full max-w-[320px] aspect-square rounded-card overflow-hidden shadow-inner">
+                    {{-- Campo SVG decorativo (franjas verdes + infield brown + bases + monticulo).
+                         Las posiciones se renderizan como botones absolutos encima. --}}
+                    <svg viewBox="0 0 320 320" class="absolute inset-0 w-full h-full" preserveAspectRatio="none" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="grassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#65a30d"/>
+                                <stop offset="100%" stop-color="#4d7c0f"/>
+                            </linearGradient>
+                            <pattern id="grassStripes" patternUnits="userSpaceOnUse" width="32" height="320">
+                                <rect width="32" height="320" fill="url(#grassGrad)"/>
+                                <rect x="0" width="16" height="320" fill="#84cc16" fill-opacity="0.45"/>
+                            </pattern>
+                            <linearGradient id="infieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#b45309"/>
+                                <stop offset="100%" stop-color="#854d0e"/>
+                            </linearGradient>
+                        </defs>
+
+                        {{-- Cesped en forma de abanico con dos curvas convexas
+                             (vista desde home plate). --}}
+                        <path d="M 32 92 Q 160 -8 288 92 L 296 232 Q 160 312 24 232 Z"
+                              fill="url(#grassStripes)"
+                              stroke="#b45309" stroke-width="3"/>
+                        {{-- Borde interno sutil del outfield --}}
+                        <path d="M 32 92 Q 160 -8 288 92 L 296 232 Q 160 312 24 232 Z"
+                              fill="none" stroke="#b45309" stroke-width="1" stroke-opacity="0.5" transform="scale(0.96) translate(6.4 6.4)"/>
+
+                        {{-- Infield en forma de rombo + semicirculo. Cobertura entre
+                             3B y 1B con arco convexo arriba; debajo del rombo el
+                             semicirculo devuelve al area verde. --}}
+                        <path d="M 160 92
+                                 L 256 200
+                                 L 160 296
+                                 L 64 200
+                                 Q 160 130 160 92 Z"
+                              fill="url(#infieldGrad)"/>
+
+                        {{-- Bases (mini rombos blancos) --}}
+                        {{-- Home plate (5 lados tradicional, simplificado) --}}
+                        <polygon points="155,288 165,288 170,283 165,278 155,278" fill="white"/>
+                        {{-- 1B (der) --}}
+                        <rect x="248" y="194" width="10" height="10" fill="white" transform="rotate(45 253 199)"/>
+                        {{-- 2B (arriba, sobre el diamante) --}}
+                        <rect x="155" y="86" width="10" height="10" fill="white" transform="rotate(45 160 91)"/>
+                        {{-- 3B (izq) --}}
+                        <rect x="62" y="194" width="10" height="10" fill="white" transform="rotate(45 67 199)"/>
+
+                        {{-- Monticulo del pitcher (P). Circulo cafe mas claro
+                             con borde y un punto interior. --}}
+                        <circle cx="160" cy="196" r="15" fill="#d97706"/>
+                        <circle cx="160" cy="196" r="13" fill="#b45309"/>
+                        <circle cx="160" cy="196" r="5" fill="#78350f"/>
+                    </svg>
+
+                    {{-- Posiciones (botones blancos con etiquetas) --}}
+                    {{-- Outfield: LF / CF / RF --}}
+                    <button type="button" @click="addFielder('LF')" :class="isFielderSelected('LF') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
+                            class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
+                            style="top: 4%; left: 12%;">LF</button>
+                    <button type="button" @click="addFielder('CF')" :class="isFielderSelected('CF') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
+                            class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
+                            style="top: 1%; left: 50%; transform: translateX(-50%);">CF</button>
+                    <button type="button" @click="addFielder('RF')" :class="isFielderSelected('RF') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
+                            class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
+                            style="top: 4%; right: 12%;">RF</button>
+
+                    {{-- Infield interior: SS (entre 3B y P), 2B (entre P y 1B) --}}
+                    <button type="button" @click="addFielder('SS')" :class="isFielderSelected('SS') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
+                            class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
+                            style="top: 36%; left: 30%;">SS</button>
+                    <button type="button" @click="addFielder('2B')" :class="isFielderSelected('2B') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
+                            class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
+                            style="top: 36%; right: 30%;">2B</button>
+
+                    {{-- Esquinas del infield: 3B / 1B --}}
+                    <button type="button" @click="addFielder('3B')" :class="isFielderSelected('3B') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
+                            class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
+                            style="top: 58%; left: 6%;">3B</button>
+                    <button type="button" @click="addFielder('1B')" :class="isFielderSelected('1B') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
+                            class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
+                            style="top: 58%; right: 6%;">1B</button>
+
+                    {{-- Catcher (home plate) --}}
+                    <button type="button" @click="addFielder('C')" :class="isFielderSelected('C') ? 'ring-2 ring-amber-400 bg-amber-100' : 'bg-slate-50 hover:bg-amber-100'"
+                            class="absolute w-12 h-9 rounded-md text-[11px] font-black text-slate-800 shadow-md border border-slate-200 flex items-center justify-center"
+                            style="top: 82%; left: 50%; transform: translateX(-50%);">C</button>
+
+                    {{-- Pitcher (P, amarillo sobre el monticulo) --}}
+                    <button type="button" @click="addFielder('P')" :class="isFielderSelected('P') ? 'ring-4 ring-amber-300 bg-yellow-200' : 'bg-yellow-300 hover:bg-yellow-400'"
+                            class="absolute w-11 h-11 rounded-full text-sm font-black text-amber-900 shadow-md border-2 border-yellow-500 flex items-center justify-center"
+                            style="top: 55%; left: 50%; transform: translate(-50%, -50%);">P</button>
                 </div>
                 <div class="mt-4 p-3 bg-wv-bg rounded-card min-h-[60px]">
                     <div class="text-xs text-wv-text-secondary uppercase font-semibold mb-1">{{ __('Secuencia') }}</div>
