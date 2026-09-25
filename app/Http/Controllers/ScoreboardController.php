@@ -302,6 +302,13 @@ class ScoreboardController extends Controller
         [$state, $pitcher, $batter, $onDeck, $pitcherStats, $batterStats] =
             $this->buildSnapshot($game);
 
+        // DISI-26: la vista del scoreboard ahora SIEMPRE usa el diseno v2 (fondo
+        // oscuro, diamante SVG, tabs PITCHEO/BATEO/EXTRAS, modales de sustitucion
+        // / lineup / stats migrados del base). Se delega a v2() para mantener una
+        // sola fuente de verdad para el state reactivo + rosters + URLs.
+        // La rama JSON se conserva para clientes antiguos que llamen al
+        // endpoint con Accept: application/json (legacy: BASE scoreboardApp
+        // ya usa /poll que devuelve el formato enriquecido).
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
@@ -316,13 +323,7 @@ class ScoreboardController extends Controller
             ]);
         }
 
-        $score = Play::scoreboard($game->id);
-        $runners = $this->runners($state);
-
-        return view('games.scoreboard', compact(
-            'game', 'state', 'score', 'pitcher', 'batter', 'onDeck', 'runners',
-            'pitcherStats', 'batterStats',
-        ));
+        return $this->v2($request, $game);
     }
 
     /**
