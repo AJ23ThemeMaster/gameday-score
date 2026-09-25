@@ -16,17 +16,34 @@ use Illuminate\View\View;
 class PlayController extends Controller
 {
     /**
+     * DISI-piloto: chequeo unificado para acciones de anotacion.
+     * Antes (DISI-38) cada metodo repetia el patron "admin OR owner" con
+     * abort_unless, lo cual excluia al rol anotador. Ahora la policy
+     * GamePolicy::score() gobierna: admin + owner + anotador con scope
+     * (delegado+team+cat) + anotador asignado.
+     */
+    private function authorizeScoring(Game $game): void
+    {
+        $this->authorize('score', $game);
+    }
+
+    /**
+     * DISI-piloto: chequeo para ver el feed de jugadas. Mismas reglas
+     * que la policy view() — admin + owner + anotador con scope + anotador
+     * asignado. Antes solo admin/owner.
+     */
+    private function authorizeViewing(Game $game): void
+    {
+        $this->authorize('view', $game);
+    }
+
+    /**
      * Feed de jugadas (play-by-play) del juego.
      * Devuelve el HTML del listado para refresco AJAX.
      */
     public function index(Request $request, Game $game): View|JsonResponse
     {
-        // DISI-38: admin OR owner pueden ver las jugadas del juego.
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para ver las jugadas de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        $this->authorizeViewing($game);
 
         $plays = Play::where('game_id', $game->id)
             ->with(['batter', 'pitcher'])
@@ -63,12 +80,7 @@ class PlayController extends Controller
      */
     public function store(Request $request, Game $game): JsonResponse
     {
-        // DISI-38: admin OR owner pueden crear jugadas manuales.
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para registrar jugadas en este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        $this->authorizeScoring($game);
 
         $validated = $request->validate([
             'inning' => ['required', 'integer', 'min:1'],
@@ -126,12 +138,7 @@ class PlayController extends Controller
      */
     public function pitch(Request $request, Game $game, GameplayEngine $engine): JsonResponse
     {
-        // DISI-38: admin OR owner pueden registrar pitches / hits.
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para registrar pitches en este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        $this->authorizeScoring($game);
         abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
 
         $validated = $request->validate([
@@ -201,13 +208,9 @@ class PlayController extends Controller
         // DISI-36: mensajes explicitos para que la UI muestre el motivo real
         // del error (403/422 silencioso era inutil para diagnosticar).
         //
-        // DISI-37: permitir que el rol 'admin' tambien pueda finalizar el
-        // inning (antes solo el anotador/$game->user_id podia).
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para finalizar el inning de este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        // DISI-37 + DISI-piloto: permitir tambien al rol anotador (con scope
+        // automatico o asignado). Antes solo admin/owner.
+        $this->authorizeScoring($game);
         abort_unless(
             $game->isInProgress(),
             422,
@@ -254,17 +257,9 @@ class PlayController extends Controller
         // DISI-36: mensajes explicitos para que la UI muestre el motivo real
         // del error (403/422 silencioso era inutil para diagnosticar).
         //
-        // DISI-37: permitir que el rol 'admin' tambien pueda finalizar el
-        // juego (antes solo el anotador/$game->user_id podia). El admin es
-        // el dueno de la plataforma y tiene visibilidad sobre todos los
-        // juegos; restringirle la finalizacion manual no tenia sentido
-        // operativo. La regla final es: admin OR anotador del juego
-        // ($game->user_id === Auth::id()).
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para finalizar este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        // DISI-37 + DISI-piloto: permitir tambien al rol anotador (con scope
+        // automatico o asignado). Antes solo admin/owner.
+        $this->authorizeScoring($game);
         abort_unless(
             $game->isInProgress(),
             422,
@@ -303,12 +298,8 @@ class PlayController extends Controller
      */
     public function substitute(Request $request, Game $game, GameplayEngine $engine): JsonResponse
     {
-        // DISI-38: admin OR owner pueden hacer sustituciones.
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para sustituir atletas en este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        // DISI-38 + DISI-piloto: permitir tambien al rol anotador (con scope o asignado).
+        $this->authorizeScoring($game);
         abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
 
         $validated = $request->validate([
@@ -347,12 +338,8 @@ class PlayController extends Controller
      */
     public function runnerAction(Request $request, Game $game, GameplayEngine $engine): JsonResponse
     {
-        // DISI-38: admin OR owner pueden ejecutar acciones sobre corredores.
-        abort_unless(
-            Auth::check() && ($game->user_id === Auth::id() || Auth::user()->hasRole('admin')),
-            403,
-            'No tienes permiso para acciones de corredor en este juego. Solo el administrador o el anotador del juego pueden hacerlo.'
-        );
+        // DISI-38 + DISI-piloto: permitir tambien al rol anotador (con scope o asignado).
+        $this->authorizeScoring($game);
         abort_unless($game->isInProgress(), 422, 'El juego no esta en curso.');
 
         $validated = $request->validate([

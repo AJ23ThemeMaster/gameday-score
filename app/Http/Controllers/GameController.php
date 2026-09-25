@@ -39,11 +39,25 @@ class GameController extends Controller
         ]);
 
         if (Auth::user()->hasRole('anotador')) {
-            $scorekeeperIds = Scorekeeper::where('user_id', Auth::id())->pluck('id');
-            $gameIds = \DB::table('game_scorekeeper')
-                ->whereIn('scorekeeper_id', $scorekeeperIds)
-                ->pluck('game_id');
-            $query->whereIn('id', $gameIds);
+            // Hibrido (DISI-piloto): si el anotador ademas es delegado y
+            // tiene team_id + category_id, su scope es automatico: juegos
+            // de (su equipo, su categoria). No requiere asignacion manual
+            // en game_scorekeeper. Un anotador puro (sin rol delegado o
+            // sin alguno de los dos FK) sigue limitado a los juegos donde
+            // esta asignado via game_scorekeeper.
+            $u = Auth::user();
+            if ($u->hasRole('delegado') && $u->team_id !== null && $u->category_id !== null) {
+                $query->where(function ($q) use ($u) {
+                    $q->where('home_team_id', (int) $u->team_id)
+                        ->orWhere('away_team_id', (int) $u->team_id);
+                })->where('category_id', (int) $u->category_id);
+            } else {
+                $scorekeeperIds = Scorekeeper::where('user_id', Auth::id())->pluck('id');
+                $gameIds = \DB::table('game_scorekeeper')
+                    ->whereIn('scorekeeper_id', $scorekeeperIds)
+                    ->pluck('game_id');
+                $query->whereIn('id', $gameIds);
+            }
         } elseif (! Auth::user()->hasRole('admin')) {
             // Otros: solo sus propios juegos
             $query->where('user_id', Auth::id());
