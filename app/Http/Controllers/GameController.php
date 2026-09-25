@@ -160,56 +160,26 @@ class GameController extends Controller
 
     public function create(): View
     {
-        // DISI-piloto: GamePolicy::create() cubre admin + delegado con scope.
+        // DISI-piloto: solo admin puede crear juegos (ver GamePolicy::create).
         $this->authorize('create', Game::class);
 
-        $u = Auth::user();
-        $delegateScope = $u->hasRole('delegado') && $u->team_id !== null && $u->category_id !== null;
-
-        // DISI-piloto: el delegado con scope solo ve su equipo + su categoria
-        // en los dropdowns. Ademas pre-seleccionamos su equipo/categoria para
-        // que el formulario no le pida inventar valores.
-        if ($delegateScope) {
-            $categories = Category::where('id', (int) $u->category_id)->get();
-            $teams = Team::where('id', (int) $u->team_id)->get();
-            $defaults = [
-                'category_id' => (int) $u->category_id,
-                'home_team_id' => (int) $u->team_id,
-            ];
-        } else {
-            $categories = Category::active()->orderBy('name')->get();
-            $teams = Team::active()->orderBy('name')->get();
-            $defaults = [];
-        }
+        $categories = Category::active()->orderBy('name')->get();
         $tournaments = Tournament::active()->orderBy('name')->get();
         $stadiums = Stadium::active()->orderBy('name')->get();
+        $teams = Team::active()->orderBy('name')->get();
         $scorekeepers = Scorekeeper::active()->orderBy('last_name')->get();
         $referees = Referee::active()->orderBy('last_name')->get();
         $game = new Game();
 
-        return view('games.create', array_merge(compact(
+        return view('games.create', compact(
             'categories', 'tournaments', 'stadiums', 'teams', 'scorekeepers', 'referees', 'game',
-        ), $defaults ? ['defaults' => $defaults] : []));
+        ));
     }
 
     public function store(StoreGameRequest $request): RedirectResponse
     {
-        // DISI-piloto: GamePolicy::create() cubre admin + delegado con scope.
+        // DISI-piloto: GamePolicy::create() restringe a admin.
         $this->authorize('create', Game::class);
-
-        $u = Auth::user();
-        // Para delegados con scope, forzar que las selecciones caigan dentro
-        // de su equipo y categoria. Si elige otro equipo/categoria, abort 403.
-        // Asi el admin no tiene que confiar en la UI para el scope.
-        if ($u->hasRole('delegado') && $u->team_id !== null && $u->category_id !== null) {
-            $data = $request->validated();
-            $inScope = ((int) ($data['home_team_id'] ?? 0) === (int) $u->team_id
-                || (int) ($data['away_team_id'] ?? 0) === (int) $u->team_id)
-                && (int) ($data['category_id'] ?? 0) === (int) $u->category_id;
-            if (! $inScope) {
-                abort(403, 'Como delegado solo puedes crear juegos para tu equipo y tu categoria.');
-            }
-        }
 
         $data = $request->validated();
         $data['user_id'] = Auth::id();
@@ -261,30 +231,18 @@ class GameController extends Controller
     {
         $this->authorize('update', $game);
 
-        $u = Auth::user();
-        // DISI-piloto: el delegado con scope no puede cambiar el equipo
-        // ni la categoria del juego (romperia el scope). Mostramos solo
-        // sus opciones y la vista las bloquea con readonly/disabled.
-        $delegateEditing = $u->hasRole('delegado') && $u->team_id !== null && $u->category_id !== null
-            && ! $u->hasRole('admin');
-
-        if ($delegateEditing) {
-            $categories = Category::where('id', (int) $u->category_id)->get();
-            $teams = Team::where('id', (int) $u->team_id)->get();
-        } else {
-            $categories = Category::active()->orderBy('name')->get();
-            $teams = Team::active()->orderBy('name')->get();
-        }
+        $categories = Category::active()->orderBy('name')->get();
         $tournaments = Tournament::active()->orderBy('name')->get();
         $stadiums = Stadium::active()->orderBy('name')->get();
+        $teams = Team::active()->orderBy('name')->get();
         $scorekeepers = Scorekeeper::active()->orderBy('last_name')->get();
         $referees = Referee::active()->orderBy('last_name')->get();
 
         $game->load(['scorekeepers', 'referees']);
 
-        return view('games.edit', array_merge(compact(
+        return view('games.edit', compact(
             'game', 'categories', 'tournaments', 'stadiums', 'teams', 'scorekeepers', 'referees',
-        ), $delegateEditing ? ['delegateEditing' => true] : []));
+        ));
     }
 
     public function update(UpdateGameRequest $request, Game $game): RedirectResponse
@@ -293,21 +251,6 @@ class GameController extends Controller
 
         $data = $request->validated();
         $data['is_public'] = $request->boolean('is_public');
-
-        // DISI-piloto: el delegado con scope no puede transicionar el juego
-        // fuera de su (equipo, categoria), aunque haya pasado la policy de
-        // update (la policy solo verifica el ESTADO actual, no evita que la
-        // edicion saque al juego del scope).
-        $u = Auth::user();
-        if ($u->hasRole('delegado') && $u->team_id !== null && $u->category_id !== null
-            && ! $u->hasRole('admin')) {
-            $inScope = ((int) ($data['home_team_id'] ?? 0) === (int) $u->team_id
-                || (int) ($data['away_team_id'] ?? 0) === (int) $u->team_id)
-                && (int) ($data['category_id'] ?? 0) === (int) $u->category_id;
-            if (! $inScope) {
-                abort(403, 'Como delegado solo puedes mover el juego dentro de tu equipo y categoria.');
-            }
-        }
 
         // Si la categoría cambió, re-snapshot las reglas
         if ((int) $game->category_id !== (int) $data['category_id']) {

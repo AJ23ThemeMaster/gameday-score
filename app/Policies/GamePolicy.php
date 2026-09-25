@@ -47,16 +47,11 @@ class GamePolicy
      */
     public function create(User $user): bool
     {
-        // Admin: crea donde quiera.
-        // Delegado con scope (team_id + category_id no nulos): puede crear
-        // juegos para su (equipo, categoria). El controller filtra los
-        // dropdowns y valida que home_team_id/away_team_id/category_id
-        // caigan dentro del scope; si no, devuelve 403 explicito.
-        if ($user->hasRole('admin')) {
-            return true;
-        }
-
-        return $user->hasRole('delegado') && $this->userHasDelegateScope($user);
+        // DISI-piloto: solo admin puede crear juegos. Los delegados con scope
+        // gestionan los juegos existentes de su (equipo, categoria) pero la
+        // creacion inicial queda restringida al admin para tener control de
+        // cambios sobre el fixture, horarios, asignacion de staff, etc.
+        return $user->hasRole('admin');
     }
 
     public function update(User $user, Game $game): bool
