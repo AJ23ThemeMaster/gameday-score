@@ -315,7 +315,8 @@
         endGameUrl: @js(route('games.plays.end-game', $game)),
         pollUrl: @js(route('games.scoreboard.poll', $game)),
         csrf: @js(csrf_token()),
-     })">
+     })"
+     x-init="if (isFinalized || gameStatus !== 'in_progress') { tab = 'extra'; }">
 
     {{-- Top header: liga / torneo / categoria a la izquierda, 4 acciones a la derecha --}}
     <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
@@ -631,11 +632,13 @@
     <div class="mt-4">
         <div class="flex border-b border-wv-border mb-3">
             <button type="button" @click="tab='pitch'"
+                    x-show="!isFinalized && gameStatus==='in_progress'"
                     :class="tab==='pitch' ? 'sb-tab is-active' : 'sb-tab'"
                     class="flex-1 text-center">
                 {{ __('Pitcheo') }}
             </button>
             <button type="button" @click="tab='hit'"
+                    x-show="!isFinalized && gameStatus==='in_progress'"
                     :class="tab==='hit' ? 'sb-tab is-active' : 'sb-tab'"
                     class="flex-1 text-center">
                 {{ __('Bateo') }}
@@ -670,19 +673,28 @@
             </div>
         </div>
 
-        {{-- EXTRAS: 4 arriba (Sustituir, Balk, Reordenar Lineup, Stats)
-                      4 abajo (Roster, Cerrar Inning, Finalizar Juego, Box Score) --}}
+        {{-- EXTRAS --}}
         <div x-show="tab==='extra'">
-            <div x-show="!isFinalized && gameStatus==='in_progress'" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <button type="button" @click="openSubstituteModal('pitcher')" :disabled="busy" class="sb-action-btn" style="background:#0ea5e9;">{{ __('Sustitución') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Pitcher, bateador o corredor') }}</div></button>
-                <button type="button" @click="sendPitch('balk')" :disabled="busy" class="sb-action-btn" style="background:#a855f7;">{{ __('Balk') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Corredores avanzan 1 base') }}</div></button>
-                <button type="button" @click="openLineupModal()" :disabled="busy" class="sb-action-btn" style="background:#10b981;">{{ __('Lineup') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Titulares, posiciones y pitcher') }}</div></button>
-                <button type="button" @click="openStatsModal()" :disabled="busy" class="sb-action-btn" style="background:#6366f1;">{{ __('Stats del juego') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo') }}</div></button>
+            {{-- EN JUEGO: 4 arriba (Sustituir, Balk, Reordenar Lineup, Stats)
+                          4 abajo (Roster, Cerrar Inning, Finalizar Juego, Box Score) --}}
+            <div x-show="!isFinalized && gameStatus==='in_progress'">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button type="button" @click="openSubstituteModal('pitcher')" :disabled="busy" class="sb-action-btn" style="background:#0ea5e9;">{{ __('Sustitución') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Pitcher, bateador o corredor') }}</div></button>
+                    <button type="button" @click="sendPitch('balk')" :disabled="busy" class="sb-action-btn" style="background:#a855f7;">{{ __('Balk') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Corredores avanzan 1 base') }}</div></button>
+                    <button type="button" @click="openLineupModal()" :disabled="busy" class="sb-action-btn" style="background:#10b981;">{{ __('Lineup') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Titulares, posiciones y pitcher') }}</div></button>
+                    <button type="button" @click="openStatsModal()" :disabled="busy" class="sb-action-btn" style="background:#6366f1;">{{ __('Stats del juego') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo') }}</div></button>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                    <a href="{{ route('games.roster.index', $game) }}" class="sb-action-btn out text-center block text-sm">{{ __('Roster') }}</a>
+                    <button type="button" @click="openEndInningModal()" :disabled="busy" class="sb-action-btn" style="background:#f97316;">{{ __('Cerrar inning') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Terminar la media entrada actual') }}</div></button>
+                    <button type="button" @click="openEndGameModal()" :disabled="busy" class="sb-action-btn" style="background:#b91c1c;">{{ __('Finalizar juego') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Cerrar el juego por completo') }}</div></button>
+                    <a href="{{ route('games.box-score', $game) }}" class="sb-action-btn out text-center block text-sm">{{ __('Box Score') }}</a>
+                </div>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
-                <a href="{{ route('games.roster.index', $game) }}" class="sb-action-btn out text-center block text-sm">{{ __('Roster') }}</a>
-                <button type="button" @click="openEndInningModal()" :disabled="busy" class="sb-action-btn" style="background:#f97316;">{{ __('Cerrar inning') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Terminar la media entrada actual') }}</div></button>
-                <button type="button" @click="openEndGameModal()" :disabled="busy" class="sb-action-btn" style="background:#b91c1c;">{{ __('Finalizar juego') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Cerrar el juego por completo') }}</div></button>
+
+            {{-- FINALIZADO: solo lectura (Stats del juego + Box Score) --}}
+            <div x-show="isFinalized || gameStatus!=='in_progress'" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button type="button" @click="openStatsModal()" class="sb-action-btn" style="background:#6366f1;">{{ __('Stats del juego') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo') }}</div></button>
                 <a href="{{ route('games.box-score', $game) }}" class="sb-action-btn out text-center block text-sm">{{ __('Box Score') }}</a>
             </div>
         </div>
