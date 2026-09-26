@@ -154,6 +154,7 @@ class Play extends Model
     public const SUBTYPE_OUT_PICKOFF = 'pickoff';
     public const SUBTYPE_OUT_AT_2B = 'out_at_2b';
     public const SUBTYPE_OUT_AT_3B = 'out_at_3b';
+    public const SUBTYPE_OUT_AT_HOME = 'out_at_home';
 
     public function game(): BelongsTo
     {
@@ -216,6 +217,7 @@ class Play extends Model
             $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_PICKOFF   => 'Pickoff',
             $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_AT_2B     => 'Out en 2B',
             $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_AT_3B     => 'Out en 3B',
+            $t === self::TYPE_OUT && $s === self::SUBTYPE_OUT_AT_HOME   => 'Out en home',
             $t === self::TYPE_OUT                                        => 'Out',
 
             // Hits

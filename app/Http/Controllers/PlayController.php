@@ -344,7 +344,7 @@ class PlayController extends Controller
 
         $validated = $request->validate([
             'base' => ['required', 'in:first,second,third'],
-            'action' => ['required', 'in:advance,stolen_base,wild_pitch,passed_ball,error_advance,obstruction,score_rbi,score_no_rbi,caught_stealing,pickoff,out_at_2b,out_at_3b'],
+            'action' => ['required', 'in:advance,stolen_base,wild_pitch,passed_ball,error_advance,obstruction,score_rbi,score_no_rbi,caught_stealing,pickoff,out_at_2b,out_at_3b,out_at_advance'],
         ]);
 
         try {

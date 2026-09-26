@@ -1052,14 +1052,27 @@ class GameplayEngine
                 case 'pickoff':
                 case 'out_at_2b':
                 case 'out_at_3b':
+                case 'out_at_advance':
                     $newBases = $this->clearBase($bases, $base);
                     $newOuts = $outs + 1;
                     $type = Play::TYPE_OUT;
+                    // out_at_advance es la opcion generica del frontend
+                    // ("Out al intentar avanzar") y se mapea a la base destino
+                    // segun la base actual del corredor:
+                    //   first  -> out en 2B (intentando robar/avanzar a 2B)
+                    //   second -> out en 3B (intentando avanzar a 3B)
+                    //   third  -> out en home (intentando anotar)
                     $subtype = match ($action) {
                         'caught_stealing' => Play::SUBTYPE_OUT_CAUGHT_STEALING,
                         'pickoff' => Play::SUBTYPE_OUT_PICKOFF,
                         'out_at_2b' => Play::SUBTYPE_OUT_AT_2B,
                         'out_at_3b' => Play::SUBTYPE_OUT_AT_3B,
+                        'out_at_advance' => match ($base) {
+                            'first' => Play::SUBTYPE_OUT_AT_2B,
+                            'second' => Play::SUBTYPE_OUT_AT_3B,
+                            'third' => Play::SUBTYPE_OUT_AT_HOME,
+                            default => throw new \InvalidArgumentException("out_at_advance no aplica desde base {$base}"),
+                        },
                     };
                     $result = $this->describeRunnerOut($subtype, $baseLabel, $runnerName);
                     break;
@@ -1242,6 +1255,7 @@ class GameplayEngine
             Play::SUBTYPE_OUT_PICKOFF => "{$runnerName} OUT por pickoff (viraje) en {$baseLabel}",
             Play::SUBTYPE_OUT_AT_2B => "{$runnerName} OUT en 2B",
             Play::SUBTYPE_OUT_AT_3B => "{$runnerName} OUT en 3B",
+            Play::SUBTYPE_OUT_AT_HOME => "{$runnerName} OUT en home",
             default => "{$runnerName} OUT desde {$baseLabel}",
         };
     }
