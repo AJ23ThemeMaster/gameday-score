@@ -1130,6 +1130,28 @@ class GameplayEngine
                         'inning_half' => $newHalf,
                     ]);
                 }
+
+                // IMPORTANTE: mismo patron que processPitch (linea ~324).
+                // Despues del inning_end (que tiene outs_after=3, marcador del
+                // medio inning VIEJO) registramos un at_bat_start del NUEVO
+                // medio inning. Asi el ultimo play refleja outs=0, next batter
+                // y new half, y Play::currentState() no devuelve outs=3 + null
+                // batter (que es lo que rompe el scoreboard cuando el 3er out
+                // viene de una accion de corredor como out_at_advance).
+                if ($endHalfActual && $newInning > 0) {
+                    $created[] = $this->recordPlay($game, [
+                        'inning' => $newInning, 'half' => $newHalf,
+                        'type' => Play::TYPE_PITCH,
+                        'subtype' => 'at_bat_start',
+                        'result' => 'Nuevo inning - bateador al bate',
+                        'batter_id' => $nextBatterId,
+                        'pitcher_id' => $newPitcherId,
+                        'outs_before' => 0, 'outs_after' => 0,
+                        'balls' => 0, 'strikes' => 0,
+                        'bases_before' => ['first' => null, 'second' => null, 'third' => null],
+                        'bases_after' => ['first' => null, 'second' => null, 'third' => null],
+                    ]);
+                }
             }
 
             // DISI-50: sincronizar el snapshot del Game (bases, outs, score,
