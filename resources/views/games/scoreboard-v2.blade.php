@@ -422,7 +422,7 @@
     </div>
 
     {{-- Pitcher + Batter cards (con foto) --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4" x-show="!isFinalized && gameStatus==='in_progress'">
         {{-- Pitcher --}}
         <div class="sb-card">
             <div class="text-[10px] uppercase tracking-wider mb-1" style="color: var(--sb-text-dim);">{{ __('Pitcheando') }}</div>
@@ -478,7 +478,7 @@
     </div>
 
     {{-- On deck --}}
-    <div class="sb-card mt-3" x-show="onDeck" x-cloak>
+    <div class="sb-card mt-3" x-show="onDeck && !isFinalized && gameStatus==='in_progress'" x-cloak>
         <div class="text-[10px] uppercase tracking-wider mb-1" style="color: var(--sb-text-dim);">{{ __('Prevenido') }}</div>
         <div class="sb-player-card" x-show="onDeck">
             <template x-if="onDeck?.photo_url">
@@ -601,7 +601,7 @@
     </div>
 
     {{-- Conteo: Bolas / Strikes / Outs (3 columnas, debajo del diamante) --}}
-    <div class="sb-count-grid sb-card mt-3">
+    <div class="sb-count-grid sb-card mt-3" x-show="!isFinalized && gameStatus==='in_progress'">
         <div class="sb-count-cell">
             <div class="label">{{ __('Bolas') }}</div>
             <div class="sb-count-dots" data-balls>
@@ -709,8 +709,8 @@
                 </div>
             </div>
 
-            {{-- FINALIZADO: solo lectura (Stats del juego + Box Score) --}}
-            <div x-show="isFinalized || gameStatus!=='in_progress'" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {{-- FINALIZADO: solo lectura (Stats del juego arriba, Box Score abajo) --}}
+            <div x-show="isFinalized || gameStatus!=='in_progress'" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button type="button" @click="openStatsModal()" class="sb-action-btn" style="background:#6366f1;">{{ __('Stats del juego') }}<div class="text-[9px] font-normal opacity-80 mt-0.5 leading-tight">{{ __('Box score completo') }}</div></button>
                 <a href="{{ route('games.box-score', $game) }}" class="sb-action-btn out text-center block text-sm">{{ __('Box Score') }}</a>
             </div>
