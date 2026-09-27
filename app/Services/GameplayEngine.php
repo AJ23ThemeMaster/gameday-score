@@ -875,7 +875,16 @@ class GameplayEngine
      * Finaliza el juego manualmente (util cuando el anotador quiere cerrar
      * antes del inning final, por ejemplo por mercy rule, lluvia, etc.).
      */
-    public function endGame(Game $game): array
+    /**
+     * Finaliza el juego. Acepta un motivo y (opcional) una nota libre.
+     *
+     * DISI-prod: el modal "Finalizar juego" del scoreboard v2 ahora pide
+     * un motivo (regulation | knockout | suspension | forfeit | other) y
+     * opcionalmente una nota. Ambos se guardan en el Play subtype/meta para
+     * que el box score y la vista publica puedan mostrar "Finalizado por
+     * suspension a partir del inning X" o similar.
+     */
+    public function endGame(Game $game, ?string $reason = null, ?string $note = null): array
     {
         $state = Play::currentState($game->id);
         $inning = $state['inning'];
@@ -884,16 +893,29 @@ class GameplayEngine
         $bases = $state['bases'];
         $pitcherId = $state['current_pitcher_id'];
 
+        $reason = $reason ?: 'manual';
+        $reasonLabel = $this->endGameReasonLabel($reason);
+        $resultText = 'Juego terminado (' . $reasonLabel . ')';
+        if ($note) {
+            $resultText .= ': ' . $note;
+        }
+
+        $meta = ['reason' => $reason];
+        if ($note !== null && $note !== '') {
+            $meta['note'] = $note;
+        }
+
         $this->recordPlay($game, [
             'inning' => $inning, 'half' => $half,
             'type' => Play::TYPE_GAME_END,
-            'subtype' => 'manual',
-            'result' => 'Juego terminado (manual)',
+            'subtype' => $reason,
+            'result' => $resultText,
             'batter_id' => null,
             'pitcher_id' => $pitcherId,
             'outs_before' => $outs, 'outs_after' => $outs,
             'balls' => 0, 'strikes' => 0,
             'bases_before' => $bases, 'bases_after' => $bases,
+            'meta' => $meta,
         ]);
         $game->update(['status' => 'finalized']);
         // DISI-50: sincronizar score + state para que la vista publica muestre
@@ -903,11 +925,29 @@ class GameplayEngine
         $g = $game->fresh();
         return [
             'status' => 'game_over',
+            'reason' => $reason,
+            'reason_label' => $reasonLabel,
+            'note' => $note,
             'inning' => $inning,
             'half' => $half,
             'away_score' => $g->away_score,
             'home_score' => $g->home_score,
         ];
+    }
+
+    /**
+     * Etiqueta humana del motivo de finalizacion para mostrar en UI/box score.
+     */
+    private function endGameReasonLabel(string $reason): string
+    {
+        return match ($reason) {
+            'regulation' => 'Reglamentario',
+            'knockout' => 'Nocaut / Mercy rule',
+            'suspension' => 'Suspension',
+            'forfeit' => 'Forfait / W.O.',
+            'other' => 'Otro motivo',
+            default => 'Manual',
+        };
     }
 
     /**

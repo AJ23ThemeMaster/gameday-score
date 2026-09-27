@@ -986,9 +986,38 @@
             </div>
             <div class="p-5 space-y-3">
                 <p class="text-sm text-wv-text-secondary">{{ __('Vas a finalizar el juego por completo. Esta acción no se puede deshacer.') }}</p>
-                <div class="flex gap-2">
+
+                {{-- Motivo de finalizacion (DISI: suspension, nocout, etc.) --}}
+                <div>
+                    <label class="block text-xs font-bold text-wv-text-secondary uppercase mb-1 tracking-wider">
+                        {{ __('Motivo de finalización') }} <span class="text-red-500">*</span>
+                    </label>
+                    <select x-model="endGameReason"
+                            class="w-full px-3 py-2 rounded-card bg-wv-surface-hover text-wv-text border border-wv-border text-sm">
+                        <option value="">{{ __('Seleccionar motivo...') }}</option>
+                        <option value="regulation">{{ __('Reglamentario (9 innings completos)') }}</option>
+                        <option value="knockout">{{ __('Nocaut / Mercy rule') }}</option>
+                        <option value="suspension">{{ __('Suspensión (lluvia, luz, etc.)') }}</option>
+                        <option value="forfeit">{{ __('Forfait / W.O.') }}</option>
+                        <option value="other">{{ __('Otro motivo') }}</option>
+                    </select>
+                </div>
+
+                {{-- Detalle libre cuando es 'other' (opcional) --}}
+                <div x-show="endGameReason === 'other'" x-cloak>
+                    <label class="block text-xs font-bold text-wv-text-secondary uppercase mb-1 tracking-wider">
+                        {{ __('Detalle (opcional)') }}
+                    </label>
+                    <input type="text" x-model="endGameNote"
+                           :placeholder="__('Ej: Accidente del arbitro, equipo visitante no se presento...')"
+                           class="w-full px-3 py-2 rounded-card bg-wv-surface-hover text-wv-text border border-wv-border text-sm" />
+                </div>
+
+                <div class="flex gap-2 pt-2">
                     <button type="button" @click="closeModal()" class="flex-1 py-3 bg-[#f43f5e] hover:bg-[#e11d48] text-white font-bold rounded-card">{{ __('Cancelar') }}</button>
-                    <button type="button" @click="confirmEndGame()" class="flex-1 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-bold rounded-card">{{ __('Finalizar') }}</button>
+                    <button type="button" @click="confirmEndGame()"
+                            :disabled="!endGameReason"
+                            class="flex-1 py-3 bg-[#10b981] hover:bg-[#059669] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-card">{{ __('Finalizar') }}</button>
                 </div>
             </div>
         </div>

@@ -292,6 +292,11 @@ document.addEventListener('alpine:init', () => {
         lineupLoading: false,
         lineupDirty: false,
         lineupDragId: null,
+        // Modal Finalizar juego (DISI-prod): motivo + nota libres.
+        // reason: '' | 'regulation' | 'knockout' | 'suspension' | 'forfeit' | 'other'
+        // note: texto libre opcional, util sobre todo con 'other'.
+        endGameReason: '',
+        endGameNote: '',
         // Modal resumen tras finalizar inning (DISI-218 migrado al v2): el
         // pitch endpoint devuelve data.summary con {inning, half, runs, hits,
         // walks, strikeouts, errors, lob, pitcher_id, pitcher_name, pitcher_pitches}.
@@ -1040,10 +1045,19 @@ document.addEventListener('alpine:init', () => {
 
         async endGame() {
             if (this.busy) return;
+            // DISI-prod: reason es obligatorio (regulation | knockout | suspension | forfeit | other).
+            if (!this.endGameReason) {
+                this.toast('Selecciona un motivo de finalizacion antes de continuar', 'warning');
+                return;
+            }
             this.busy = true;
             try {
                 const fd = new FormData();
                 fd.append('_token', this.csrf);
+                fd.append('reason', this.endGameReason);
+                if (this.endGameNote) {
+                    fd.append('note', this.endGameNote);
+                }
                 const res = await fetch(this.endGameUrl, {
                     method: 'POST',
                     body: fd,
@@ -1059,7 +1073,11 @@ document.addEventListener('alpine:init', () => {
                     return;
                 }
                 this.applyState(data);
-                this.toast('Juego finalizado', 'success');
+                const label = (data.result && data.result.reason_label) ? data.result.reason_label : this.endGameReason;
+                this.toast('Juego finalizado (' + label + ')', 'warning');
+                // Limpiar campos del modal para la proxima vez
+                this.endGameReason = '';
+                this.endGameNote = '';
             } catch (e) {
                 this.toast('Error de red: ' + e.message, 'error');
             } finally {
@@ -1257,6 +1275,9 @@ document.addEventListener('alpine:init', () => {
         lineupLoading: false,
         lineupDirty: false,
         lineupDragId: null,
+        // Modal Finalizar juego (DISI-prod): motivo + nota libres.
+        endGameReason: '',
+        endGameNote: '',
 
         start() {
             this.pollInterval = setInterval(() => this.poll(), 5000);
@@ -1655,16 +1676,33 @@ document.addEventListener('alpine:init', () => {
         },
 
         // Finalizar juego
-        openEndGameModal() { this.modal = 'end-game'; },
+        openEndGameModal() {
+            this.modal = 'end-game';
+            // Limpiar campos del modal cada vez que se abre
+            this.endGameReason = '';
+            this.endGameNote = '';
+        },
         async confirmEndGame() {
+            // DISI-prod: reason es obligatorio.
+            if (!this.endGameReason) {
+                this.toast('Selecciona un motivo de finalizacion antes de continuar', 'warning');
+                return;
+            }
             try {
+                const fd = new FormData();
+                fd.append('_token', this.csrf);
+                fd.append('reason', this.endGameReason);
+                if (this.endGameNote) {
+                    fd.append('note', this.endGameNote);
+                }
                 const resp = await fetch(this.endGameUrl, {
                     method: 'POST',
+                    body: fd,
                     headers: {
-                        'X-CSRF-TOKEN': this.csrf,
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json',
                     },
+                    credentials: 'same-origin',
                 });
                 // DISI-36: si el server aborta con 403/422, leer el JSON de
                 // error para mostrar el mensaje real al usuario en vez de
@@ -1681,7 +1719,11 @@ document.addEventListener('alpine:init', () => {
                 const data = await resp.json();
                 if (data.success) {
                     this.closeModal();
-                    this.toast('Juego finalizado: ' + data.result.away_score + '-' + data.result.home_score, 'warning');
+                    const label = (data.result && data.result.reason_label) ? data.result.reason_label : (this.endGameReason || '');
+                    this.toast('Juego finalizado (' + label + '): ' + data.result.away_score + '-' + data.result.home_score, 'warning');
+                    // Limpiar campos del modal para la proxima vez
+                    this.endGameReason = '';
+                    this.endGameNote = '';
                     await this.pollNow();
                 } else {
                     this.toast(data.message || 'Error al finalizar juego', 'error');

@@ -251,6 +251,8 @@ class PlayController extends Controller
 
     /**
      * Finaliza el juego manualmente (mercy rule, lluvia, etc.).
+     * DISI-prod: acepta `reason` (regulation | knockout | suspension | forfeit | other)
+     * y `note` opcional para detallar el motivo cuando es 'other'.
      */
     public function endGame(Request $request, Game $game, GameplayEngine $engine): JsonResponse
     {
@@ -266,7 +268,15 @@ class PlayController extends Controller
             'El juego ya esta finalizado. Estado actual: "' . $game->status . '".'
         );
 
-        $result = $engine->endGame($game);
+        $validated = $request->validate([
+            'reason' => 'required|string|in:regulation,knockout,suspension,forfeit,other',
+            'note' => 'nullable|string|max:500',
+        ], [
+            'reason.required' => 'Debes indicar el motivo de la finalizacion.',
+            'reason.in' => 'El motivo debe ser uno de: regulation, knockout, suspension, forfeit, other.',
+        ]);
+
+        $result = $engine->endGame($game, $validated['reason'], $validated['note'] ?? null);
 
         // Snapshot UI despues del endGame.
         $freshGame = $game->fresh();
