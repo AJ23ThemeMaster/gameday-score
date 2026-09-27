@@ -350,35 +350,92 @@
             </span>
         </div>
 
-        {{-- Derecha: 4 acciones con colores del index --}}
-        <div class="inline-flex items-center gap-1">
-            @if ($game->is_public && $game->public_token)
-                <a href="{{ route('games.live.public', $game->public_token) }}"
-                   target="_blank" rel="noopener"
-                   title="{{ __('En vivo (vista publica)') }}"
-                   aria-label="{{ __('En vivo (vista publica)') }}"
-                   class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-alert/40 text-wv-alert hover:bg-wv-alert/15 hover:border-wv-alert focus:ring-wv-alert">
-                    <span class="material-symbols-outlined" style="font-size:18px;">live_tv</span>
+        {{-- Derecha: 4 acciones con colores del index
+              Mobile: 1 boton con density_medium que despliega popover con las 4 acciones.
+              Desktop (sm+): 4 botones inline como antes. --}}
+        <div class="inline-flex items-center gap-1" x-data="{ mobileActionsOpen: false }">
+            {{-- Desktop: 4 acciones inline --}}
+            <div class="hidden sm:inline-flex items-center gap-1">
+                @if ($game->is_public && $game->public_token)
+                    <a href="{{ route('games.live.public', $game->public_token) }}"
+                       target="_blank" rel="noopener"
+                       title="{{ __('En vivo (vista publica)') }}"
+                       aria-label="{{ __('En vivo (vista publica)') }}"
+                       class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-alert/40 text-wv-alert hover:bg-wv-alert/15 hover:border-wv-alert focus:ring-wv-alert">
+                        <span class="material-symbols-outlined" style="font-size:18px;">live_tv</span>
+                    </a>
+                @endif
+                <a href="{{ route('games.show', $game) }}"
+                   title="{{ __('Detalle del juego') }}"
+                   aria-label="{{ __('Detalle del juego') }}"
+                   class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-accent/40 text-wv-accent hover:bg-wv-accent/15 hover:border-wv-accent focus:ring-wv-accent">
+                    <span class="material-symbols-outlined" style="font-size:18px;">visibility</span>
                 </a>
-            @endif
-            <a href="{{ route('games.show', $game) }}"
-               title="{{ __('Detalle del juego') }}"
-               aria-label="{{ __('Detalle del juego') }}"
-               class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-accent/40 text-wv-accent hover:bg-wv-accent/15 hover:border-wv-accent focus:ring-wv-accent">
-                <span class="material-symbols-outlined" style="font-size:18px;">visibility</span>
-            </a>
-            <a href="{{ route('games.roster.index', $game) }}"
-               title="{{ __('Roster del juego') }}"
-               aria-label="{{ __('Roster del juego') }}"
-               class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-success/40 text-wv-success hover:bg-wv-success/15 hover:border-wv-success focus:ring-wv-success">
-                <span class="material-symbols-outlined" style="font-size:18px;">groups</span>
-            </a>
-            <a href="{{ route('games.index') }}"
-               title="{{ __('Salir al listado') }}"
-               aria-label="{{ __('Salir al listado') }}"
-               class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-text-secondary/40 text-wv-text-secondary hover:bg-wv-text-secondary/15 hover:border-wv-text-secondary focus:ring-wv-text-secondary">
-                <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
-            </a>
+                <a href="{{ route('games.roster.index', $game) }}"
+                   title="{{ __('Roster del juego') }}"
+                   aria-label="{{ __('Roster del juego') }}"
+                   class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-success/40 text-wv-success hover:bg-wv-success/15 hover:border-wv-success focus:ring-wv-success">
+                    <span class="material-symbols-outlined" style="font-size:18px;">groups</span>
+                </a>
+                <a href="{{ route('games.index') }}"
+                   title="{{ __('Salir al listado') }}"
+                   aria-label="{{ __('Salir al listado') }}"
+                   class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-text-secondary/40 text-wv-text-secondary hover:bg-wv-text-secondary/15 hover:border-wv-text-secondary focus:ring-wv-text-secondary">
+                    <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
+                </a>
+            </div>
+
+            {{-- Mobile: 1 boton density_medium + popover con 4 acciones --}}
+            <div class="sm:hidden relative" @click.outside="mobileActionsOpen = false">
+                <button type="button"
+                        @click="mobileActionsOpen = !mobileActionsOpen"
+                        :aria-expanded="mobileActionsOpen"
+                        aria-haspopup="menu"
+                        title="{{ __('Acciones del juego') }}"
+                        aria-label="{{ __('Acciones del juego') }}"
+                        class="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-accent/40 text-wv-accent hover:bg-wv-accent/15 hover:border-wv-accent focus:ring-wv-accent">
+                    <span class="material-symbols-outlined" style="font-size:18px;">density_medium</span>
+                </button>
+                <div x-show="mobileActionsOpen"
+                     x-cloak
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="opacity-0 -translate-y-1"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="opacity-100 translate-y-0"
+                     x-transition:leave-end="opacity-0 -translate-y-1"
+                     @click.stop
+                     role="menu"
+                     class="absolute left-0 top-full mt-2 z-50 min-w-[200px] bg-wv-surface border border-wv-border rounded-lg shadow-xl p-1.5 flex flex-col gap-1">
+                    @if ($game->is_public && $game->public_token)
+                        <a href="{{ route('games.live.public', $game->public_token) }}"
+                           target="_blank" rel="noopener"
+                           role="menuitem"
+                           class="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-wv-alert/15 text-wv-alert transition">
+                            <span class="material-symbols-outlined" style="font-size:18px;">live_tv</span>
+                            <span>{{ __('En vivo (vista publica)') }}</span>
+                        </a>
+                    @endif
+                    <a href="{{ route('games.show', $game) }}"
+                       role="menuitem"
+                       class="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-wv-accent/15 text-wv-accent transition">
+                        <span class="material-symbols-outlined" style="font-size:18px;">visibility</span>
+                        <span>{{ __('Detalle del juego') }}</span>
+                    </a>
+                    <a href="{{ route('games.roster.index', $game) }}"
+                       role="menuitem"
+                       class="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-wv-success/15 text-wv-success transition">
+                        <span class="material-symbols-outlined" style="font-size:18px;">groups</span>
+                        <span>{{ __('Roster del juego') }}</span>
+                    </a>
+                    <a href="{{ route('games.index') }}"
+                       role="menuitem"
+                       class="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-wv-text-secondary/15 text-wv-text-secondary transition">
+                        <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
+                        <span>{{ __('Salir al listado') }}</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -408,7 +465,7 @@
                 <strong x-text="inning"></strong>
                 <span x-text="half === 'top' ? '▲' : '▼'"></span>
             </div>
-            <div class="mt-1 inline-flex items-center gap-1 px-3 py-1 bg-emerald-900 border border-emerald-500 rounded-full text-emerald-200 text-xs font-black uppercase tracking-wider"
+            <div class="mt-1 inline-flex items-center justify-center px-2.5 sm:px-3 py-1 bg-emerald-900 border border-emerald-500 rounded-full text-emerald-200 text-[10px] sm:text-xs font-black uppercase tracking-wide sm:tracking-wider text-center whitespace-nowrap"
                  x-show="isFinalized" x-cloak>
                 {{ __('JUEGO FINALIZADO') }}
             </div>
