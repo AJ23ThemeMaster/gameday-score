@@ -324,17 +324,23 @@
         <div class="flex items-center gap-1.5 text-xs flex-wrap" style="color: var(--sb-text-dim);">
             @if ($game->tournament?->league)
                 <a href="{{ route('leagues.show', $game->tournament->league) }}"
-                   class="inline-flex items-center px-2 py-1 rounded-md bg-wv-surface border border-wv-border hover:border-wv-accent transition"
+                   class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-wv-surface border border-wv-border hover:border-wv-accent transition"
                    style="color: var(--sb-text);">
-                    {{ $game->tournament->league->short_name ?? $game->tournament->league->name }}
+                    @if ($game->tournament->league->logo_url)
+                        <img src="{{ $game->tournament->league->logo_url }}" alt="" class="w-4 h-4 rounded-sm object-cover">
+                    @endif
+                    <span>{{ $game->tournament->league->short_name ?? $game->tournament->league->name }}</span>
                 </a>
                 <span style="opacity:.5;">/</span>
             @endif
             @if ($game->tournament)
                 <a href="{{ route('tournaments.show', $game->tournament) }}"
-                   class="inline-flex items-center px-2 py-1 rounded-md bg-wv-surface border border-wv-border hover:border-wv-accent transition"
+                   class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-wv-surface border border-wv-border hover:border-wv-accent transition"
                    style="color: var(--sb-text);">
-                    {{ $game->tournament->name }}
+                    @if ($game->tournament->logo_url)
+                        <img src="{{ $game->tournament->logo_url }}" alt="" class="w-4 h-4 rounded-sm object-cover">
+                    @endif
+                    <span>{{ $game->tournament->name }}</span>
                 </a>
                 <span style="opacity:.5;">/</span>
             @endif
@@ -630,7 +636,7 @@
 
     {{-- Action panel + modals --}}
     <div class="mt-4">
-        <div class="flex border-b border-wv-border mb-3">
+        <div class="flex border-b border-wv-border">
             <button type="button" @click="tab='pitch'"
                     x-show="!isFinalized && gameStatus==='in_progress'"
                     :class="tab==='pitch' ? 'sb-tab is-active' : 'sb-tab'"
@@ -644,6 +650,7 @@
                 {{ __('Bateo') }}
             </button>
             <button type="button" @click="tab='extra'"
+                    x-show="!isFinalized && gameStatus==='in_progress'"
                     :class="tab==='extra' ? 'sb-tab is-active' : 'sb-tab'"
                     class="flex-1 text-center">
                 {{ __('Extras') }}
@@ -1614,9 +1621,9 @@
         </div>
     </div>
 
-    <div class="text-center text-xs mt-3" style="color: var(--sb-text-dim);">
+    {{-- <div class="text-center text-xs mt-3" style="color: var(--sb-text-dim);">
         Vista paralela · scoreboard-v2 · mismos datos que el scoreboard clásico, diseño experimental
-    </div>
+    </div> --}}
 </div>
 </div>
 @endsection
