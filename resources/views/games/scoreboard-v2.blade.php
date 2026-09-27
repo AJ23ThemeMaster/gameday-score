@@ -658,18 +658,35 @@
             <button type="button" @click="openOutStep1()" :disabled="busy" class="sb-action-btn out">{{ __('Out') }}</button>
         </div>
 
-        {{-- BATEO: Sencillo | Doble | Triple | HR  (fila 1, 4 cols)
+        {{-- BATEO: Sencillo | Doble | Triple | HR  (fila 1, 4 cols, responsive)
                     HR de pierna | Toque de bolas (fila 2, 2 cols) --}}
         <div x-show="tab==='hit' && !isFinalized && gameStatus==='in_progress'">
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <button type="button" @click="openHitModal('single')" :disabled="busy" class="sb-action-btn ball">{{ __('Sencillo') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">1B</div></button>
-                <button type="button" @click="openHitModal('double')" :disabled="busy" class="sb-action-btn" style="background:#0ea5e9;">{{ __('Doble') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">2B</div></button>
-                <button type="button" @click="openHitModal('triple')" :disabled="busy" class="sb-action-btn" style="background:#8b5cf6;">{{ __('Triple') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">3B</div></button>
-                <button type="button" @click="openHitModal('hr')" :disabled="busy" class="sb-action-btn strike">{{ __('HR') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">Home Run</div></button>
+            <div class="grid grid-cols-4 gap-2">
+                <button type="button" @click="openHitModal('single')" :disabled="busy" class="sb-action-btn ball">
+                    <span class="block text-sm sm:text-base">{{ __('Sencillo') }}</span>
+                    <div class="text-[10px] font-normal opacity-80 mt-0.5">1B</div>
+                </button>
+                <button type="button" @click="openHitModal('double')" :disabled="busy" class="sb-action-btn" style="background:#0ea5e9;">
+                    <span class="block text-sm sm:text-base">{{ __('Doble') }}</span>
+                    <div class="text-[10px] font-normal opacity-80 mt-0.5">2B</div>
+                </button>
+                <button type="button" @click="openHitModal('triple')" :disabled="busy" class="sb-action-btn" style="background:#8b5cf6;">
+                    <span class="block text-sm sm:text-base">{{ __('Triple') }}</span>
+                    <div class="text-[10px] font-normal opacity-80 mt-0.5">3B</div>
+                </button>
+                <button type="button" @click="openHitModal('hr')" :disabled="busy" class="sb-action-btn strike">
+                    <span class="block text-sm sm:text-base">{{ __('HR') }}</span>
+                    <div class="text-[10px] font-normal opacity-80 mt-0.5 hidden sm:block">{{ __('Home Run') }}</div>
+                </button>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-2 gap-2 mt-2">
-                <button type="button" @click="openHitModal('inside_park')" :disabled="busy" class="sb-action-btn foul">{{ __('HR de pierna') }}</button>
-                <button type="button" @click="openBuntModal()" :disabled="busy" class="sb-action-btn" style="background:#eab308;">{{ __('Toque de bolas') }}<div class="text-[10px] font-normal opacity-80 mt-0.5">{{ __('Sacrificio o sencillo') }}</div></button>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                <button type="button" @click="openHitModal('inside_park')" :disabled="busy" class="sb-action-btn foul">
+                    <span class="block text-sm sm:text-base">{{ __('HR de pierna') }}</span>
+                </button>
+                <button type="button" @click="openBuntModal()" :disabled="busy" class="sb-action-btn" style="background:#eab308;">
+                    <span class="block text-sm sm:text-base">{{ __('Toque de bolas') }}</span>
+                    <div class="text-[10px] font-normal opacity-80 mt-0.5 hidden sm:block">{{ __('Sacrificio o sencillo') }}</div>
+                </button>
             </div>
         </div>
 
