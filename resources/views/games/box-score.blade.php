@@ -118,6 +118,14 @@
                                 {{-- Score CENTRADO --}}
                                 <div class="text-center flex-shrink-0 px-2">
                                     <p class="text-5xl font-black">{{ $score['home'] }} - {{ $score['away'] }}</p>
+                                    @php $endReason = $game->endGameReason(); @endphp
+                                    @if ($endReason)
+                                        <div class="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 border border-amber-300/60 rounded-full text-amber-50 text-xs font-bold uppercase tracking-wider"
+                                             title="{{ $endReason['note'] ?? '' }}">
+                                            <span class="material-symbols-outlined" style="font-size:14px;">flag</span>
+                                            <span>{{ $endReason['label'] }}</span>
+                                        </div>
+                                    @endif
                                 </div>
 
                                 {{-- Visitante (logo + nombre a la derecha) --}}

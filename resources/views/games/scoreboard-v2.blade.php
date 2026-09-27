@@ -486,6 +486,15 @@
                  x-show="isFinalized" x-cloak>
                 {{ __('JUEGO FINALIZADO') }}
             </div>
+            @php $endReason = $game->endGameReason(); @endphp
+            @if ($endReason)
+                <div class="mt-1 inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 bg-amber-900/60 border border-amber-500/70 rounded-full text-amber-100 text-[10px] sm:text-xs font-bold uppercase tracking-wide sm:tracking-wider text-center whitespace-nowrap"
+                     title="{{ $endReason['note'] ?? '' }}"
+                     x-show="isFinalized" x-cloak>
+                    <span class="material-symbols-outlined" style="font-size:12px;">flag</span>
+                    <span>{{ $endReason['label'] }}</span>
+                </div>
+            @endif
         </div>
 
         {{-- Visitante --}}

@@ -174,6 +174,53 @@ class Game extends Model
         return url("/game/live/{$this->public_token}");
     }
 
+    /**
+     * Motivo de finalizacion del juego (reglamentario/nocaut/suspension/forfait/otro)
+     * + nota opcional. Lo extrae del ultimo Play de tipo game_end (subtype=reason,
+     * meta->note). Retorna null si el juego no fue finalizado con motivo explicito
+     * (subtype=manual se considera "sin motivo seleccionado" y no se muestra).
+     */
+    public function endGameReason(): ?array
+    {
+        if ($this->status !== 'finalized') {
+            return null;
+        }
+
+        $last = Play::where('game_id', $this->id)
+            ->where('type', Play::TYPE_GAME_END)
+            ->orderByDesc('sequence')
+            ->first();
+
+        if (! $last) {
+            return null;
+        }
+
+        $reason = $last->subtype ?: 'manual';
+
+        // subtype=manual (legacy o juegos cerrados via DB sin pasar por el modal)
+        // no deben mostrar burbuja de motivo: no hay informacion que aportar.
+        if ($reason === 'manual') {
+            return null;
+        }
+
+        $meta = $last->meta ?? [];
+        $note = $meta['note'] ?? null;
+
+        $labels = [
+            'regulation' => 'Reglamentario',
+            'knockout' => 'Nocaut / Mercy rule',
+            'suspension' => 'Suspendido',
+            'forfeit' => 'Forfait / W.O.',
+            'other' => 'Otro motivo',
+        ];
+
+        return [
+            'reason' => $reason,
+            'label' => $labels[$reason] ?? 'Finalizado',
+            'note' => $note,
+        ];
+    }
+
     public function isInProgress(): bool
     {
         return $this->status === 'in_progress';
