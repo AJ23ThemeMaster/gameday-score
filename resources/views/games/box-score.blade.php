@@ -271,12 +271,12 @@
                                 </label>
                                 <select name="winning_pitcher_id" class="block w-full rounded-md border-gray-300 text-sm">
                                     <option value="">— Sin asignar —</option>
-                                    @forelse ($winningRoster as $a)
+                                    @forelse ($winningPitchers as $a)
                                         <option value="{{ $a->id }}" @selected($game->winning_pitcher_id == $a->id)>
                                             #{{ $a->number }} {{ $a->full_name }} ({{ $a->team->short_name ?? $a->team->name }})
                                         </option>
                                     @empty
-                                        <option value="" disabled>{{ __('Sin roster del equipo ganador.') }}</option>
+                                        <option value="" disabled>{{ __('El equipo ganador aun no tiene pitchers registrados.') }}</option>
                                     @endforelse
                                 </select>
                                 @error('winning_pitcher_id')
@@ -291,12 +291,12 @@
                                 </label>
                                 <select name="losing_pitcher_id" class="block w-full rounded-md border-gray-300 text-sm">
                                     <option value="">— Sin asignar —</option>
-                                    @forelse ($losingRoster as $a)
+                                    @forelse ($losingPitchers as $a)
                                         <option value="{{ $a->id }}" @selected($game->losing_pitcher_id == $a->id)>
                                             #{{ $a->number }} {{ $a->full_name }} ({{ $a->team->short_name ?? $a->team->name }})
                                         </option>
                                     @empty
-                                        <option value="" disabled>{{ __('Sin roster del equipo perdedor.') }}</option>
+                                        <option value="" disabled>{{ __('El equipo perdedor aun no tiene pitchers registrados.') }}</option>
                                     @endforelse
                                 </select>
                                 @error('losing_pitcher_id')
@@ -311,12 +311,12 @@
                                 </label>
                                 <select name="save_pitcher_id" class="block w-full rounded-md border-gray-300 text-sm">
                                     <option value="">— N/A —</option>
-                                    @forelse ($winningRoster as $a)
+                                    @forelse ($winningPitchers as $a)
                                         <option value="{{ $a->id }}" @selected($game->save_pitcher_id == $a->id)>
                                             #{{ $a->number }} {{ $a->full_name }} ({{ $a->team->short_name ?? $a->team->name }})
                                         </option>
                                     @empty
-                                        <option value="" disabled>{{ __('Sin roster del equipo ganador.') }}</option>
+                                        <option value="" disabled>{{ __('El equipo ganador aun no tiene pitchers registrados.') }}</option>
                                     @endforelse
                                 </select>
                                 @error('save_pitcher_id')

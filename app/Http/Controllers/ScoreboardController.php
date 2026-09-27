@@ -687,12 +687,39 @@ class ScoreboardController extends Controller
                 ->values();
         };
 
+        // Pitchers que efectivamente pitchearon en el juego (tienen al menos un Play
+        // con pitcher_id = su id). Esto evita listar atletas del roster que nunca
+        // subieron a la loma. Los selects del box-score usan esto para G, P y SV;
+        // MVP sigue usando el roster completo del ganador (puede ser cualquier
+        // posicion: bateador, corredor, etc).
+        $pitcherIdsForGame = \App\Models\Play::where('game_id', $game->id)
+            ->whereNotNull('pitcher_id')
+            ->distinct()
+            ->pluck('pitcher_id');
+
+        $pitchersFor = function (?int $teamId) use ($pitcherIdsForGame) {
+            if (! $teamId) {
+                return collect();
+            }
+
+            return \App\Models\Athlete::whereIn('id', $pitcherIdsForGame)
+                ->where('team_id', $teamId)
+                ->with('team')
+                ->orderBy('number')
+                ->get()
+                ->values();
+        };
+
+        $winningPitchers = $pitchersFor($winnerTeamId);
+        $losingPitchers = $pitchersFor($loserTeamId);
         $winningRoster = $rosterFor($winnerTeamId);
         $losingRoster = $rosterFor($loserTeamId);
 
         return view('games.box-score', compact(
             'game', 'score', 'lineScore', 'totalInnings',
-            'winningRoster', 'losingRoster', 'maxPlayedInning', 'gameEnded'
+            'winningRoster', 'losingRoster',
+            'winningPitchers', 'losingPitchers',
+            'maxPlayedInning', 'gameEnded'
         ));
     }
 
