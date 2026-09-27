@@ -386,9 +386,25 @@
             </div>
 
             {{-- Mobile: 1 boton density_medium + popover con 4 acciones --}}
-            <div class="sm:hidden relative" @click.outside="mobileActionsOpen = false">
+            <div class="sm:hidden relative"
+                 x-data="{ 
+                     mobileActionsOpen: false,
+                     mobileActionsAlign: 'right',
+                     computeMobileActionsAlign() {
+                         const btn = this.$refs.mobileActionsBtn;
+                         if (!btn) return;
+                         const rect = btn.getBoundingClientRect();
+                         const spaceRight = window.innerWidth - rect.right;
+                         // ~220px = popover min-width + safety. Si hay espacio a la derecha,
+                         // abre hacia la izquierda del contenedor (popover hacia la derecha).
+                         // Si no hay espacio, abre hacia la derecha del contenedor (popover hacia la izquierda).
+                         this.mobileActionsAlign = spaceRight > 220 ? 'left' : 'right';
+                     }
+                 }"
+                 @click.outside="mobileActionsOpen = false">
                 <button type="button"
-                        @click="mobileActionsOpen = !mobileActionsOpen"
+                        x-ref="mobileActionsBtn"
+                        @click="computeMobileActionsAlign(); mobileActionsOpen = !mobileActionsOpen"
                         :aria-expanded="mobileActionsOpen"
                         aria-haspopup="menu"
                         title="{{ __('Acciones del juego') }}"
@@ -406,7 +422,8 @@
                      x-transition:leave-end="opacity-0 -translate-y-1"
                      @click.stop
                      role="menu"
-                     class="absolute left-0 top-full mt-2 z-50 min-w-[200px] bg-wv-surface border border-wv-border rounded-lg shadow-xl p-1.5 flex flex-col gap-1">
+                     :class="mobileActionsAlign === 'right' ? 'right-0' : 'left-0'"
+                     class="absolute top-full mt-2 z-50 min-w-[200px] bg-wv-surface border border-wv-border rounded-lg shadow-xl p-1.5 flex flex-col gap-1">
                     @if ($game->is_public && $game->public_token)
                         <a href="{{ route('games.live.public', $game->public_token) }}"
                            target="_blank" rel="noopener"
