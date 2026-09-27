@@ -11,6 +11,8 @@
                 <a href="{{ route('games.roster.index', $game) }}" class="inline-flex items-center px-3 py-1.5 bg-wv-accent-soft hover:bg-wv-accent text-wv-accent hover:text-wv-text-on-accent text-xs font-semibold rounded-card transition">{{ __('Roster') }}</a>
                 @if (in_array($game->status, ['scheduled', 'in_progress', 'paused']))
                     <a href="{{ route('games.scoreboard', $game) }}" class="inline-flex items-center px-3 py-1.5 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-xs font-semibold rounded-card transition">{{ __('Scoreboard en vivo') }}</a>
+                @else
+                    <a href="{{ route('games.scoreboard', $game) }}" class="inline-flex items-center px-3 py-1.5 bg-wv-accent hover:bg-wv-accent-hover text-wv-text-on-accent text-xs font-semibold rounded-card transition">{{ __('Scoreboard') }}</a>
                 @endif
                 {{-- DISI-piloto: el delegado con scope puede editar; un gestor/owner
                      sin scope tambien. La policy unifica esto. --}}

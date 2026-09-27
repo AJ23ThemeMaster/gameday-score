@@ -231,15 +231,15 @@
                                                     @endif
                                                 @endif
                                                 {{-- sports_baseball: scoreboard de control del juego (games.scoreboard).
-                                                     Solo el anotador/admin usa esta vista para gestionar jugadas. --}}
-                                                @if (in_array($g->status, ['scheduled', 'in_progress', 'paused']))
-                                                    <a href="{{ route('games.scoreboard', $g) }}"
-                                                       title="{{ __('Scoreboard') }}"
-                                                       aria-label="{{ __('Scoreboard') }}"
-                                                       class="inline-flex items-center justify-center w-8 h-8 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-accent/40 text-wv-accent hover:bg-wv-accent/15 hover:border-wv-accent focus:ring-wv-accent">
-                                                        <span class="material-symbols-outlined !text-[16px]">sports_baseball</span>
-                                                    </a>
-                                                @endif
+                                                     Solo el anotador/admin usa esta vista para gestionar jugadas.
+                                                     Siempre visible, incluso cuando el juego esta finalizado, para
+                                                     consultar el estado y las atribuciones (G/P/SV/MVP, motivo). --}}
+                                                <a href="{{ route('games.scoreboard', $g) }}"
+                                                   title="{{ __('Scoreboard') }}"
+                                                   aria-label="{{ __('Scoreboard') }}"
+                                                   class="inline-flex items-center justify-center w-8 h-8 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-wv-bg border-wv-accent/40 text-wv-accent hover:bg-wv-accent/15 hover:border-wv-accent focus:ring-wv-accent">
+                                                    <span class="material-symbols-outlined !text-[16px]">sports_baseball</span>
+                                                </a>
                                                 {{-- DISI-piloto: el boton Editar aparece si la policy `update` pasa;
                                                      Eliminar requiere policy `delete` (admin-only en este piloto). --}}
                                                 <x-action-buttons
