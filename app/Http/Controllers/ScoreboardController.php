@@ -136,11 +136,12 @@ class ScoreboardController extends Controller
         ]);
 
         // Validar 'lineup' contra el payload enriquecido (puede venir de `order` legacy).
+        // Tamano del lineup puede ser 9 (sin DH) o 10 (con DH). lineup_order 1-10.
         $validator = Validator::make($payload, [
-            'lineup' => 'required|array|size:9',
+            'lineup' => 'required|array|min:9|max:10',
             'lineup.*.athlete_id' => 'required|integer',
-            'lineup.*.lineup_order' => 'required|integer|min:1|max:9',
-            'lineup.*.position' => 'required|string|in:P,C,1B,2B,3B,SS,LF,CF,RF',
+            'lineup.*.lineup_order' => 'required|integer|min:1|max:10',
+            'lineup.*.position' => 'required|string|in:P,C,1B,2B,3B,SS,LF,CF,RF,DH',
             'lineup.*.is_pitcher' => 'required|boolean',
         ]);
         if ($validator->fails()) {
@@ -157,10 +158,11 @@ class ScoreboardController extends Controller
             return response()->json(['success' => false, 'error' => 'Equipo no pertenece al juego'], 422);
         }
 
-        // Validar lineup_order unicos 1..9
+        // Validar lineup_order unicos 1..N (donde N es 9 o 10)
+        $lineupCount = count($data['lineup']);
         $orders = array_column($data['lineup'], 'lineup_order');
-        if (count(array_unique($orders)) !== 9) {
-            return response()->json(['success' => false, 'error' => 'lineup_order debe ser unico del 1 al 9'], 422);
+        if (count(array_unique($orders)) !== $lineupCount) {
+            return response()->json(['success' => false, 'error' => "lineup_order debe ser unico del 1 al {$lineupCount}"], 422);
         }
 
         // Validar exactamente 1 pitcher (DISI-31b: en formato legacy sin pitcher
@@ -185,7 +187,7 @@ class ScoreboardController extends Controller
             ->whereIn('athlete_id', $athleteIds)
             ->pluck('athlete_id')
             ->all();
-        if (count($validIds) !== 9) {
+        if (count($validIds) !== $lineupCount) {
             return response()->json(['success' => false, 'error' => 'Uno o mas atletas no pertenecen al roster del equipo'], 422);
         }
 
@@ -416,6 +418,10 @@ class ScoreboardController extends Controller
             'substituteUrl' => route('games.plays.substitute', $game),
             'lineupReorderUrl' => route('games.lineup.reorder', $game),
             'statsUrl' => route('games.scoreboard.stats', $game),
+            // Tamano del lineup de bateo por equipo (9 sin DH, 10 con DH).
+            // Se detecta del pivot game_athlete.max(lineup_order).
+            'lineupSizeAway' => $this->lineupSizeFromRoster($game, $game->away_team_id),
+            'lineupSizeHome' => $this->lineupSizeFromRoster($game, $game->home_team_id),
         ];
 
         return view('games.scoreboard-v2', compact(
@@ -548,6 +554,20 @@ class ScoreboardController extends Controller
         $batterStats = $batter ? Play::statsForBatter($game->id, $batter->id) : $this->emptyBatterStats();
 
         return [$state, $pitcher, $batter, $onDeck, $pitcherStats, $batterStats];
+    }
+
+    /**
+     * Tamano del lineup de bateo para un equipo en este juego.
+     * 9 por defecto (sin DH) o 10 si algun bateador tiene lineup_order >= 10.
+     */
+    private function lineupSizeFromRoster(\App\Models\Game $game, int $teamId): int
+    {
+        $maxOrder = (int) DB::table('game_athlete')
+            ->where('game_id', $game->id)
+            ->where('team_id', $teamId)
+            ->where('is_starter', true)
+            ->max('lineup_order');
+        return $maxOrder >= 10 ? 10 : 9;
     }
 
     private function athleteToArray(Athlete $a): array

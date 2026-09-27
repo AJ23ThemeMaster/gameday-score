@@ -708,11 +708,20 @@ document.addEventListener('alpine:init', () => {
         currentTeamId() {
             return this.lineupTeam === 'away' ? this.awayTeamId : this.homeTeamId;
         },
+        // Tamano del lineup segun el team actual: 9 sin DH, 10 con DH.
+        // El tamano se pasa desde el backend (lineupSizeAway/lineupSizeHome)
+        // y se autodetecta del max lineup_order del roster del equipo.
+        currentLineupSize() {
+            const key = this.lineupTeam === 'away' ? 'lineupSizeAway' : 'lineupSizeHome';
+            const size = Number(this[key]);
+            return (size === 10) ? 10 : 9;
+        },
         addToLineup(athleteId) {
             const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
             const lineup = this.currentLineup();
-            if (lineup.length >= 9) {
-                this.toast('El lineup ya tiene 9 jugadores. Quita uno antes de agregar otro.', 'warning');
+            const size = this.currentLineupSize();
+            if (lineup.length >= size) {
+                this.toast(`El lineup ya tiene ${size} jugadores. Quita uno antes de agregar otro.`, 'warning');
                 return;
             }
             const athlete = all.find(a => Number(a.id) === Number(athleteId));
@@ -751,7 +760,9 @@ document.addEventListener('alpine:init', () => {
             lineup.forEach((a, i) => { a.lineup_order = i + 1; });
         },
         suggestPosition(idx) {
-            return ['P','C','1B','2B','3B','SS','LF','CF','RF'][idx] || '';
+            // 9 posiciones defensivas + DH en la posicion 10 (cuando el
+            // lineup es de 10 bateadores con DH).
+            return ['P','C','1B','2B','3B','SS','LF','CF','RF','DH'][idx] || '';
         },
         onDragStart(event, id) {
             this.lineupDragId = id;
@@ -807,8 +818,9 @@ document.addEventListener('alpine:init', () => {
         async saveLineup() {
             const lineup = this.currentLineup();
             const teamId = this.currentTeamId();
-            if (lineup.length !== 9) {
-                this.toast('El lineup debe tener exactamente 9 jugadores. Actual: ' + lineup.length, 'error');
+            const size = this.currentLineupSize();
+            if (lineup.length !== size) {
+                this.toast(`El lineup debe tener exactamente ${size} jugadores. Actual: ${lineup.length}`, 'error');
                 return;
             }
             const pitcherCount = lineup.filter(a => !!a.is_pitcher).length;
@@ -1995,13 +2007,21 @@ document.addEventListener('alpine:init', () => {
         currentTeamId() {
             return this.lineupTeam === 'away' ? this.awayTeamId : this.homeTeamId;
         },
+        // Tamano del lineup segun el team actual: 9 sin DH, 10 con DH.
+        // lineupSizeAway/Home vienen del backend (ScoreboardController::v2).
+        currentLineupSize() {
+            const key = this.lineupTeam === 'away' ? 'lineupSizeAway' : 'lineupSizeHome';
+            const size = Number(this[key]);
+            return (size === 10) ? 10 : 9;
+        },
 
         // DISI-31: gestion del lineup
         addToLineup(athleteId) {
             const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
             const lineup = this.currentLineup();
-            if (lineup.length >= 9) {
-                this.toast('El lineup ya tiene 9 jugadores. Quita uno antes de agregar otro.', 'warning');
+            const size = this.currentLineupSize();
+            if (lineup.length >= size) {
+                this.toast(`El lineup ya tiene ${size} jugadores. Quita uno antes de agregar otro.`, 'warning');
                 return;
             }
             const athlete = all.find(a => a.id === athleteId);
@@ -2100,15 +2120,16 @@ document.addEventListener('alpine:init', () => {
             this.lineupDirty = true;
         },
 
-        // DISI-31: enviar payload completo (9 atletas con orden, posicion, pitcher).
+        // DISI-31: enviar payload completo (9 o 10 atletas con orden, posicion, pitcher).
         // DISI-32: defaults robustos en position/is_pitcher por si algun item del
         // lineup llega sin esos campos (ej: atletas agregados via drag&drop que
         // no han pasado por el modal de Gestion de Lineup).
         async saveLineup() {
             const lineup = this.currentLineup();
             const teamId = this.currentTeamId();
-            if (lineup.length !== 9) {
-                this.toast('El lineup debe tener exactamente 9 jugadores. Actual: ' + lineup.length, 'error');
+            const size = this.currentLineupSize();
+            if (lineup.length !== size) {
+                this.toast(`El lineup debe tener exactamente ${size} jugadores. Actual: ${lineup.length}`, 'error');
                 return;
             }
             const pitcherCount = lineup.filter(a => !!a.is_pitcher).length;

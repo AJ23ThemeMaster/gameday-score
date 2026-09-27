@@ -1293,12 +1293,12 @@
                         :class="lineupTeam === 'home' ? 'border-b-2 border-emerald-500 text-wv-text font-bold' : 'text-wv-text-secondary'"
                         class="px-3 py-2 text-sm" x-text="homeShort"></button>
                 <div class="ml-auto text-xs text-wv-text-secondary px-2">
-                    <span x-text="currentLineup().length"></span> / 9 {{ __('titulares') }}
+                    <span x-text="currentLineup().length"></span> / <span x-text="currentLineupSize()"></span> {{ __('titulares') }}
                 </div>
             </div>
 
             <div class="flex-1 overflow-y-auto p-3 space-y-4">
-                {{-- ============== SECCION TITULARES (9) ============== --}}
+                {{-- ============== SECCION TITULARES (9 o 10 con DH) ============== --}}
                 <div>
                     <div class="flex items-center justify-between mb-2 px-1">
                         <h4 class="text-xs uppercase tracking-wider text-wv-text-secondary font-bold">{{ __('Titulares (lineup)') }}</h4>
@@ -1330,6 +1330,7 @@
                                     <option value="LF">LF</option>
                                     <option value="CF">CF</option>
                                     <option value="RF">RF</option>
+                                    <option value="DH">DH</option>
                                 </select>
                                 {{-- Radio pitcher (solo 1 por equipo) --}}
                                 <label class="flex items-center gap-1 text-xs flex-shrink-0 cursor-pointer" title="{{ __('Marcar como pitcher') }}">
@@ -1370,7 +1371,7 @@
                                 <span class="text-sm font-bold text-wv-text-secondary w-7 flex-shrink-0 text-center" x-text="'#' + (a.number ?? '-')"></span>
                                 <span class="text-sm font-medium text-wv-text flex-1 truncate" x-text="(a.first_name || '') + ' ' + (a.last_name || '')"></span>
                                 <span class="text-[10px] text-wv-text-secondary flex-shrink-0" x-text="a.position || ''"></span>
-                                <button type="button" @click="addToLineup(a.id)" :disabled="currentLineup().length >= 9"
+                                <button type="button" @click="addToLineup(a.id)" :disabled="currentLineup().length >= currentLineupSize()"
                                         title="{{ __('Agregar al lineup') }}"
                                         class="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded flex-shrink-0">
                                     + {{ __('Agregar') }}
@@ -1390,10 +1391,10 @@
                     {{ __('Cancelar') }}
                 </button>
                 <button type="button" @click="saveLineup()"
-                        :disabled="currentLineup().length !== 9 || lineupLoading"
+                        :disabled="currentLineup().length !== currentLineupSize() || lineupLoading"
                         class="flex-1 py-2 bg-[#10b981] hover:bg-[#059669] disabled:opacity-50 text-white text-sm font-bold rounded-lg">
-                    <span x-show="currentLineup().length === 9 && !lineupLoading">{{ __('Guardar lineup') }}</span>
-                    <span x-show="currentLineup().length !== 9" x-text="'Faltan ' + (9 - currentLineup().length) + ' titulares'"></span>
+                    <span x-show="currentLineup().length === currentLineupSize() && !lineupLoading">{{ __('Guardar lineup') }}</span>
+                    <span x-show="currentLineup().length !== currentLineupSize()" x-text="'Faltan ' + (currentLineupSize() - currentLineup().length) + ' titulares'"></span>
                 </button>
             </div>
         </div>

@@ -496,11 +496,34 @@ class GameplayEngine
             return $a?->id;
         }
         $lineupOrder = (int) $current->pivot->lineup_order;
+        // Tamano del lineup del equipo: 9 (sin DH) o 10 (con DH). Se detecta
+        // dinamicamente desde el pivot para que cada equipo pueda tener su
+        // propio tamano (los dos equipos NO tienen que coincidir).
+        $maxOrder = (int) $game->athletes()
+            ->wherePivot('team_id', $teamId)
+            ->wherePivot('is_starter', true)
+            ->max('game_athlete.lineup_order');
+        $size = $maxOrder >= 10 ? 10 : 9;
+        $nextOrder = $lineupOrder >= $size ? 1 : $lineupOrder + 1;
         $next = $game->athletes()
             ->wherePivot('team_id', $teamId)
-            ->wherePivot('lineup_order', $lineupOrder === 9 ? 1 : $lineupOrder + 1)
+            ->wherePivot('lineup_order', $nextOrder)
             ->first();
         return $next?->id;
+    }
+
+    /**
+     * Tamano del lineup de bateo de un equipo en este juego.
+     * 9 si el lineup tiene 9 bateadores (sin DH), 10 si tiene 10 (con DH).
+     * Util para validacion y para pasar al frontend.
+     */
+    public function lineupSizeFor(Game $game, int $teamId): int
+    {
+        $maxOrder = (int) $game->athletes()
+            ->wherePivot('team_id', $teamId)
+            ->wherePivot('is_starter', true)
+            ->max('game_athlete.lineup_order');
+        return $maxOrder >= 10 ? 10 : 9;
     }
 
     /**
