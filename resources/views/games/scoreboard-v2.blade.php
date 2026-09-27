@@ -510,6 +510,50 @@
         </div>
     </div>
 
+    {{-- Pitchers + MVP (solo se muestran los asignados) --}}
+    @if ($game->winningPitcher || $game->losingPitcher || $game->savePitcher || $game->mvp)
+        <div class="mt-4 px-3 py-3 bg-wv-surface border border-wv-border rounded-card">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                @if ($game->winningPitcher)
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-wv-text-secondary font-semibold uppercase tracking-wider text-[10px] sm:text-xs w-28 sm:w-32 flex-shrink-0">{{ __('Pitcher ganador') }} (G)</span>
+                        <span class="font-semibold truncate" style="color: var(--sb-text);">
+                            <span class="text-wv-text-secondary">#{{ $game->winningPitcher->number }}</span>
+                            {{ $game->winningPitcher->full_name }}
+                        </span>
+                    </div>
+                @endif
+                @if ($game->losingPitcher)
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-wv-text-secondary font-semibold uppercase tracking-wider text-[10px] sm:text-xs w-28 sm:w-32 flex-shrink-0">{{ __('Pitcher perdedor') }} (P)</span>
+                        <span class="font-semibold truncate" style="color: var(--sb-text);">
+                            <span class="text-wv-text-secondary">#{{ $game->losingPitcher->number }}</span>
+                            {{ $game->losingPitcher->full_name }}
+                        </span>
+                    </div>
+                @endif
+                @if ($game->savePitcher)
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-wv-text-secondary font-semibold uppercase tracking-wider text-[10px] sm:text-xs w-28 sm:w-32 flex-shrink-0">{{ __('Juego salvado') }} (SV)</span>
+                        <span class="font-semibold truncate" style="color: var(--sb-text);">
+                            <span class="text-wv-text-secondary">#{{ $game->savePitcher->number }}</span>
+                            {{ $game->savePitcher->full_name }}
+                        </span>
+                    </div>
+                @endif
+                @if ($game->mvp)
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-yellow-300 font-semibold uppercase tracking-wider text-[10px] sm:text-xs w-28 sm:w-32 flex-shrink-0">⭐ {{ __('MÁS VALIOSO') }}</span>
+                        <span class="font-semibold truncate" style="color: var(--sb-text);">
+                            <span class="text-wv-text-secondary">#{{ $game->mvp->number }}</span>
+                            {{ $game->mvp->full_name }}
+                        </span>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
+
     {{-- Pitcher + Batter cards (con foto) --}}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4" x-show="!isFinalized && gameStatus==='in_progress'">
         {{-- Pitcher --}}

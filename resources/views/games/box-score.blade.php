@@ -229,7 +229,7 @@
                                     @endif
                                     @if ($game->mvp)
                                         <div class="flex items-center gap-2">
-                                            <span class="text-yellow-300 font-semibold uppercase tracking-wider text-xs w-32">⭐ MVP</span>
+                                            <span class="text-yellow-300 font-semibold uppercase tracking-wider text-xs w-32">⭐ {{ __('MÁS VALIOSO') }}</span>
                                             <span class="font-semibold">#{{ $game->mvp->number }} {{ $game->mvp->full_name }}</span>
                                         </div>
                                     @endif
