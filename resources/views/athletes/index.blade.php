@@ -129,8 +129,16 @@
                                         </td>
                                         <td class="px-6 py-3 text-sm text-wv-text-secondary">{{ $a->team->name ?? '—' }}</td>
                                         <td class="px-6 py-3 text-sm">
-                                            @if ($a->category)
-                                                <a href="{{ route('categories.show', $a->category) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $a->category->name }}</a>
+                                            {{-- DISI-N: atletas pueden pertenecer
+                                                 a 1 o 2 categorias (pivot). --}}
+                                            @if ($a->categories->isNotEmpty())
+                                                <ul class="space-y-0.5">
+                                                    @foreach ($a->categories as $cat)
+                                                        <li>
+                                                            <a href="{{ route('categories.show', $cat) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $cat->name }}</a>
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
                                             @else
                                                 <span class="text-wv-text-secondary">—</span>
                                             @endif

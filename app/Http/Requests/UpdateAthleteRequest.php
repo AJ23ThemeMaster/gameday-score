@@ -25,7 +25,11 @@ class UpdateAthleteRequest extends FormRequest
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'document_file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
             'team_id' => ['nullable', 'integer', 'exists:teams,id'],
-            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            // DISI-N: un atleta puede pertenecer a MAXIMO 2 categorias del
+            // mismo equipo. La validacion fina de "todas del mismo team"
+            // la hace Athlete::syncCategories() en el controller.
+            'categories' => ['nullable', 'array', 'max:2'],
+            'categories.*' => ['integer', 'exists:categories,id', 'distinct'],
             'number' => ['nullable', 'integer', 'between:0,99'],
             'position' => ['nullable', 'in:P,C,1B,2B,3B,SS,LF,CF,RF,DH'],
             'bats' => ['nullable', 'in:L,R,S'],
@@ -33,6 +37,15 @@ class UpdateAthleteRequest extends FormRequest
             'active' => ['boolean'],
             'remove_photo' => ['boolean'],
             'remove_document' => ['boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'categories.max' => 'Un atleta puede pertenecer a máximo 2 categorías.',
+            'categories.*.exists' => 'Una de las categorías seleccionadas no existe.',
+            'categories.*.distinct' => 'No puedes asignar la misma categoría dos veces.',
         ];
     }
 }

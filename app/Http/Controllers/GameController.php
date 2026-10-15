@@ -413,8 +413,14 @@ class GameController extends Controller
 
     /**
      * DISI-67: auto-poblar el roster del juego con todos los atletas del
-     * equipo local Y visitante que tengan `category_id` igual a la
-     * categoria del juego. Devuelve la cantidad insertada.
+     * equipo local Y visitante que pertenezcan a la categoria del juego.
+     * Devuelve la cantidad insertada.
+     *
+     * DISI-N: las categorias del atleta viven en la pivot athlete_category
+     * (1 o 2 categorias del mismo equipo). Si el atleta pertenece a 2 cats
+     * y una de ellas coincide con la categoria del juego, debe aparecer en
+     * el roster. Por eso usamos `whereHas('categories', ...)` en lugar del
+     * antiguo `where('category_id', ...)`.
      *
      * El `team_id` del pivot se llena con el equipo del atleta (que tiene
      * que coincidir con local o visitante por el filtro whereIn).
@@ -422,8 +428,10 @@ class GameController extends Controller
     private function seedRosterFromCategory(Game $game): int
     {
         $athletes = Athlete::query()
-            ->where('category_id', $game->category_id)
             ->whereIn('team_id', [$game->home_team_id, $game->away_team_id])
+            ->whereHas('categories', function ($q) use ($game) {
+                $q->where('categories.id', (int) $game->category_id);
+            })
             ->select(['id', 'team_id'])
             ->get();
 
