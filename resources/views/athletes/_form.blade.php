@@ -1,7 +1,4 @@
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4" x-data="athleteCategoryForm({
-    max: 2,
-    initial: @js(old('categories', $selectedCategoryIds ?? []))
-})">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
     <div>
         <x-input-label for="first_name" :value="__('Nombre')" />
@@ -69,11 +66,21 @@
         <x-input-error :messages="$errors->get('team_id')" class="mt-2" />
     </div>
 
-    {{-- DISI-N: multi-select de categorias (maximo 2 del mismo equipo).
-         Reemplaza el antiguo dropdown unico de category_id.
-         x-model + x-init en Alpine manejan el limite visual de 2;
-         el server-side enforcea la regla via Athlete::syncCategories(). --}}
-    <div x-data="{ disabledByDelegado: @js(auth()->user()?->isDelegado() ?? false) }">
+    {{-- DISI-N: multi-select de categorias (max 2 del mismo equipo).
+         Refactor a checkboxes nativos + JS vanilla (sin Alpine component)
+         por dos motivos:
+           1. El layout principal NO tiene @stack('scripts'), asi que un
+              componente Alpine registrado via window.* desde un push se
+              evaluaba sin estar disponible -> Alpine.data('xxx') fallaba
+              silenciosamente y los checkboxes quedaban "muertos".
+           2. x-data anidados creaban scopes independientes y las
+              referencias cruzadas (selected/toggle) no funcionaban.
+         Ahora: checkboxes nativos con `name="categories[]"` (Blade serializa
+         como array en POST), el estado checked se hidrata con PHP puro desde
+         $selectedCategoryIds / old('categories'), y el limite de 2 lo
+         enforza JS vanilla al change. La regla definitiva vive en
+         Athlete::syncCategories() server-side (defense in depth). --}}
+    <div>
         <x-input-label for="categories" :value="__('Categorías (máx. 2, mismo equipo)')" />
         @auth
             @if (auth()->user()->isDelegado())
@@ -85,19 +92,27 @@
                     @endforeach
                 </select>
                 <input type="hidden" name="categories[]" value="{{ $categories->first()?->id }}">
+                <p class="mt-1 text-xs text-wv-text-secondary">{{ __('Como delegado, solo puedes asignar atletas a tu categoría.') }}</p>
             @else
-                {{-- Admin / gestor: multi-select con checkboxes (UX mas clara que
-                     un dropdown multiple porque se ve el maximo de 2). --}}
-                <div class="mt-1 border border-wv-border bg-wv-surface rounded-md shadow-sm p-3 space-y-2">
+                {{-- Admin / gestor: grupo de checkboxes nativos con limite JS a 2. --}}
+                <div id="athlete-categories-group"
+                     data-max="2"
+                     class="mt-1 border border-wv-border bg-wv-surface rounded-md shadow-sm p-3 space-y-2">
+                    @php
+                        // Normalizar $selectedCategoryIds a array de ints para
+                        // que in_array(... true) funcione incluso si viniera
+                        // con strings (ej. del roundtrip old()).
+                        $preselected = array_map('intval', (array) old('categories', $selectedCategoryIds ?? []));
+                    @endphp
                     @forelse ($categories as $cat)
-                        <label class="flex items-center gap-2 text-sm text-wv-text {{ $cat->team_id && (!auth()->user()->isAdmin()) && (int) $cat->team_id !== (int) ($athlete->team_id ?? old('team_id', 0)) ? 'opacity-50' : '' }}">
+                        <label class="flex items-center gap-2 text-sm text-wv-text"
+                               data-cat-checkbox
+                               data-cat-id="{{ (int) $cat->id }}">
                             <input type="checkbox"
+                                   class="athlete-cat-cb rounded border-wv-border bg-wv-bg text-wv-accent focus:ring-wv-accent"
                                    name="categories[]"
-                                   value="{{ $cat->id }}"
-                                   {{ in_array((int) $cat->id, old('categories', $selectedCategoryIds ?? []), true) ? 'checked' : '' }}
-                                   :disabled="selected.length >= max && !selected.includes({{ (int) $cat->id }})"
-                                   @change="toggle({{ (int) $cat->id }})"
-                                   class="rounded border-wv-border bg-wv-bg text-wv-accent focus:ring-wv-accent">
+                                   value="{{ (int) $cat->id }}"
+                                   {{ in_array((int) $cat->id, $preselected, true) ? 'checked' : '' }}>
                             <span>
                                 {{ $cat->name }}
                                 @if ($cat->team)
@@ -113,9 +128,12 @@
                 </div>
                 <p class="mt-1 text-xs text-wv-text-secondary">
                     {{ __('Selecciona hasta 2 categorías del mismo equipo del atleta.') }}
-                    <span x-show="selected.length > 0" x-cloak>
-                        {{ __('Seleccionadas') }}: <span x-text="selected.length"></span>/<span x-text="max"></span>
-                    </span>
+                    <span id="athlete-cats-count" class="font-mono"></span>
+                </p>
+                <p id="athlete-cats-warning"
+                   class="mt-1 text-xs text-wv-alert hidden"
+                   role="alert">
+                    {{ __('Has alcanzado el máximo de 2 categorías. Desmarca una para cambiar.') }}
                 </p>
             @endif
         @endauth
@@ -218,29 +236,63 @@
 
 </div>
 
-@once
-@push('scripts')
+{{-- Script inline (no @push porque el layout principal no tiene @stack('scripts')):
+     limita la seleccion del grupo de categorias a `data-max` checkboxes,
+     muestra el contador "N/2" y un warning cuando se llega al maximo.
+     La regla DEFINITIVA vive server-side en Athlete::syncCategories(); este
+     script solo es UX (que el usuario no marque mas de 2 visuales).
+
+     NOTA Blade: NO usar directivas Blade (como @@once o @@endonce) dentro
+     de <script>. Blade parsea @@xxx dentro de <script> como si fueran
+     directivas; esto rompe el template. Ademas, en este caso usamos
+     checkboxes nativos y el JS se ejecuta una sola vez por inclusion
+     del form, asi que el @@once wrapper no aporta. --}}
 <script>
-    // Alpine component: estado del multi-select de categorias (max 2).
-    // Se inicializa con las categorias previamente seleccionadas (old()
-    // o del atleta en edicion) para que la regla visual persista en
-    // re-renders por validation errors.
-    function athleteCategoryForm({ max = 2, initial = [] } = {}) {
-        return {
-            max: max,
-            selected: Array.isArray(initial) ? initial.map((v) => parseInt(v, 10)).filter(Number.isFinite) : [],
-            toggle(id) {
-                const i = this.selected.indexOf(id);
-                if (i >= 0) {
-                    this.selected.splice(i, 1);
-                } else if (this.selected.length < this.max) {
-                    this.selected.push(id);
-                }
-            },
-        };
+(function () {
+    var group = document.getElementById('athlete-categories-group');
+    if (!group) return;
+    var max = parseInt(group.getAttribute('data-max') || '2', 10);
+    var cbs = group.querySelectorAll('.athlete-cat-cb');
+    var counter = document.getElementById('athlete-cats-count');
+    var warning = document.getElementById('athlete-cats-warning');
+
+    function updateCounter() {
+        var checked = group.querySelectorAll('.athlete-cat-cb:checked').length;
+        if (counter) {
+            counter.textContent = checked > 0 ? ' (' + checked + '/' + max + ')' : '';
+        }
     }
-    // Exponer globalmente para Alpine.data() desde el partial _form.
-    window.athleteCategoryForm = athleteCategoryForm;
+
+    function syncDisabledState() {
+        var checked = Array.from(group.querySelectorAll('.athlete-cat-cb:checked'));
+        var reachedLimit = checked.length >= max;
+        if (warning) {
+            if (reachedLimit) {
+                warning.classList.remove('hidden');
+            } else {
+                warning.classList.add('hidden');
+            }
+        }
+        cbs.forEach(function (cb) {
+            // Un checkbox ya checked no se bloquea: el usuario debe poder
+            // desmarcarlo para liberar el cupo. Los NO checked se bloquean
+            // cuando ya hay `max` marcados.
+            if (cb.checked) {
+                cb.disabled = false;
+            } else {
+                cb.disabled = reachedLimit;
+            }
+        });
+    }
+
+    group.addEventListener('change', function (event) {
+        if (event.target && event.target.classList.contains('athlete-cat-cb')) {
+            syncDisabledState();
+            updateCounter();
+        }
+    });
+
+    syncDisabledState();
+    updateCounter();
+})();
 </script>
-@endpush
-@endonce
