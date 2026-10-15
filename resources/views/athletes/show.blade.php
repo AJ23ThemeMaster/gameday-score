@@ -49,10 +49,22 @@
                         </dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Categoría') }}</dt>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Categorías') }}</dt>
                         <dd class="text-base font-medium text-wv-text">
-                            @if ($athlete->category)
-                                <a href="{{ route('categories.show', $athlete->category) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $athlete->category->name }}</a>
+                            {{-- DISI-N: atletas pueden pertenecer a 1 o 2
+                                 categorias del mismo equipo. Listamos todas
+                                 las de la pivot (athlete_category). --}}
+                            @if ($categoryList->isNotEmpty())
+                                <ul class="space-y-1">
+                                    @foreach ($categoryList as $cat)
+                                        <li>
+                                            <a href="{{ route('categories.show', $cat) }}" class="text-wv-accent hover:text-wv-accent-hover">{{ $cat->name }}</a>
+                                            @if ($cat->team)
+                                                <span class="text-xs text-wv-text-secondary">· {{ $cat->team->short_name ?? $cat->team->name }}</span>
+                                            @endif
+                                        </li>
+                                    @endforeach
+                                </ul>
                             @else —
                             @endif
                         </dd>

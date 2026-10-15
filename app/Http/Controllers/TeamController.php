@@ -113,11 +113,17 @@ class TeamController extends Controller
 
         $rosterIds = $rosters->pluck('id')->all();
         if ($rosterIds) {
+            // DISI-N: atletas ya no tienen category_id directo. El match con
+            // la categoria del roster se hace via la pivot athlete_category.
             $athleteCounts = \App\Models\Athlete::query()
-                ->selectRaw('rosters.id as roster_id, COUNT(athletes.id) as athletes_count')
+                ->selectRaw('rosters.id as roster_id, COUNT(DISTINCT athletes.id) as athletes_count')
                 ->join('rosters', function ($join) {
-                    $join->on('rosters.team_id', '=', 'athletes.team_id')
-                         ->whereColumn('rosters.category_id', 'athletes.category_id');
+                    $join->on('rosters.team_id', '=', 'athletes.team_id');
+                })
+                ->whereExists(function ($sub) {
+                    $sub->from('athlete_category as ac')
+                        ->whereColumn('ac.athlete_id', 'athletes.id')
+                        ->whereColumn('ac.category_id', 'rosters.category_id');
                 })
                 ->whereIn('rosters.id', $rosterIds)
                 ->groupBy('rosters.id')

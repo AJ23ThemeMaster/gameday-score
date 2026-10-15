@@ -95,11 +95,13 @@ class SearchController extends Controller
             'athletes' => $this->mapSimple(
                 // Visual: foto real del atleta si tiene, sino iniciales (primer
                 // caracter de first_name + last_name). Fallback 'person'.
-                Athlete::query()->with(['team', 'category'])->where('first_name', 'LIKE', $like)->orWhere('last_name', 'LIKE', $like)->orWhere('document_id', 'LIKE', $like)->orderBy('last_name')->limit(5)->get(),
+                // DISI-N: cargamos categories (pivot) para listar todas las
+                // categorias del atleta en el subtitulo de busqueda.
+                Athlete::query()->with(['team', 'categories'])->where('first_name', 'LIKE', $like)->orWhere('last_name', 'LIKE', $like)->orWhere('document_id', 'LIKE', $like)->orderBy('last_name')->limit(5)->get(),
                 fn ($a) => $this->row(
                     $a->full_name,
                     trim(($a->team->short_name ?? $a->team->name ?? '')
-                        . ($a->category?->name ? ' · ' . $a->category->name : '')
+                        . ($a->categories->isNotEmpty() ? ' · ' . $a->categories->pluck('name')->join(' / ') : '')
                         . ($a->number ? ' · #' . $a->number : '')),
                     route('athletes.show', $a),
                     image: $a->photoUrl,

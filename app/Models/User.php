@@ -165,6 +165,11 @@ class User extends Authenticatable
      * puede crear atletas de su (equipo, categoria). La validacion
      * fina de scope en create/store la hace el controller. Aqui solo
      * confirmamos que el atleta guardado esta dentro del scope.
+     *
+     * DISI-N: ahora la categoria del atleta vive en la pivot
+     * athlete_category (puede ser 1 o 2 categorias del mismo equipo).
+     * isDelegadoOf chequea que alguna de las categorias del atleta
+     * (en la pivot) coincida con la categoria del delegado.
      */
     public function isDelegadoOf($athlete): bool
     {
@@ -174,9 +179,16 @@ class User extends Authenticatable
         if (! $athlete instanceof \App\Models\Athlete) {
             return false;
         }
+        if ((int) $athlete->team_id !== (int) $this->team_id) {
+            return false;
+        }
 
-        return (int) $athlete->team_id === (int) $this->team_id
-            && (int) $athlete->category_id === (int) $this->category_id;
+        // La categoria del atleta vive en la pivot athlete_category.
+        // El atleta es administrable por el delegado si alguna de sus
+        // categorias en la pivot coincide con la del delegado.
+        return $athlete->categories()
+            ->where('categories.id', (int) $this->category_id)
+            ->exists();
     }
 
     /**

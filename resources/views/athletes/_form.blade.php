@@ -1,4 +1,7 @@
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4" x-data="athleteCategoryForm({
+    max: 2,
+    initial: @js(old('categories', $selectedCategoryIds ?? []))
+})">
 
     <div>
         <x-input-label for="first_name" :value="__('Nombre')" />
@@ -66,32 +69,60 @@
         <x-input-error :messages="$errors->get('team_id')" class="mt-2" />
     </div>
 
-    <div>
-        <x-input-label for="category_id" :value="__('Categoría')" />
-        {{-- DISI-delegado: delegado solo puede editar atletas de SU categoria;
-             el select se pre-selecciona con esa unica categoria y se deshabilita. --}}
+    {{-- DISI-N: multi-select de categorias (maximo 2 del mismo equipo).
+         Reemplaza el antiguo dropdown unico de category_id.
+         x-model + x-init en Alpine manejan el limite visual de 2;
+         el server-side enforcea la regla via Athlete::syncCategories(). --}}
+    <div x-data="{ disabledByDelegado: @js(auth()->user()?->isDelegado() ?? false) }">
+        <x-input-label for="categories" :value="__('Categorías (máx. 2, mismo equipo)')" />
         @auth
             @if (auth()->user()->isDelegado())
-                <select id="category_id" name="category_id" disabled
+                {{-- Delegado: solo su categoria (la pivot se llena con un unico ID). --}}
+                <select id="categories" name="categories[]" disabled
                         class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text rounded-md shadow-sm opacity-70 cursor-not-allowed">
                     @foreach ($categories as $cat)
                         <option value="{{ $cat->id }}" selected>{{ $cat->name }}</option>
                     @endforeach
                 </select>
-                <input type="hidden" name="category_id" value="{{ $categories->first()?->id }}">
+                <input type="hidden" name="categories[]" value="{{ $categories->first()?->id }}">
             @else
-                <select id="category_id" name="category_id" class="block mt-1 w-full border-wv-border bg-wv-surface text-wv-text focus:border-wv-accent focus:ring-wv-accent rounded-md shadow-sm">
-                    <option value="">— {{ __('Sin categoría') }} —</option>
-                    @foreach ($categories as $cat)
-                        <option value="{{ $cat->id }}" {{ (string) old('category_id', $athlete->category_id ?? request('category_id', '')) === (string) $cat->id ? 'selected' : '' }}>
-                            {{ $cat->name }}@if ($cat->team) ({{ $cat->team->short_name ?? $cat->team->name }})@endif
-                        </option>
-                    @endforeach
-                </select>
-                <p class="mt-1 text-xs text-wv-text-secondary">{{ __('DISI-14: 1 atleta pertenece a 1 equipo Y 1 categoría.') }}</p>
+                {{-- Admin / gestor: multi-select con checkboxes (UX mas clara que
+                     un dropdown multiple porque se ve el maximo de 2). --}}
+                <div class="mt-1 border border-wv-border bg-wv-surface rounded-md shadow-sm p-3 space-y-2">
+                    @forelse ($categories as $cat)
+                        <label class="flex items-center gap-2 text-sm text-wv-text {{ $cat->team_id && (!auth()->user()->isAdmin()) && (int) $cat->team_id !== (int) ($athlete->team_id ?? old('team_id', 0)) ? 'opacity-50' : '' }}">
+                            <input type="checkbox"
+                                   name="categories[]"
+                                   value="{{ $cat->id }}"
+                                   {{ in_array((int) $cat->id, old('categories', $selectedCategoryIds ?? []), true) ? 'checked' : '' }}
+                                   :disabled="selected.length >= max && !selected.includes({{ (int) $cat->id }})"
+                                   @change="toggle({{ (int) $cat->id }})"
+                                   class="rounded border-wv-border bg-wv-bg text-wv-accent focus:ring-wv-accent">
+                            <span>
+                                {{ $cat->name }}
+                                @if ($cat->team)
+                                    <span class="text-xs text-wv-text-secondary">({{ $cat->team->short_name ?? $cat->team->name }})</span>
+                                @else
+                                    <span class="text-xs text-wv-text-secondary">({{ __('Sin equipo') }})</span>
+                                @endif
+                            </span>
+                        </label>
+                    @empty
+                        <p class="text-sm text-wv-text-secondary italic">{{ __('No hay categorías registradas.') }}</p>
+                    @endforelse
+                </div>
+                <p class="mt-1 text-xs text-wv-text-secondary">
+                    {{ __('Selecciona hasta 2 categorías del mismo equipo del atleta.') }}
+                    <span x-show="selected.length > 0" x-cloak>
+                        {{ __('Seleccionadas') }}: <span x-text="selected.length"></span>/<span x-text="max"></span>
+                    </span>
+                </p>
             @endif
         @endauth
-        <x-input-error :messages="$errors->get('category_id')" class="mt-2" />
+        <x-input-error :messages="$errors->get('categories')" class="mt-2" />
+        @foreach ($errors->get('categories.*') as $msg)
+            <p class="text-sm text-wv-alert mt-1">{{ $msg }}</p>
+        @endforeach
     </div>
 
     <div>
@@ -186,3 +217,30 @@
     </div>
 
 </div>
+
+@once
+@push('scripts')
+<script>
+    // Alpine component: estado del multi-select de categorias (max 2).
+    // Se inicializa con las categorias previamente seleccionadas (old()
+    // o del atleta en edicion) para que la regla visual persista en
+    // re-renders por validation errors.
+    function athleteCategoryForm({ max = 2, initial = [] } = {}) {
+        return {
+            max: max,
+            selected: Array.isArray(initial) ? initial.map((v) => parseInt(v, 10)).filter(Number.isFinite) : [],
+            toggle(id) {
+                const i = this.selected.indexOf(id);
+                if (i >= 0) {
+                    this.selected.splice(i, 1);
+                } else if (this.selected.length < this.max) {
+                    this.selected.push(id);
+                }
+            },
+        };
+    }
+    // Exponer globalmente para Alpine.data() desde el partial _form.
+    window.athleteCategoryForm = athleteCategoryForm;
+</script>
+@endpush
+@endonce

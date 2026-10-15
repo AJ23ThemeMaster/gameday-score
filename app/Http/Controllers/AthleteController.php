@@ -44,7 +44,7 @@ class AthleteController extends Controller
     /**
      * DISI-delegado: chequeo combinado para gestor O delegado.
      * - Gestor: el atleta pertenece a SU equipo (sin importar la categoria).
-     * - Delegado: el atleta pertenece a SU equipo Y SU categoria.
+     * - Delegado: el atleta pertenece a SU equipo Y alguna de sus categorias.
      * - Admin: pasa sin chequeo.
      */
     private function authorizeGestorOrDelegadoOnAthlete(Athlete $athlete): void
@@ -75,7 +75,7 @@ class AthleteController extends Controller
             'name' => trim((string) $request->query('name', '')),
             'document_id' => trim((string) $request->query('document_id', '')),
             'number' => trim((string) $request->query('number', '')),
-            'position' => trim((string) $request->query('position', '')),
+            'position' => (string) $request->query('position', ''),
             'status' => (string) $request->query('status', 'all'),
             'team_id' => $request->query('team_id'),
             'category_id' => $request->query('category_id'),
@@ -84,19 +84,21 @@ class AthleteController extends Controller
         $filters['team_id'] = is_numeric($filters['team_id']) ? (int) $filters['team_id'] : null;
         $filters['category_id'] = is_numeric($filters['category_id']) ? (int) $filters['category_id'] : null;
 
-        $q = Athlete::with(['team', 'category']);
+        $q = Athlete::with(['team', 'categories']);
 
         // DISI-XXX + DISI-delegado: gestor ve SOLO atletas de su equipo;
-        // delegado ve SOLO atletas de SU equipo Y SU categoria (scope
-        // automatico, no anulable por filtros). Admin ve todos y puede
-        // filtrar por team_id libremente.
+        // delegado ve SOLO atletas de SU equipo Y SU categoria via pivot
+        // athlete_category (scope automatico, no anulable por filtros).
+        // Admin ve todos y puede filtrar por team_id/category_id libremente.
         if ($isGestor) {
             $q->where('team_id', $user->team_id);
             $filters['team_id'] = (int) $user->team_id;
         } elseif ($isDelegado) {
-            // Scope doble para delegado: team_id Y category_id del usuario.
+            // Scope doble para delegado: team_id + categoria via pivot.
             $q->where('team_id', $user->team_id);
-            $q->where('category_id', $user->category_id);
+            $q->whereHas('categories', function ($w) use ($user) {
+                $w->where('categories.id', (int) $user->category_id);
+            });
             $filters['team_id'] = (int) $user->team_id;
             $filters['category_id'] = (int) $user->category_id;
         }
@@ -124,8 +126,11 @@ class AthleteController extends Controller
         if ($filters['team_id'] !== null) {
             $q->where('team_id', $filters['team_id']);
         }
+        // DISI-N: filtro por categoria via pivot.
         if ($filters['category_id'] !== null) {
-            $q->where('category_id', $filters['category_id']);
+            $q->whereHas('categories', function ($w) use ($filters) {
+                $w->where('categories.id', $filters['category_id']);
+            });
         }
 
         $athletes = $q
@@ -136,8 +141,8 @@ class AthleteController extends Controller
 
         // DISI-XXX + DISI-delegado: el contador total refleja lo que el usuario
         // realmente puede ver. Para gestor es el total de su equipo;
-        // para delegado es el total de su (equipo, categoria); para
-        // admin es el total global.
+        // para delegado es el total de su (equipo, categoria via pivot);
+        // para admin es el total global.
         if ($isGestor || $isDelegado) {
             $totalAthletes = (clone $q)->toBase()->getCountForPagination();
         } else {
@@ -176,18 +181,28 @@ class AthleteController extends Controller
         // DISI-piloto: delegado con scope (team + cat) ve solo su equipo +
         // su categoria en los dropdowns, pre-seleccionados para que el
         // form no le pida inventar valores.
+        // DISI-N: ahora las categorias se asignan via multi-select; el
+        // delegado arranca con su categoria pre-seleccionada en el array.
         if ($user->isDelegado()) {
             $teams = Team::where('id', (int) $user->team_id)->get();
-            $categories = Category::where('id', (int) $user->category_id)->get();
-            $defaults = ['team_id' => (int) $user->team_id, 'category_id' => (int) $user->category_id];
+            $categories = Category::orderBy('name')->get();
+            $defaults = [
+                'team_id' => (int) $user->team_id,
+                'selected_category_ids' => [(int) $user->category_id],
+            ];
         } elseif ($user->isGestor()) {
             $teams = Team::where('id', (int) $user->team_id)->get();
             $categories = Category::orderBy('name')->get();
-            $defaults = ['team_id' => (int) $user->team_id];
+            $defaults = [
+                'team_id' => (int) $user->team_id,
+                'selected_category_ids' => [],
+            ];
         } else {
             $teams = Team::orderBy('name')->get();
             $categories = Category::orderBy('name')->get();
-            $defaults = [];
+            $defaults = [
+                'selected_category_ids' => [],
+            ];
         }
 
         return view('athletes.create', array_merge(compact('teams', 'categories'),
@@ -200,26 +215,33 @@ class AthleteController extends Controller
         $data['active'] = $request->boolean('active', true);
         // Cast defensivo para PHP 8.4 strict types
         $data['team_id'] = isset($data['team_id']) && $data['team_id'] !== null ? (int) $data['team_id'] : null;
-        $data['category_id'] = isset($data['category_id']) && $data['category_id'] !== null ? (int) $data['category_id'] : null;
 
         // DISI-81 + DISI-piloto:
         // - gestor solo puede crear atletas para SU equipo.
         // - delegado con scope: solo atletas de (su equipo, su categoria).
-        //   Si intenta team/cat fuera del scope, abort 403 (defense in depth:
-        //   aunque la UI bloquee los selects con disabled, server-side se valida).
+        //   La validacion fina de las categorias se hace via
+        //   Athlete::syncCategories() (all categories must share team_id).
+        //   El delegado ademas NO puede elegir otra categoria que la suya.
+        //   Aunque la UI bloquee los selects con disabled, server-side se
+        //   valida (defense in depth).
         $user = \Illuminate\Support\Facades\Auth::user();
         if ($user && $user->isGestor()) {
             $data['team_id'] = (int) $user->team_id;
         }
         if ($user && $user->isDelegado()) {
             $data['team_id'] = (int) $user->team_id;
-            $data['category_id'] = (int) $user->category_id;
-
-            // Validacion server-side de scope por si alguien manipula el form.
             $sentTeam = (int) ($request->input('team_id') ?? 0);
-            $sentCat = (int) ($request->input('category_id') ?? 0);
-            if ($sentTeam !== (int) $user->team_id || $sentCat !== (int) $user->category_id) {
-                abort(403, 'Como delegado solo puedes crear atletas de tu equipo y tu categoria.');
+            if ($sentTeam !== (int) $user->team_id) {
+                abort(403, 'Como delegado solo puedes crear atletas de tu equipo.');
+            }
+
+            // Forzar a que la unica categoria permitida sea la del delegado.
+            $sentCats = $request->input('categories', []);
+            $sentCats = is_array($sentCats)
+                ? collect($sentCats)->map(fn ($v) => (int) $v)->unique()->values()->all()
+                : [];
+            if ($sentCats !== [(int) $user->category_id]) {
+                abort(403, 'Como delegado solo puedes crear atletas de tu categoría.');
             }
         }
 
@@ -233,6 +255,12 @@ class AthleteController extends Controller
 
         $athlete = Athlete::create($data);
 
+        // DISI-N: sincronizar las categorias via Athlete::syncCategories().
+        // El helper valida max 2 + mismo equipo + existentes.
+        $categoryIds = $request->input('categories', []);
+        $categoryIds = is_array($categoryIds) ? array_map('intval', $categoryIds) : [];
+        $athlete->syncCategories($categoryIds);
+
         return redirect()
             ->route('athletes.show', $athlete)
             ->with('status', "Atleta «{$athlete->full_name}» creado correctamente.");
@@ -245,9 +273,11 @@ class AthleteController extends Controller
         // por lo que el chequeo fino lo hacemos aca.
         $this->authorizeGestorOrDelegadoOnAthlete($athlete);
 
-        // DISI-62: cargamos team + category + juegos del atleta (via game_athlete
-        // pivot) y computamos stats agregadas + per-game en una sola pasada.
-        $athlete->load(['team', 'category', 'team.league']);
+        // DISI-62: cargamos team + categorias (pivot) + juegos del atleta
+        // (via game_athlete pivot) y computamos stats agregadas + per-game
+        // en una sola pasada.
+        $athlete->load(['team', 'team.league', 'categories']);
+        $categoryList = $athlete->categories()->orderBy('name')->get();
 
         // Juegos en los que el atleta participo (como bateador o como pitcher).
         // game_athlete es la pivot con team_id / lineup_order / position / is_pitcher.
@@ -280,7 +310,8 @@ class AthleteController extends Controller
         }
 
         return view('athletes.show', compact(
-            'athlete', 'games', 'careerBatting', 'careerPitching', 'perTournament', 'perGame'
+            'athlete', 'games', 'careerBatting', 'careerPitching',
+            'perTournament', 'perGame', 'categoryList'
         ));
     }
 
@@ -462,13 +493,19 @@ class AthleteController extends Controller
         $teams = ($user && ($user->isGestor() || $user->isDelegado()))
             ? Team::where('id', $user->team_id)->get()
             : Team::orderBy('name')->get();
-        $categories = ($user && $user->isDelegado())
-            ? Category::where('id', $user->category_id)->orderBy('name')->get()
-            : (($user && $user->isGestor())
-                ? Category::where('team_id', $user->team_id)->orderBy('name')->get()
-                : Category::orderBy('name')->get());
 
-        return view('athletes.edit', compact('athlete', 'teams', 'categories'));
+        // DISI-N: el multi-select de categorias. Admin/gestor ven todas las
+        // categorias; delegado solo ve SU categoria.
+        if ($user && $user->isDelegado()) {
+            $categories = Category::where('id', (int) $user->category_id)->orderBy('name')->get();
+        } else {
+            $categories = Category::orderBy('name')->get();
+        }
+
+        // Categorias actualmente asignadas al atleta (puede ser 1 o 2).
+        $selectedCategoryIds = $athlete->categories()->pluck('categories.id')->map(fn ($v) => (int) $v)->all();
+
+        return view('athletes.edit', compact('athlete', 'teams', 'categories', 'selectedCategoryIds'));
     }
 
     public function update(UpdateAthleteRequest $request, Athlete $athlete): RedirectResponse
@@ -477,13 +514,18 @@ class AthleteController extends Controller
         $data = $request->validated();
         $data['active'] = $request->boolean('active', $athlete->active);
         $data['team_id'] = isset($data['team_id']) && $data['team_id'] !== null ? (int) $data['team_id'] : null;
-        $data['category_id'] = isset($data['category_id']) && $data['category_id'] !== null ? (int) $data['category_id'] : null;
 
         // DISI-81: gestor no puede cambiar el equipo del atleta a uno que
         // no sea el suyo.
         $user = \Illuminate\Support\Facades\Auth::user();
         if ($user->isGestor()) {
             $data['team_id'] = $user->team_id;
+        }
+
+        // DISI-N + DISI-piloto delegado: si el delegado intenta cambiar team
+        // fuera de scope, abort.
+        if ($user->isDelegado() && (int) $data['team_id'] !== (int) $user->team_id) {
+            abort(403, 'Como delegado solo puedes modificar atletas de tu equipo.');
         }
 
         if ($request->hasFile('photo')) {
@@ -503,6 +545,18 @@ class AthleteController extends Controller
         }
 
         $athlete->update($data);
+
+        // DISI-N: sincronizar categorias via Athlete::syncCategories().
+        // El helper valida max 2 + mismo equipo + existentes.
+        $categoryIds = $request->input('categories', []);
+        $categoryIds = is_array($categoryIds) ? array_map('intval', $categoryIds) : [];
+
+        // DISI-piloto: delegado solo puede mantener SU categoria, no agregar otras.
+        if ($user->isDelegado()) {
+            $categoryIds = [(int) $user->category_id];
+        }
+
+        $athlete->syncCategories($categoryIds);
 
         return redirect()
             ->route('athletes.show', $athlete)
