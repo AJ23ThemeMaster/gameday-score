@@ -149,6 +149,137 @@
                     @endif
                 </div>
 
+                {{-- Resultados de los juegos de esta CATEGORIA por torneo.
+                     El resultado (G/P/E) se calcula desde la perspectiva del
+                     equipo del roster: "Ganado" = gano este equipo. --}}
+                <div class="mt-6 pt-6 border-t border-wv-border">
+                    <h4 class="text-sm font-semibold text-wv-text mb-3">
+                        {{ __('Resultados por torneo') }}
+                        <span class="text-wv-text-secondary font-normal">
+                            ({{ $gamesByTournament->sum('games_count') }} {{ \Illuminate\Support\Str::plural('juego', $gamesByTournament->sum('games_count')) }})
+                        </span>
+                    </h4>
+                    @if ($gamesByTournament->isEmpty())
+                        <p class="text-sm text-wv-text-secondary italic">
+                            {{ __('Esta categoría aún no tiene juegos registrados para este equipo.') }}
+                        </p>
+                    @else
+                        @foreach ($gamesByTournament as $group)
+                            <div class="mb-4 border border-wv-border rounded-card overflow-hidden">
+                                <div class="px-4 py-3 bg-wv-surface-hover flex flex-wrap items-center justify-between gap-2">
+                                    <h5 class="text-sm font-semibold text-wv-text">
+                                        @if ($group['tournament'])
+                                            <a href="{{ route('tournaments.show', $group['tournament']) }}" class="hover:text-wv-accent">{{ $group['tournament']->name }}</a>
+                                        @else
+                                            <span class="text-wv-text-secondary italic">{{ __('Sin torneo') }}</span>
+                                        @endif
+                                    </h5>
+                                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                                        <span class="font-mono text-wv-text-secondary">{{ __('JJ') }} {{ $group['played_count'] }}</span>
+                                        @if ($group['wins'] > 0)
+                                            <span class="inline-flex px-2 py-0.5 leading-4 font-semibold rounded-full bg-wv-success/15 text-wv-success border border-wv-success/40">
+                                                {{ $group['wins'] }} {{ __('G') }}
+                                            </span>
+                                        @endif
+                                        @if ($group['losses'] > 0)
+                                            <span class="inline-flex px-2 py-0.5 leading-4 font-semibold rounded-full bg-wv-alert/15 text-wv-alert border border-wv-alert/40">
+                                                {{ $group['losses'] }} {{ __('P') }}
+                                            </span>
+                                        @endif
+                                        @if ($group['ties'] > 0)
+                                            <span class="inline-flex px-2 py-0.5 leading-4 font-semibold rounded-full bg-wv-surface text-wv-text-secondary border border-wv-border">
+                                                {{ $group['ties'] }} {{ __('E') }}
+                                            </span>
+                                        @endif
+                                        @if ($group['played_count'] > 0)
+                                            <span class="font-mono text-wv-text-secondary" title="{{ __('Anotado - Permitido') }}">
+                                                {{ $group['points_for'] }} - {{ $group['points_against'] }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-wv-border text-sm">
+                                        <thead class="bg-wv-surface">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Fecha') }}</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Rival') }}</th>
+                                                <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Sede') }}</th>
+                                                <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Resultado') }}</th>
+                                                <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Marcador') }}</th>
+                                                <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Estado') }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-wv-border">
+                                            @foreach ($group['games'] as $row)
+                                                @php
+                                                    $g = $row['game'];
+                                                    $resultBadge = match ($row['result']) {
+                                                        'W' => ['bg-wv-success/15 text-wv-success border-wv-success/40', __('G')],
+                                                        'L' => ['bg-wv-alert/15 text-wv-alert border-wv-alert/40', __('P')],
+                                                        'T' => ['bg-wv-surface-hover text-wv-text-secondary border-wv-border', __('E')],
+                                                        default => ['bg-wv-accent/15 text-wv-accent border-wv-accent/40', '—'],
+                                                    };
+                                                @endphp
+                                                <tr class="hover:bg-wv-surface-hover">
+                                                    <td class="px-3 py-2 whitespace-nowrap text-wv-text-secondary">
+                                                        {{ $g->scheduled_at?->format('d/m/Y') ?? '—' }}
+                                                    </td>
+                                                    <td class="px-3 py-2 whitespace-nowrap">
+                                                        @if ($row['opponent'])
+                                                            <a href="{{ route('teams.show', $row['opponent']) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">
+                                                                {{ $row['opponent']->short_name ?? $row['opponent']->name }}
+                                                            </a>
+                                                        @else
+                                                            <span class="text-wv-text-secondary">—</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="px-3 py-2 text-center text-xs text-wv-text-secondary">
+                                                        {{ $row['is_home'] ? __('Local') : __('Visitante') }}
+                                                    </td>
+                                                    <td class="px-3 py-2 text-center">
+                                                        <span class="inline-flex px-2 py-0.5 text-xs leading-4 font-semibold rounded-full border {{ $resultBadge[0] }}">
+                                                            {{ $resultBadge[1] }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-3 py-2 text-center font-mono text-wv-text">
+                                                        @if ($row['result'] === 'pending')
+                                                            <span class="text-wv-text-secondary">—</span>
+                                                        @else
+                                                            {{ $row['my_score'] }} - {{ $row['opp_score'] }}
+                                                        @endif
+                                                    </td>
+                                                    <td class="px-3 py-2 text-center">
+                                                        <span class="inline-flex px-2 text-[10px] leading-4 font-semibold rounded-full border
+                                                            @switch($g->status)
+                                                                @case('scheduled')
+                                                                    bg-wv-surface-hover text-wv-text-secondary border-wv-border
+                                                                    @break
+                                                                @case('in_progress')
+                                                                    bg-wv-accent/15 text-wv-accent border-wv-accent/40
+                                                                    @break
+                                                                @case('finalized')
+                                                                @case('completed')
+                                                                    bg-wv-success/15 text-wv-success border-wv-success/40
+                                                                    @break
+                                                                @default
+                                                                    bg-wv-surface-hover text-wv-text-secondary border-wv-border
+                                                            @endswitch
+                                                        ">{{ \Illuminate\Support\Str::ucfirst($g->status) }}</span>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        @endforeach
+                        <p class="mt-2 text-xs text-wv-text-secondary">
+                            {{ __('G = Ganado · P = Perdido · E = Empate. El resultado se calcula desde la perspectiva del equipo del roster. Los juegos no finalizados no cuentan en el resumen.') }}
+                        </p>
+                    @endif
+                </div>
+
                 <div class="mt-6 pt-6 border-t border-wv-border text-xs text-wv-text-secondary">
                     {{ __('Creado') }}: {{ $roster->created_at->format('d/m/Y H:i') }} ·
                     {{ __('Actualizado') }}: {{ $roster->updated_at->format('d/m/Y H:i') }}
