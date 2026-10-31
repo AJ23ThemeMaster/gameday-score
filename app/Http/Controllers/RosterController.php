@@ -198,7 +198,86 @@ class RosterController extends Controller
             ->orderBy('last_name')
             ->get();
 
-        return view('rosters.show', compact('team', 'roster', 'categoryAthletes'));
+        // Resultados de los juegos de esta CATEGORIA en los que participa
+        // el equipo del roster, agrupados por torneo. Cada grupo trae:
+        //  - resumen: JJ / Ganados / Perdidos / Empates
+        //  - detalle: cada juego con rival, marcador y resultado (G/P/E)
+        //    desde la perspectiva del equipo del roster.
+        $gamesByTournament = $this->gamesByTournament($roster);
+
+        return view('rosters.show', compact('team', 'roster', 'categoryAthletes', 'gamesByTournament'));
+    }
+
+    /**
+     * Agrupa por torneo los juegos de la categoria del roster en los que
+     * juega su equipo. El resultado de cada juego se calcula desde la
+     * perspectiva del EQUIPO DEL ROSTER (local o visitante), de modo que
+     * "Ganado" siempre significa que gano ese equipo.
+     *
+     * Los juegos no completados (scheduled / in_progress) se listan igual
+     * pero no cuentan en el resumen JJ/G/P/E.
+     */
+    private function gamesByTournament(Roster $roster): \Illuminate\Support\Collection
+    {
+        $games = \App\Models\Game::query()
+            ->where('category_id', $roster->category_id)
+            ->where(function ($q) use ($roster) {
+                $q->where('home_team_id', $roster->team_id)
+                  ->orWhere('away_team_id', $roster->team_id);
+            })
+            ->with(['homeTeam', 'awayTeam', 'tournament'])
+            ->orderByDesc('scheduled_at')
+            ->get();
+
+        return $games
+            ->groupBy(fn ($g) => $g->tournament_id === null ? 'none' : 't:'.$g->tournament_id)
+            ->map(function ($groupGames, $key) use ($roster) {
+                $rows = $groupGames->map(function ($g) use ($roster) {
+                    $isHome = (int) $g->home_team_id === (int) $roster->team_id;
+                    $myScore = (int) ($isHome ? $g->home_score : $g->away_score);
+                    $oppScore = (int) ($isHome ? $g->away_score : $g->home_score);
+                    $opponent = $isHome ? $g->awayTeam : $g->homeTeam;
+                    $completed = $g->isCompleted();
+
+                    if (! $completed) {
+                        $result = 'pending';
+                    } elseif ($myScore > $oppScore) {
+                        $result = 'W';
+                    } elseif ($myScore < $oppScore) {
+                        $result = 'L';
+                    } else {
+                        $result = 'T';
+                    }
+
+                    return [
+                        'game' => $g,
+                        'opponent' => $opponent,
+                        'is_home' => $isHome,
+                        'my_score' => $myScore,
+                        'opp_score' => $oppScore,
+                        'result' => $result,
+                    ];
+                });
+
+                $played = $rows->filter(fn ($r) => $r['result'] !== 'pending');
+
+                return [
+                    'tournament' => $groupGames->first()?->tournament,
+                    'tournament_id' => $groupGames->first()?->tournament_id,
+                    'games' => $rows,
+                    'games_count' => $rows->count(),
+                    'played_count' => $played->count(),
+                    'wins' => $played->where('result', 'W')->count(),
+                    'losses' => $played->where('result', 'L')->count(),
+                    'ties' => $played->where('result', 'T')->count(),
+                    'points_for' => $played->sum('my_score'),
+                    'points_against' => $played->sum('opp_score'),
+                ];
+            })
+            // Ordenar: torneos con nombre primero (alfabético), "Sin
+            // torneo" al final.
+            ->sortBy(fn ($g) => $g['tournament'] ? $g['tournament']->name : 'ZZZ-Sin torneo')
+            ->values();
     }
 
     public function edit(Team $team, Roster $roster): View
