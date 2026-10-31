@@ -89,7 +89,7 @@
                             <p class="mb-4">{{ __('No hay atletas que coincidan con el filtro.') }}</p>
                             <a href="{{ route('athletes.index') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Limpiar filtros') }}</a>
                         @else
-                            <p class="mb-4">{{ __('AÃºn no hay atletas registrados.') }}</p>
+                            <p class="mb-4">{{ __('Aún no hay atletas registrados.') }}</p>
                             @if (auth()->user()?->canCreateAthletes())
                                 <a href="{{ route('athletes.create') }}" class="text-wv-accent hover:text-wv-accent-hover underline">{{ __('Registrar el primer atleta') }}</a>
                             @endif

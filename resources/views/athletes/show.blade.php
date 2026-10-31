@@ -70,11 +70,11 @@
                         </dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('NÃºmero') }}</dt>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Número') }}</dt>
                         <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $athlete->number ?? '—' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
-                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('PosiciÃ³n') }}</dt>
+                        <dt class="text-wv-text-secondary text-xs uppercase">{{ __('Posición') }}</dt>
                         <dd class="font-mono text-2xl font-semibold text-wv-text">{{ $athlete->position ?? '—' }}</dd>
                     </div>
                     <div class="bg-wv-bg border border-wv-border rounded-card p-3">
@@ -158,7 +158,46 @@
                             @endforeach
                         </dl>
                     @else
-                        <p class="text-sm text-wv-text-secondary italic">{{ __('AÃºn no tiene turnos al bate registrados.') }}</p>
+                        <p class="text-sm text-wv-text-secondary italic">{{ __('Aún no tiene turnos al bate registrados.') }}</p>
+                    @endif
+
+                    @if ($statsByCategory->count() > 1)
+                        <div class="mt-4 pt-3 border-t border-wv-border">
+                            <p class="text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider mb-2">
+                                {{ __('Desglose por categoría') }}
+                            </p>
+                            <table class="w-full text-xs">
+                                <thead>
+                                    <tr class="text-wv-text-secondary uppercase">
+                                        <th class="text-left font-semibold pb-1">{{ __('Categoría') }}</th>
+                                        <th class="text-center font-semibold pb-1">AB</th>
+                                        <th class="text-center font-semibold pb-1">H</th>
+                                        <th class="text-center font-semibold pb-1">AVG</th>
+                                        <th class="text-center font-semibold pb-1">BB</th>
+                                        <th class="text-center font-semibold pb-1">K</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-wv-border">
+                                    @foreach ($statsByCategory as $catRow)
+                                        @php $cb = $catRow['batting']; @endphp
+                                        <tr>
+                                            <td class="py-1.5 text-wv-text">
+                                                @if ($catRow['category'])
+                                                    <a href="{{ route('categories.show', $catRow['category']) }}" class="hover:text-wv-accent hover:text-wv-accent-hover">{{ $catRow['category']->name }}</a>
+                                                @else
+                                                    <span class="text-wv-text-secondary italic">{{ __('Sin categoría') }}</span>
+                                                @endif
+                                            </td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cb['at_bats'] }}</td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cb['hits'] }}</td>
+                                            <td class="py-1.5 text-center font-mono font-semibold {{ $cb['avg'] >= 0.3 ? 'text-wv-success' : 'text-wv-text' }}">{{ number_format($cb['avg'], 3, '.', '') }}</td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cb['walks'] }}</td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cb['strikeouts'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     @endif
                 </div>
 
@@ -185,24 +224,69 @@
                             @endforeach
                         </dl>
                     @else
-                        <p class="text-sm text-wv-text-secondary italic">{{ __('AÃºn no tiene lanzamientos registrados.') }}</p>
+                        <p class="text-sm text-wv-text-secondary italic">{{ __('Aún no tiene lanzamientos registrados.') }}</p>
+                    @endif
+
+                    @if ($statsByCategory->count() > 1)
+                        <div class="mt-4 pt-3 border-t border-wv-border">
+                            <p class="text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider mb-2">
+                                {{ __('Desglose por categoría') }}
+                            </p>
+                            <table class="w-full text-xs">
+                                <thead>
+                                    <tr class="text-wv-text-secondary uppercase">
+                                        <th class="text-left font-semibold pb-1">{{ __('Categoría') }}</th>
+                                        <th class="text-center font-semibold pb-1">{{ __('lanz.') }}</th>
+                                        <th class="text-center font-semibold pb-1">S</th>
+                                        <th class="text-center font-semibold pb-1">B</th>
+                                        <th class="text-center font-semibold pb-1">K</th>
+                                        <th class="text-center font-semibold pb-1">H</th>
+                                        <th class="text-center font-semibold pb-1">BB</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-wv-border">
+                                    @foreach ($statsByCategory as $catRow)
+                                        @php $cp = $catRow['pitching']; @endphp
+                                        <tr>
+                                            <td class="py-1.5 text-wv-text">
+                                                @if ($catRow['category'])
+                                                    <a href="{{ route('categories.show', $catRow['category']) }}" class="hover:text-wv-accent hover:text-wv-accent-hover">{{ $catRow['category']->name }}</a>
+                                                @else
+                                                    <span class="text-wv-text-secondary italic">{{ __('Sin categoría') }}</span>
+                                                @endif
+                                            </td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cp['pitches'] }}</td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cp['strikes'] }}</td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cp['balls'] }}</td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cp['strikeouts'] }}</td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cp['hits'] }}</td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cp['walks'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     @endif
                 </div>
             </div>
 
-            {{-- DISI-79: stats por torneo --}}
+            {{-- DISI-N: stats por categoria (una fila por categoria, lado a lado).
+                 Es el desglose principal pedido: un atleta en Pre-infantil +
+                 Infantil ve sus numeros de cada categoria por separado. --}}
             <div class="mt-6 bg-wv-surface border border-wv-border rounded-card">
                 <div class="p-5 border-b border-wv-border flex justify-between items-center">
-                    <h3 class="text-base font-bold text-wv-text">{{ __('Estadísticas por torneo') }}</h3>
-                    <span class="text-sm text-wv-text-secondary">{{ $perTournament->count() }} {{ \Illuminate\Support\Str::plural('torneo', $perTournament->count()) }}</span>
+                    <h3 class="text-base font-bold text-wv-text">{{ __('Estadísticas por categoría') }}</h3>
+                    <span class="text-sm text-wv-text-secondary">
+                        {{ $statsByCategory->count() }} {{ \Illuminate\Support\Str::plural('categoría', $statsByCategory->count()) }}
+                    </span>
                 </div>
-                @if ($perTournament->count() > 0)
+                @if ($statsByCategory->count() > 0)
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-wv-border text-sm">
                             <thead class="bg-wv-surface-hover">
                                 <tr>
-                                    <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Torneo') }}</th>
-                                    <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider" title="Juegos jugados en el torneo">{{ __('JJ') }}</th>
+                                    <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Categoría') }}</th>
+                                    <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider" title="Juegos jugados en la categoría">{{ __('JJ') }}</th>
                                     <th colspan="5" class="px-3 py-2 text-center text-[10px] font-bold text-wv-accent uppercase tracking-wider bg-wv-accent-soft">{{ __('Bateo') }}</th>
                                     <th colspan="5" class="px-3 py-2 text-center text-[10px] font-bold text-wv-text uppercase tracking-wider bg-wv-surface-hover">{{ __('Pitcheo') }}</th>
                                 </tr>
@@ -222,14 +306,17 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-wv-border">
-                                @foreach ($perTournament as $row)
+                                @foreach ($statsByCategory as $row)
                                     @php $b = $row['batting']; $p = $row['pitching']; @endphp
                                     <tr class="hover:bg-wv-surface-hover">
                                         <td class="px-3 py-2 whitespace-nowrap">
-                                            @if ($row['tournament'])
-                                                <a href="{{ route('tournaments.show', $row['tournament']) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">{{ $row['tournament']->name }}</a>
+                                            @if ($row['category'])
+                                                <a href="{{ route('categories.show', $row['category']) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">{{ $row['category']->name }}</a>
+                                                @if (! $row['in_roster'])
+                                                    <span class="ml-1 text-[10px] text-wv-text-secondary italic">({{ __('fuera de roster actual') }})</span>
+                                                @endif
                                             @else
-                                                <span class="text-wv-text-secondary italic">Sin torneo</span>
+                                                <span class="text-wv-text-secondary italic">{{ __('Sin categoría') }}</span>
                                             @endif
                                         </td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $row['games_count'] }}</td>
@@ -250,10 +337,89 @@
                         </table>
                     </div>
                     <p class="px-5 py-2 text-[11px] text-wv-text-secondary italic border-t border-wv-border">
-                        {{ __('AVG = H/AB del propio torneo. JJ = juegos jugados como bateador o pitcher en el torneo. Los juegos sin torneo asignado (amistosos) se agrupan en "Sin torneo".') }}
+                        {{ __('Cada jugada se atribuye a la categoría del juego en el que ocurrió. AVG = H/AB de la categoría. JJ = juegos como bateador o pitcher en esa categoría.') }}
                     </p>
                 @else
-                    <div class="p-8 text-center text-wv-text-secondary text-sm">{{ __('AÃºn no hay jugadas registradas para agrupar por torneo.') }}</div>
+                    <div class="p-8 text-center text-wv-text-secondary text-sm">{{ __('Aún no hay jugadas registradas para agrupar por categoría.') }}</div>
+                @endif
+            </div>
+
+            {{-- DISI-79: stats por torneo. DISI-N: cada fila es (torneo, categoría)
+                 para que el desglose por torneo se pueda filtrar más aún por
+                 categoría (ej. un torneo con Pre-infantil y Infantil). --}}
+            <div class="mt-6 bg-wv-surface border border-wv-border rounded-card">
+                <div class="p-5 border-b border-wv-border flex justify-between items-center">
+                    <h3 class="text-base font-bold text-wv-text">{{ __('Estadísticas por torneo') }}</h3>
+                    <span class="text-sm text-wv-text-secondary">
+                        {{ $perTournamentByCategory->count() }} {{ \Illuminate\Support\Str::plural('fila', $perTournamentByCategory->count()) }}
+                    </span>
+                </div>
+                @if ($perTournamentByCategory->count() > 0)
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-wv-border text-sm">
+                            <thead class="bg-wv-surface-hover">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Torneo') }}</th>
+                                    <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Categoría') }}</th>
+                                    <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider" title="Juegos jugados en el torneo">{{ __('JJ') }}</th>
+                                    <th colspan="5" class="px-3 py-2 text-center text-[10px] font-bold text-wv-accent uppercase tracking-wider bg-wv-accent-soft">{{ __('Bateo') }}</th>
+                                    <th colspan="5" class="px-3 py-2 text-center text-[10px] font-bold text-wv-text uppercase tracking-wider bg-wv-surface-hover">{{ __('Pitcheo') }}</th>
+                                </tr>
+                                <tr class="border-t border-wv-border">
+                                    <th></th><th></th><th></th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">AB</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">H</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">AVG</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">BB</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">K</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">Lanz.</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">S</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">B</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">K</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">H</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">BB</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-wv-border">
+                                @foreach ($perTournamentByCategory as $row)
+                                    @php $b = $row['batting']; $p = $row['pitching']; @endphp
+                                    <tr class="hover:bg-wv-surface-hover">
+                                        <td class="px-3 py-2 whitespace-nowrap">
+                                            @if ($row['tournament'])
+                                                <a href="{{ route('tournaments.show', $row['tournament']) }}" class="text-wv-accent hover:text-wv-accent-hover font-medium">{{ $row['tournament']->name }}</a>
+                                            @else
+                                                <span class="text-wv-text-secondary italic">{{ __('Sin torneo') }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap">
+                                            @if ($row['category'])
+                                                <a href="{{ route('categories.show', $row['category']) }}" class="text-wv-text hover:text-wv-accent">{{ $row['category']->name }}</a>
+                                            @else
+                                                <span class="text-wv-text-secondary italic">{{ __('Sin categoría') }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $row['games_count'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['at_bats'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['hits'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono font-semibold {{ $b['avg'] >= 0.3 ? 'text-wv-success' : 'text-wv-text' }}">{{ number_format($b['avg'], 3, '.', '') }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['walks'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['strikeouts'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['pitches'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['strikes'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['balls'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['strikeouts'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['hits'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['walks'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="px-5 py-2 text-[11px] text-wv-text-secondary italic border-t border-wv-border">
+                        {{ __('AVG = H/AB de la fila (torneo + categoría). JJ = juegos jugados como bateador o pitcher. Los juegos sin torneo asignado (amistosos) se agrupan en "Sin torneo".') }}
+                    </p>
+                @else
+                    <div class="p-8 text-center text-wv-text-secondary text-sm">{{ __('Aún no hay jugadas registradas para agrupar por torneo.') }}</div>
                 @endif
             </div>
 
@@ -326,7 +492,7 @@
                         {{ __('AVG por juego se calcula como H/AB del propio juego. S/B: strikes/balls lanzados.') }}
                     </p>
                 @else
-                    <p class="p-6 text-wv-text-secondary text-sm">{{ __('Este atleta aÃºn no ha participado en juegos registrados.') }}</p>
+                    <p class="p-6 text-wv-text-secondary text-sm">{{ __('Este atleta aún no ha participado en juegos registrados.') }}</p>
                 @endif
             </div>
 
