@@ -590,12 +590,16 @@ class ScoreboardController extends Controller
 
     private function emptyPitcherStats(): array
     {
-        return ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0];
+        // Las keys deben calcar las de Play::statsForPitcher() para que
+        // el shape del array sea identico con o sin lanzador actual.
+        return ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0, 'hr_allowed' => 0, 'rbi_allowed' => 0];
     }
 
     private function emptyBatterStats(): array
     {
-        return ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0, 'avg' => 0.0];
+        // Las keys deben calcar las de Play::statsForBatter() para que
+        // el shape del array sea identico con o sin bateador actual.
+        return ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0, 'avg' => 0.0, 'rbi' => 0, 'hr' => 0];
     }
 
     /**

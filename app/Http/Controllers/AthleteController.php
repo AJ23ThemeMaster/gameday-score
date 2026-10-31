@@ -515,8 +515,8 @@ class AthleteController extends Controller
     {
         return array_merge([
             'game_ids' => [],
-            'batting' => ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0],
-            'pitching' => ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0],
+            'batting' => ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0, 'rbi' => 0, 'hr' => 0],
+            'pitching' => ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0, 'hr_allowed' => 0, 'rbi_allowed' => 0],
         ], $extra);
     }
 
@@ -538,7 +538,7 @@ class AthleteController extends Controller
      */
     private function batterStatsFromPlays(iterable $plays): array
     {
-        $stats = ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0];
+        $stats = ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0, 'rbi' => 0, 'hr' => 0];
         foreach ($plays as $p) {
             $this->accumulateBatter($stats, $p);
         }
@@ -552,7 +552,7 @@ class AthleteController extends Controller
      */
     private function pitcherStatsFromPlays(iterable $plays): array
     {
-        $stats = ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0];
+        $stats = ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0, 'hr_allowed' => 0, 'rbi_allowed' => 0];
         foreach ($plays as $p) {
             $this->accumulatePitcher($stats, $p);
         }
@@ -561,6 +561,11 @@ class AthleteController extends Controller
 
     /**
      * Suma una jugada a un acumulador de bateo (mutates $stats in place).
+     *
+     * DISI: agrega `rbi` (segun la columna plays.rbi de la jugada) y `hr`
+     * (subtipo `hr`). El HR de pierna (`inside_park`) cuenta como hit y
+     * como carrera, pero no como HR: misma convencion que el box score
+     * (Play::battingStatsForGame).
      */
     private function accumulateBatter(array &$stats, \App\Models\Play $p): void
     {
@@ -568,13 +573,21 @@ class AthleteController extends Controller
         if ($type === \App\Models\Play::TYPE_HIT) {
             $stats['at_bats']++;
             $stats['hits']++;
+            $stats['rbi'] += (int) $p->rbi;
+            if ($p->subtype === \App\Models\Play::SUBTYPE_HIT_HR) {
+                $stats['hr']++;
+            }
         } elseif ($type === \App\Models\Play::TYPE_OUT) {
             $stats['at_bats']++;
             if ($p->subtype === \App\Models\Play::SUBTYPE_OUT_STRIKEOUT) {
                 $stats['strikeouts']++;
             }
+            // Un out puede generar RBI (fly out con corredor en 3B).
+            $stats['rbi'] += (int) $p->rbi;
         } elseif ($type === \App\Models\Play::TYPE_WALK) {
             $stats['walks']++;
+            // Un walk con corredores en bases genera RBI.
+            $stats['rbi'] += (int) $p->rbi;
         } elseif ($type === \App\Models\Play::TYPE_HBP) {
             // No cuenta como AB ni hit
         } elseif ($type === \App\Models\Play::TYPE_BUNT) {
@@ -584,11 +597,15 @@ class AthleteController extends Controller
                     $stats['hits']++;
                 }
             }
+            $stats['rbi'] += (int) $p->rbi;
         }
     }
 
     /**
      * Suma una jugada a un acumulador de pitcheo (mutates $stats in place).
+     *
+     * DISI: agrega `hr_allowed` (jonrones permitidos) y `rbi_allowed`
+     * (RBI permitidos). Son stats "en contra": lo que el lanzador PERMITIO.
      */
     private function accumulatePitcher(array &$stats, \App\Models\Play $p): void
     {
@@ -608,8 +625,14 @@ class AthleteController extends Controller
             $stats['strikeouts']++;
         } elseif ($type === \App\Models\Play::TYPE_HIT) {
             $stats['hits']++;
+            if ($subtype === \App\Models\Play::SUBTYPE_HIT_HR) {
+                $stats['hr_allowed']++;
+            }
+            $stats['rbi_allowed'] += (int) $p->rbi;
         } elseif ($type === \App\Models\Play::TYPE_WALK) {
             $stats['walks']++;
+            // Un walk con corredores en bases genera RBI en contra.
+            $stats['rbi_allowed'] += (int) $p->rbi;
         }
     }
 
