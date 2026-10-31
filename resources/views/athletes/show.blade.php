@@ -149,8 +149,8 @@
                         {{ __('Estadísticas como bateador') }}
                     </h3>
                     @if ($careerBatting['at_bats'] > 0 || $careerBatting['hits'] > 0)
-                        <dl class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
-                            @foreach (['at_bats' => 'AB', 'hits' => 'H', 'avg' => 'AVG', 'walks' => 'BB', 'strikeouts' => 'K'] as $key => $label)
+                        <dl class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                            @foreach (['at_bats' => 'AB', 'hits' => 'H', 'avg' => 'AVG', 'walks' => 'BB', 'strikeouts' => 'K', 'rbi' => 'RBI', 'hr' => 'HR'] as $key => $label)
                                 <div class="bg-wv-bg border border-wv-border rounded p-2">
                                     <dt class="text-wv-text-secondary text-[10px] uppercase">{{ $label }}</dt>
                                     <dd class="font-mono text-xl font-bold text-wv-text">{{ $key === 'avg' ? number_format($careerBatting[$key], 3, '.', '') : $careerBatting[$key] }}</dd>
@@ -175,6 +175,8 @@
                                         <th class="text-center font-semibold pb-1">AVG</th>
                                         <th class="text-center font-semibold pb-1">BB</th>
                                         <th class="text-center font-semibold pb-1">K</th>
+                                        <th class="text-center font-semibold pb-1">RBI</th>
+                                        <th class="text-center font-semibold pb-1">HR</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-wv-border">
@@ -193,6 +195,8 @@
                                             <td class="py-1.5 text-center font-mono font-semibold {{ $cb['avg'] >= 0.3 ? 'text-wv-success' : 'text-wv-text' }}">{{ number_format($cb['avg'], 3, '.', '') }}</td>
                                             <td class="py-1.5 text-center font-mono text-wv-text">{{ $cb['walks'] }}</td>
                                             <td class="py-1.5 text-center font-mono text-wv-text">{{ $cb['strikeouts'] }}</td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cb['rbi'] }}</td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cb['hr'] }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -207,7 +211,7 @@
                         {{ __('Estadísticas como lanzador') }}
                     </h3>
                     @if ($careerPitching['pitches'] > 0 || $careerPitching['strikeouts'] > 0)
-                        <dl class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
+                        <dl class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                             <div class="bg-wv-bg border border-wv-border rounded p-2">
                                 <dt class="text-wv-text-secondary text-[10px] uppercase">{{ __('lanz.') }}</dt>
                                 <dd class="font-mono text-xl font-bold text-wv-text">{{ $careerPitching['pitches'] }}</dd>
@@ -222,6 +226,14 @@
                                     <dd class="font-mono text-xl font-bold text-wv-text">{{ $careerPitching[$key] }}</dd>
                                 </div>
                             @endforeach
+                            <div class="bg-wv-bg border border-wv-border rounded p-2">
+                                <dt class="text-wv-text-secondary text-[10px] uppercase" title="Jonrones permitidos">{{ __('HR perm.') }}</dt>
+                                <dd class="font-mono text-xl font-bold text-wv-text">{{ $careerPitching['hr_allowed'] }}</dd>
+                            </div>
+                            <div class="bg-wv-bg border border-wv-border rounded p-2">
+                                <dt class="text-wv-text-secondary text-[10px] uppercase" title="RBI permitidos">{{ __('RBI perm.') }}</dt>
+                                <dd class="font-mono text-xl font-bold text-wv-text">{{ $careerPitching['rbi_allowed'] }}</dd>
+                            </div>
                         </dl>
                     @else
                         <p class="text-sm text-wv-text-secondary italic">{{ __('Aún no tiene lanzamientos registrados.') }}</p>
@@ -242,6 +254,8 @@
                                         <th class="text-center font-semibold pb-1">K</th>
                                         <th class="text-center font-semibold pb-1">H</th>
                                         <th class="text-center font-semibold pb-1">BB</th>
+                                        <th class="text-center font-semibold pb-1">HR</th>
+                                        <th class="text-center font-semibold pb-1">RBI</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-wv-border">
@@ -261,6 +275,8 @@
                                             <td class="py-1.5 text-center font-mono text-wv-text">{{ $cp['strikeouts'] }}</td>
                                             <td class="py-1.5 text-center font-mono text-wv-text">{{ $cp['hits'] }}</td>
                                             <td class="py-1.5 text-center font-mono text-wv-text">{{ $cp['walks'] }}</td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cp['hr_allowed'] }}</td>
+                                            <td class="py-1.5 text-center font-mono text-wv-text">{{ $cp['rbi_allowed'] }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -287,8 +303,8 @@
                                 <tr>
                                     <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Categoría') }}</th>
                                     <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider" title="Juegos jugados en la categoría">{{ __('JJ') }}</th>
-                                    <th colspan="5" class="px-3 py-2 text-center text-[10px] font-bold text-wv-accent uppercase tracking-wider bg-wv-accent-soft">{{ __('Bateo') }}</th>
-                                    <th colspan="5" class="px-3 py-2 text-center text-[10px] font-bold text-wv-text uppercase tracking-wider bg-wv-surface-hover">{{ __('Pitcheo') }}</th>
+                                    <th colspan="7" class="px-3 py-2 text-center text-[10px] font-bold text-wv-accent uppercase tracking-wider bg-wv-accent-soft">{{ __('Bateo') }}</th>
+                                    <th colspan="7" class="px-3 py-2 text-center text-[10px] font-bold text-wv-text uppercase tracking-wider bg-wv-surface-hover">{{ __('Pitcheo') }}</th>
                                 </tr>
                                 <tr class="border-t border-wv-border">
                                     <th></th><th></th>
@@ -297,12 +313,16 @@
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">AVG</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">BB</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">K</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">RBI</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">HR</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">Lanz.</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">S</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">B</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">K</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">H</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">BB</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">HR</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">RBI</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-wv-border">
@@ -325,12 +345,16 @@
                                         <td class="px-3 py-2 text-center font-mono font-semibold {{ $b['avg'] >= 0.3 ? 'text-wv-success' : 'text-wv-text' }}">{{ number_format($b['avg'], 3, '.', '') }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['walks'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['strikeouts'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['rbi'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['hr'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['pitches'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['strikes'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['balls'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['strikeouts'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['hits'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['walks'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['hr_allowed'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['rbi_allowed'] }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -362,8 +386,8 @@
                                     <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Torneo') }}</th>
                                     <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Categoría') }}</th>
                                     <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider" title="Juegos jugados en el torneo">{{ __('JJ') }}</th>
-                                    <th colspan="5" class="px-3 py-2 text-center text-[10px] font-bold text-wv-accent uppercase tracking-wider bg-wv-accent-soft">{{ __('Bateo') }}</th>
-                                    <th colspan="5" class="px-3 py-2 text-center text-[10px] font-bold text-wv-text uppercase tracking-wider bg-wv-surface-hover">{{ __('Pitcheo') }}</th>
+                                    <th colspan="7" class="px-3 py-2 text-center text-[10px] font-bold text-wv-accent uppercase tracking-wider bg-wv-accent-soft">{{ __('Bateo') }}</th>
+                                    <th colspan="7" class="px-3 py-2 text-center text-[10px] font-bold text-wv-text uppercase tracking-wider bg-wv-surface-hover">{{ __('Pitcheo') }}</th>
                                 </tr>
                                 <tr class="border-t border-wv-border">
                                     <th></th><th></th><th></th>
@@ -372,12 +396,16 @@
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">AVG</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">BB</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">K</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">RBI</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">HR</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">Lanz.</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">S</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">B</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">K</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">H</th>
                                     <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">BB</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">HR</th>
+                                    <th class="px-3 py-1 text-center text-[10px] font-semibold text-wv-text-secondary uppercase">RBI</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-wv-border">
@@ -404,12 +432,16 @@
                                         <td class="px-3 py-2 text-center font-mono font-semibold {{ $b['avg'] >= 0.3 ? 'text-wv-success' : 'text-wv-text' }}">{{ number_format($b['avg'], 3, '.', '') }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['walks'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['strikeouts'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['rbi'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['hr'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['pitches'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['strikes'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['balls'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['strikeouts'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['hits'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['walks'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['hr_allowed'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['rbi_allowed'] }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -436,8 +468,8 @@
                                 <tr>
                                     <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Fecha') }}</th>
                                     <th class="px-3 py-2 text-left text-[10px] font-bold text-wv-text-secondary uppercase tracking-wider">{{ __('Oponente') }}</th>
-                                    <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-accent uppercase tracking-wider" colspan="5">{{ __('Bateo') }}</th>
-                                    <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text uppercase tracking-wider" colspan="5">{{ __('Pitcheo') }}</th>
+                                    <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-accent uppercase tracking-wider" colspan="7">{{ __('Bateo') }}</th>
+                                    <th class="px-3 py-2 text-center text-[10px] font-bold text-wv-text uppercase tracking-wider" colspan="7">{{ __('Pitcheo') }}</th>
                                 </tr>
                                 <tr class="bg-wv-surface-hover">
                                     <th class="px-3 py-1"></th>
@@ -447,11 +479,15 @@
                                     <th class="px-3 py-1 text-center text-[10px] text-wv-text-secondary">AVG</th>
                                     <th class="px-3 py-1 text-center text-[10px] text-wv-text-secondary">BB</th>
                                     <th class="px-3 py-1 text-center text-[10px] text-wv-text-secondary">K</th>
+                                    <th class="px-3 py-1 text-center text-[10px] text-wv-text-secondary">RBI</th>
+                                    <th class="px-3 py-1 text-center text-[10px] text-wv-text-secondary">HR</th>
                                     <th class="px-3 py-1 text-center text-[10px] text-wv-text-secondary">{{ __('lanz.') }}</th>
                                     <th class="px-3 py-1 text-center text-[10px] text-wv-text-secondary">S/B</th>
                                     <th class="px-3 py-1 text-center text-[10px] text-wv-text-secondary">K</th>
                                     <th class="px-3 py-1 text-center text-[10px] text-wv-text-secondary">H</th>
                                     <th class="px-3 py-1 text-center text-[10px] text-wv-text-secondary">BB</th>
+                                    <th class="px-3 py-1 text-center text-[10px] text-wv-text-secondary">HR</th>
+                                    <th class="px-3 py-1 text-center text-[10px] text-wv-text-secondary">RBI</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-wv-border">
@@ -478,18 +514,22 @@
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['at_bats'] > 0 ? number_format($b['hits'] / max(1, $b['at_bats']), 3, '.', '') : '.000' }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['walks'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['strikeouts'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['rbi'] ?? 0 }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $b['hr'] ?? 0 }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['pitches'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['strikes'] }}S/{{ $p['balls'] }}B</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['strikeouts'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['hits'] }}</td>
                                         <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['walks'] }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['hr_allowed'] ?? 0 }}</td>
+                                        <td class="px-3 py-2 text-center font-mono text-wv-text">{{ $p['rbi_allowed'] ?? 0 }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
                     <p class="px-5 py-2 text-[11px] text-wv-text-secondary italic border-t border-wv-border">
-                        {{ __('AVG por juego se calcula como H/AB del propio juego. S/B: strikes/balls lanzados.') }}
+                        {{ __('AVG por juego se calcula como H/AB del propio juego. S/B: strikes/balls lanzados. HR/RBI en pitcheo son los permitidos por el lanzador.') }}
                     </p>
                 @else
                     <p class="p-6 text-wv-text-secondary text-sm">{{ __('Este atleta aún no ha participado en juegos registrados.') }}</p>

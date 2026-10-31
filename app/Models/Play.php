@@ -513,7 +513,13 @@ class Play extends Model
     /**
      * Estadisticas en vivo del pitcher durante un juego.
      * Calcula: lanzamientos (pitches), strikes, balls, ponches (K),
-     * hits permitidos (H), boletos (BB).
+     * hits permitidos (H), boletos (BB), jonrones permitidos (HR) y
+     * RBI permitidos (RBI).
+     *
+     * DISI: `hr_allowed` y `rbi_allowed` son stats "en contra": lo que el
+     * lanzador Permitio, no lo que logro. Un HR de pierna (inside_park)
+     * NO cuenta como HR (misma convencion que el box score), pero si
+     * aporta 1 RBI.
      */
     public static function statsForPitcher(int $gameId, int $pitcherId): array
     {
@@ -527,6 +533,8 @@ class Play extends Model
         $strikeouts = 0;
         $hits = 0;
         $walks = 0;
+        $hrAllowed = 0;
+        $rbiAllowed = 0;
 
         foreach ($plays as $p) {
             $type = $p->type;
@@ -551,8 +559,14 @@ class Play extends Model
                 $strikeouts++;
             } elseif ($type === static::TYPE_HIT) {
                 $hits++;
+                if ($subtype === static::SUBTYPE_HIT_HR) {
+                    $hrAllowed++;
+                }
+                $rbiAllowed += (int) $p->rbi;
             } elseif ($type === static::TYPE_WALK) {
                 $walks++;
+                // Un walk con corredores en bases genera RBI (carrera forzada).
+                $rbiAllowed += (int) $p->rbi;
             }
         }
 
@@ -563,13 +577,21 @@ class Play extends Model
             'strikeouts' => $strikeouts,
             'hits' => $hits,
             'walks' => $walks,
+            'hr_allowed' => $hrAllowed,
+            'rbi_allowed' => $rbiAllowed,
         ];
     }
 
     /**
      * Estadisticas en vivo del bateador durante un juego.
      * Calcula: turnos al bate (AB), hits (H), ponches (K), boletos (BB),
-     * promedio (AVG = H/AB).
+     * promedio (AVG = H/AB), RBI y jonrones (HR).
+     *
+     * DISI: `rbi` se acumula desde la columna plays.rbi de TODAS las jugadas
+     * que el bateador produjo (hit, out, walk, bunt), que es como el motor
+     * de juego las registra. `hr` cuenta solo el subtipo `hr` (el HR de
+     * pierna `inside_park` cuenta como hit y como carrera, no como HR, misma
+     * convencion que el box score).
      */
     public static function statsForBatter(int $gameId, int $batterId): array
     {
@@ -581,20 +603,33 @@ class Play extends Model
         $hits = 0;
         $strikeouts = 0;
         $walks = 0;
+        $rbi = 0;
+        $hr = 0;
 
         foreach ($plays as $p) {
             $type = $p->type;
             if ($type === static::TYPE_HIT) {
                 $at_bats++;
                 $hits++;
+                $rbi += (int) $p->rbi;
+                if ($p->subtype === static::SUBTYPE_HIT_HR) {
+                    $hr++;
+                }
             } elseif ($type === static::TYPE_OUT) {
                 $at_bats++;
                 if ($p->subtype === static::SUBTYPE_OUT_STRIKEOUT) {
                     $strikeouts++;
                 }
+                // Un out puede generar RBI (fly out con corredor en 3B).
+                $rbi += (int) $p->rbi;
             } elseif ($type === static::TYPE_WALK) {
                 $walks++;
                 // Los walks no cuentan como AB.
+                // Un walk con corredores en bases genera RBI.
+                $rbi += (int) $p->rbi;
+            } elseif ($type === static::TYPE_BUNT) {
+                $at_bats++;
+                $rbi += (int) $p->rbi;
             }
         }
 
@@ -606,6 +641,8 @@ class Play extends Model
             'strikeouts' => $strikeouts,
             'walks' => $walks,
             'avg' => $avg,
+            'rbi' => $rbi,
+            'hr' => $hr,
         ];
     }
 
