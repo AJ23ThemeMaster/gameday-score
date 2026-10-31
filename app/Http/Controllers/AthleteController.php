@@ -294,8 +294,14 @@ class AthleteController extends Controller
         $careerBatting = $this->aggregateBatterStats($athlete->id);
         $careerPitching = $this->aggregatePitcherStats($athlete->id);
 
-        // DISI-79: stats agrupadas por torneo (batting + pitching + games count)
-        $perTournament = $this->aggregateStatsByTournament($athlete->id);
+        // DISI-N: stats desglosadas por categoria (el atleta puede estar en
+        // hasta 2 categorias del mismo equipo) y por (torneo x categoria).
+        // $statsByCategory: una fila por categoria en la que el atleta tiene
+        //   jugadas, con el flag 'in_roster' indicando si esa categoria
+        //   esta en su pivot athlete_category.
+        // $perTournamentByCategory: cada fila es (torneo, categoria) para que
+        //   el desglose por torneo se pueda filtrar mas aun por categoria.
+        [$statsByCategory, $perTournamentByCategory] = $this->aggregateStatsByDimensions($athlete->id);
 
         // Stats por juego (para la tabla)
         $perGame = [];
@@ -311,7 +317,8 @@ class AthleteController extends Controller
 
         return view('athletes.show', compact(
             'athlete', 'games', 'careerBatting', 'careerPitching',
-            'perTournament', 'perGame', 'categoryList'
+            'perGame', 'categoryList',
+            'statsByCategory', 'perTournamentByCategory'
         ));
     }
 
@@ -337,37 +344,81 @@ class AthleteController extends Controller
     }
 
     /**
-     * DISI-79: agrega batting + pitching del atleta, agrupado por
-     * tournament_id (viene de play->game->tournament_id). Las jugadas
-     * sin torneo (tournament_id NULL) se agrupan bajo la clave 'none'
-     * y se renderizan como "Sin torneo".
+     * DISI-N: el antiguo aggregateStatsByTournament() fue reemplazado por
+     * aggregateStatsByDimensions(), que agrega el desglose por categoria
+     * (games.category_id) ademas del desglose por torneo. Se elimino el
+     * metodo anterior para no dejar dos caminos de calculo que puedan
+     * divergir.
      */
-    private function aggregateStatsByTournament(int $athleteId): \Illuminate\Support\Collection
+
+    /**
+     * DISI-N: agrega batting + pitching del atleta agrupado por DOS
+     * dimensiones a la vez:
+     *
+     *  1. Por CATEGORIA del juego (games.category_id). Un atleta puede
+     *     estar en hasta 2 categorias del mismo equipo, asi que sus
+     *     estadisticas deben poder verse de forma independiente para cada
+     *     una (ej. PEDRITO en Pre-infantil y en Infantil).
+     *     La atribucion de una jugada a una categoria es la del JUEGO en
+     *     el que ocurrio (no la de la pivot del atleta).
+     *
+     *  2. Por (TORNEO x CATEGORIA). Cada fila de la tabla "Estadisticas
+     *     por torneo" lleva su categoria, de modo que el desglose por
+     *     torneo se puede filtrar mas aun por categoria.
+     *
+     * Las jugadas de juegos sin categoria (games.category_id NULL) se
+     * agrupan bajo la clave 'none' y se renderizan como "Sin categoria".
+     *
+     * @return array{0: \Illuminate\Support\Collection, 1: \Illuminate\Support\Collection}
+     *         [0] = filas por categoria, [1] = filas por (torneo, categoria)
+     */
+    private function aggregateStatsByDimensions(int $athleteId): array
     {
-        $plays = \App\Models\Play::with('game:id,tournament_id')
+        $plays = \App\Models\Play::with('game:id,category_id,tournament_id')
             ->where(function ($q) use ($athleteId) {
                 $q->where('batter_id', $athleteId)
                   ->orWhere('pitcher_id', $athleteId);
             })
             ->get();
 
-        $byTournament = [];
+        $byCategory = [];
+        $byTournamentCategory = [];
+
         foreach ($plays as $p) {
-            $tid = $p->game?->tournament_id;
-            $key = $tid === null ? 'none' : 't:' . $tid;
-            if (! isset($byTournament[$key])) {
-                $byTournament[$key] = [
-                    'tournament_id' => $tid,
-                    'game_ids' => [],
-                    'batting' => ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0],
-                    'pitching' => ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0],
-                ];
-            }
+            $game = $p->game;
+            $catId = $game?->category_id;
+            $tid = $game?->tournament_id;
             $gid = $p->game_id;
-            if (! in_array($gid, $byTournament[$key]['game_ids'], true)) {
-                $byTournament[$key]['game_ids'][] = $gid;
+
+            // --- Dimension 1: categoria ---
+            $ckey = $catId === null ? 'none' : 'c:'.$catId;
+            if (! isset($byCategory[$ckey])) {
+                $byCategory[$ckey] = $this->emptyStatsRow(['category_id' => $catId]);
             }
-            $row = &$byTournament[$key];
+            $row = &$byCategory[$ckey];
+            if (! in_array($gid, $row['game_ids'], true)) {
+                $row['game_ids'][] = $gid;
+            }
+            if ($p->batter_id === $athleteId) {
+                $this->accumulateBatter($row['batting'], $p);
+            }
+            if ($p->pitcher_id === $athleteId) {
+                $this->accumulatePitcher($row['pitching'], $p);
+            }
+            unset($row);
+
+            // --- Dimension 2: torneo x categoria ---
+            $tkey = ($tid === null ? 'none' : 't:'.$tid).'|'.($catId === null ? 'none' : 'c:'.$catId);
+            if (! isset($byTournamentCategory[$tkey])) {
+                $byTournamentCategory[$tkey] = $this->emptyStatsRow([
+                    'tournament_id' => $tid,
+                    'category_id' => $catId,
+                ]);
+            }
+            $row = &$byTournamentCategory[$tkey];
+            if (! in_array($gid, $row['game_ids'], true)) {
+                $row['game_ids'][] = $gid;
+            }
             if ($p->batter_id === $athleteId) {
                 $this->accumulateBatter($row['batting'], $p);
             }
@@ -377,30 +428,108 @@ class AthleteController extends Controller
             unset($row);
         }
 
-        // Calcular AVG + games_count, descartar game_ids
-        foreach ($byTournament as &$row) {
-            $b = &$row['batting'];
-            $b['avg'] = $b['at_bats'] > 0 ? round($b['hits'] / $b['at_bats'], 3) : 0.0;
-            unset($b);
-            $row['games_count'] = count($row['game_ids']);
-            unset($row['game_ids']);
+        // Marcar que categorias estan en la pivot del atleta (in_roster).
+        $rosterCatIds = \App\Models\Athlete::find($athleteId)
+            ?->categories()->pluck('categories.id')
+            ->map(fn ($v) => (int) $v)
+            ->all() ?? [];
+
+        // DISI-N: garantizar que TODAS las categorias de la pivot del atleta
+        // aparezcan en el desglose, aunque no tenga jugadas en ellas. Sin
+        // esto, un atleta en Pre-infantil + Infantil que solo tiene plays
+        // en una de ellas solo veria 1 fila (la otra desapareceria), que es
+        // justo lo que el usuario quiere evitar: ver las 2 categorias
+        // independientes siempre.
+        // IMPORTANTE: esto va ANTES del batch query de modelos Category,
+        // para que las categorias agregadas aqui tambien queden resueltas
+        // (si se agrega despues, el modelo no existe en el map y la fila
+        // se renderiza como "Sin categoria").
+        foreach ($rosterCatIds as $rosterCatId) {
+            $ckey = 'c:'.$rosterCatId;
+            if (! isset($byCategory[$ckey])) {
+                $byCategory[$ckey] = $this->emptyStatsRow(['category_id' => $rosterCatId]);
+            }
+        }
+
+        // Resolver modelos Category + Tournament (batch query, sin N+1).
+        $catIds = collect($byCategory)->pluck('category_id')->filter()->unique()->values();
+        $tIds = collect($byTournamentCategory)->pluck('tournament_id')->filter()->unique()->values();
+        $categories = \App\Models\Category::whereIn('id', $catIds)->get()->keyBy('id');
+        $tournaments = \App\Models\Tournament::whereIn('id', $tIds)->get()->keyBy('id');
+
+        // JJ por categoria: juegos en los que el atleta estuvo en el roster
+        // (game_athlete), independientemente de si luego tuvo jugadas. Esto
+        // permite que una categoria de la pivot sin jugadas muestre JJ=0 en
+        // vez de desaparecer del desglose.
+        $gamesByCategory = \Illuminate\Support\Facades\DB::table('game_athlete')
+            ->join('games', 'games.id', '=', 'game_athlete.game_id')
+            ->where('game_athlete.athlete_id', $athleteId)
+            ->groupBy('games.category_id')
+            ->select('games.category_id', \Illuminate\Support\Facades\DB::raw('COUNT(DISTINCT games.id) as c'))
+            ->pluck('c', 'games.category_id')
+            ->all();
+
+        foreach ($byCategory as &$row) {
+            $this->finalizeStatsRow($row);
+            $row['category'] = $row['category_id'] ? ($categories[$row['category_id']] ?? null) : null;
+            $row['in_roster'] = $row['category_id'] !== null && in_array((int) $row['category_id'], $rosterCatIds, true);
+            // JJ = juegos del atleta en esa categoria (game_athlete). Si no
+            // hay info (categoria suelta sin juegos), se conserva el
+            // conteo de juegos con jugadas.
+            $rosterGames = $row['category_id'] !== null
+                ? (int) ($gamesByCategory[$row['category_id']] ?? 0)
+                : 0;
+            $row['games_count'] = max($row['games_count'], $rosterGames);
         }
         unset($row);
 
-        // Resolver modelos Tournament para los IDs conocidos (batch query).
-        $tIds = collect($byTournament)->pluck('tournament_id')->filter()->unique()->values();
-        $tournaments = \App\Models\Tournament::whereIn('id', $tIds)->get()->keyBy('id');
-        foreach ($byTournament as &$row) {
+        foreach ($byTournamentCategory as &$row) {
+            $this->finalizeStatsRow($row);
+            $row['category'] = $row['category_id'] ? ($categories[$row['category_id']] ?? null) : null;
             $row['tournament'] = $row['tournament_id'] ? ($tournaments[$row['tournament_id']] ?? null) : null;
         }
         unset($row);
 
-        // Ordenar: primero torneos con nombre, luego "Sin torneo" al final.
-        return collect($byTournament)
+        // Ordenar por categoria (nombre alfabetico, "Sin categoria" al final).
+        $categoryRows = collect($byCategory)
             ->sortBy(function ($r) {
-                return $r['tournament'] ? $r['tournament']->name : 'ZZZ-Sin torneo';
+                return $r['category'] ? $r['category']->name : 'ZZZ-Sin categoria';
             })
             ->values();
+
+        // Ordenar por torneo y luego por categoria.
+        $tournamentRows = collect($byTournamentCategory)
+            ->sortBy([
+                fn ($r) => $r['tournament'] ? $r['tournament']->name : 'ZZZ-Sin torneo',
+                fn ($r) => $r['category'] ? $r['category']->name : 'ZZZ-Sin categoria',
+            ])
+            ->values();
+
+        return [$categoryRows, $tournamentRows];
+    }
+
+    /**
+     * Row vacia con los contadores inicializados en 0.
+     */
+    private function emptyStatsRow(array $extra = []): array
+    {
+        return array_merge([
+            'game_ids' => [],
+            'batting' => ['at_bats' => 0, 'hits' => 0, 'strikeouts' => 0, 'walks' => 0],
+            'pitching' => ['pitches' => 0, 'strikes' => 0, 'balls' => 0, 'strikeouts' => 0, 'hits' => 0, 'walks' => 0],
+        ], $extra);
+    }
+
+    /**
+     * Calcula AVG + games_count y descarta game_ids.
+     */
+    private function finalizeStatsRow(array &$row): void
+    {
+        $b = &$row['batting'];
+        $b['avg'] = $b['at_bats'] > 0 ? round($b['hits'] / $b['at_bats'], 3) : 0.0;
+        unset($b);
+        $row['games_count'] = count($row['game_ids']);
+        unset($row['game_ids']);
     }
 
     /**
