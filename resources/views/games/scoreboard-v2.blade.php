@@ -785,7 +785,7 @@
         </div>
 
         {{-- PITCH --}}
-        <div x-show="tab==='pitch' && !isFinalized && gameStatus==='in_progress'" class="grid grid-cols-4 gap-2">
+        <div x-show="tab==='pitch' && !isFinalized && gameStatus==='in_progress'" class="grid grid-cols-4 gap-2 mt-4">
             <button type="button" @click="sendPitch('ball')" :disabled="busy" class="sb-action-btn ball">{{ __('Ball') }}</button>
             <button type="button" @click="openStrikeModal()" :disabled="busy" class="sb-action-btn strike">{{ __('Strike') }}</button>
             <button type="button" @click="sendPitch('foul')" :disabled="busy" class="sb-action-btn foul">{{ __('Foul') }}</button>
