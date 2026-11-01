@@ -1362,7 +1362,23 @@ class GameplayEngine
         $currentBatterId = $state['current_batter_id'];
         $currentPitcherId = $state['current_pitcher_id'];
 
-        $teamId = $half === 'top' ? $game->away_team_id : $game->home_team_id;
+        // Equipos según el half:
+        //  - half='top'    -> BATE el visitante (away), LANZA el local (home).
+        //  - half='bottom' -> BATE el local (home),     LANZA el visitante (away).
+        //
+        // FIX: antes se usaba un unico $teamId = "equipo que bate" para
+        // TODO, incluida la sustitución de pitcher. Eso rompia el cambio
+        // de pitcher de dos formas: (a) validaba que el pitcher entrante
+        // estuviera en el roster del equipo que bate (que no es el suyo),
+        // y (b) desmarcaba is_pitcher en el equipo equivocado.
+        $battingTeamId = $half === 'top' ? (int) $game->away_team_id : (int) $game->home_team_id;
+        $fieldingTeamId = $half === 'top' ? (int) $game->home_team_id : (int) $game->away_team_id;
+
+        // El equipo del roster depende del tipo de sustitucion:
+        //  - pitcher -> equipo que LANZA (el pitcher pertenece a ese roster)
+        //  - batter  -> equipo que BATE
+        //  - pr      -> equipo que BATE (el corredor esta en bases)
+        $teamId = $kind === 'pitcher' ? $fieldingTeamId : $battingTeamId;
 
         // Validar que ambos atletas esten en el roster del juego y del equipo correcto
         $rosterIds = $game->athletes()->wherePivot('team_id', $teamId)->pluck('athletes.id')->toArray();
@@ -1382,13 +1398,18 @@ class GameplayEngine
             case 'pitcher':
                 // Cambio de pitcher: el nuevo pitcher reemplaza al actual.
                 // Actualizar pivot: el viejo deja de ser pitcher, el nuevo pasa a serlo.
+                // FIX: se opera sobre el EQUIPO QUE LANZA (fieldingTeamId), no
+                // sobre el que bate. Antes se desmarcaba is_pitcher en el
+                // roster equivocado y el entrante quedaba marcado sin filtro
+                // de equipo (pudiendo activarlo en el roster del otro equipo).
                 DB::table('game_athlete')
                     ->where('game_id', $game->id)
-                    ->where('team_id', $teamId)
+                    ->where('team_id', $fieldingTeamId)
                     ->where('is_pitcher', true)
                     ->update(['is_pitcher' => false]);
                 DB::table('game_athlete')
                     ->where('game_id', $game->id)
+                    ->where('team_id', $fieldingTeamId)
                     ->where('athlete_id', $inAthleteId)
                     ->update(['is_pitcher' => true]);
 

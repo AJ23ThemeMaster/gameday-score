@@ -1101,6 +1101,39 @@ document.addEventListener('alpine:init', () => {
         rosterForBattingTeam() {
             return this.half === 'top' ? (this.rosterAway || []) : (this.rosterHome || []);
         },
+        // Roster del equipo que esta DEFENDIENDO (el que LANZA), que es el
+        // equipo contrario al que bate: half='top' => lanza el local (home),
+        // 'bottom' => lanza el visitante (away).
+        //
+        // FIX: el pitcher pertenece al roster del equipo que lanza, por eso
+        // el select de "Nuevo pitcher" debe leer de ACA, no de
+        // rosterForBattingTeam(). Con el roster equivocado el select salia
+        // vacio (el equipo que bate muchas veces no tiene roster cargado)
+        // y el backend rechazaba la sustitucion.
+        rosterForFieldingTeam() {
+            return this.half === 'top' ? (this.rosterHome || []) : (this.rosterAway || []);
+        },
+        // Candidatos validos para la sustitucion segun el sub-tab activo,
+        // excluyendo al atleta que YA ocupa ese rol (no puedes sustituir a
+        // alguien por si mismo).
+        //   pitcher -> roster del equipo que lanza
+        //   batter  -> roster del equipo que bate
+        //   pr      -> roster del equipo que bate (el corredor esta en bases)
+        substitutionCandidates() {
+            const list = this.subKind === 'pitcher'
+                ? this.rosterForFieldingTeam()
+                : this.rosterForBattingTeam();
+            let currentId = null;
+            if (this.subKind === 'pitcher') {
+                currentId = this.pitcher ? Number(this.pitcher.id) : null;
+            } else if (this.subKind === 'batter') {
+                currentId = this.batter ? Number(this.batter.id) : null;
+            } else if (this.subKind === 'pr') {
+                const obj = ({first: this.base1, second: this.base2, third: this.base3})[this.subBase];
+                currentId = (obj && typeof obj === 'object') ? Number(obj.id) : (obj ? Number(obj) : null);
+            }
+            return (list || []).filter(a => Number(a.id) !== currentId);
+        },
         // Busca un atleta por id en la union de ambos rosters.
         _findAthlete(id) {
             if (id === null || id === undefined) return null;
@@ -1746,6 +1779,33 @@ document.addEventListener('alpine:init', () => {
         // Roster del equipo que esta bateando (half === 'top' => away, 'bottom' => home)
         rosterForBattingTeam() {
             return this.stateHalf === 'top' ? this.rosterAway : this.rosterHome;
+        },
+        // Roster del equipo que esta DEFENDIENDO (el que LANZA), que es el
+        // equipo contrario al que bate: half='top' => lanza el local (home),
+        // 'bottom' => lanza el visitante (away).
+        //
+        // FIX: el pitcher pertenece al roster del equipo que lanza. El select
+        // de "Nuevo pitcher" debe leer de ACA; con rosterForBattingTeam()
+        // salia vacio y el backend rechazaba la operacion.
+        rosterForFieldingTeam() {
+            return this.stateHalf === 'top' ? this.rosterHome : this.rosterAway;
+        },
+        // Candidatos validos para la sustitucion segun el sub-tab activo,
+        // excluyendo al atleta que YA ocupa ese rol.
+        substitutionCandidates() {
+            const list = this.subKind === 'pitcher'
+                ? this.rosterForFieldingTeam()
+                : this.rosterForBattingTeam();
+            let currentId = null;
+            if (this.subKind === 'pitcher') {
+                currentId = this.statePitcherId ? Number(this.statePitcherId) : null;
+            } else if (this.subKind === 'batter') {
+                currentId = this.stateBatterId ? Number(this.stateBatterId) : null;
+            } else if (this.subKind === 'pr') {
+                const raw = (this.lastBases && this.lastBases[this.subBase]) ?? null;
+                currentId = (typeof raw === 'number') ? raw : null;
+            }
+            return (list || []).filter(a => Number(a.id) !== currentId);
         },
         currentPitcherLabel() {
             const id = this.statePitcherId;
