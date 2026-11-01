@@ -279,6 +279,14 @@ document.addEventListener('alpine:init', () => {
         // los dropdowns del modal Sustituir (misma estructura que el scoreboard base).
         rosterAway: config.rosterAway || [],
         rosterHome: config.rosterHome || [],
+        // Tamano del lineup de bateo: 9 bateadores de posicion (minimo) y 10
+        // cuando hay bateador designado (DH) en el puesto 10.
+        // lineupSizeHome/lineupSizeAway lo manda el backend con el tamano
+        // ESPERADO de cada equipo (9 o 10 segun tenga DH o no).
+        lineupMin: 9,
+        lineupMax: 10,
+        lineupSizeAway: config.lineupSizeAway ?? 9,
+        lineupSizeHome: config.lineupSizeHome ?? 9,
         // Modal Sustituir (migrado exacto del scoreboard base: dropdowns del roster).
         subKind: 'pitcher', // 'pitcher' | 'batter' | 'pr'
         subInId: '',        // athlete id entrante (string vacio = sin seleccionar)
@@ -713,27 +721,45 @@ document.addEventListener('alpine:init', () => {
         currentTeamId() {
             return this.lineupTeam === 'away' ? this.awayTeamId : this.homeTeamId;
         },
-        // Tamano del lineup segun el team actual: 9 sin DH, 10 con DH.
-        // El tamano se pasa desde el backend (lineupSizeAway/lineupSizeHome)
-        // y se autodetecta del max lineup_order del roster del equipo.
+        // Tamano ESPERADO del lineup del equipo activo: 9 sin DH, 10 con DH.
+        // Lo manda el backend (lineupSizeAway/lineupSizeHome).
         currentLineupSize() {
             const key = this.lineupTeam === 'away' ? 'lineupSizeAway' : 'lineupSizeHome';
             const size = Number(this[key]);
             return (size === 10) ? 10 : 9;
         },
+        // Un lineup es valido con 9 (bateadores de posicion) o 10 (9 + DH).
+        // NO se exige un numero EXACTO: exigirlo hacia imposible re-agregar al
+        // bateador designado, porque al quitarlo y guardar el backend volvia a
+        // reportar 9 y el modal nunca permitia llegar a 10 ("Sobran 1 titulares").
+        lineupIsValid() {
+            const n = this.currentLineup().length;
+            return n >= this.lineupMin && n <= this.lineupMax;
+        },
         addToLineup(athleteId) {
             const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
             const lineup = this.currentLineup();
-            const size = this.currentLineupSize();
-            if (lineup.length >= size) {
-                this.toast(`El lineup ya tiene ${size} jugadores. Quita uno antes de agregar otro.`, 'warning');
+            if (lineup.length >= this.lineupMax) {
+                this.toast(`El lineup ya tiene ${this.lineupMax} jugadores (maximo). Quita uno antes de agregar otro.`, 'warning');
                 return;
             }
             const athlete = all.find(a => Number(a.id) === Number(athleteId));
             if (!athlete) return;
-            athlete.lineup_order = lineup.length + 1;
-            athlete.position = athlete.position || this.suggestPosition(lineup.length);
+            const slot = lineup.length;
+            athlete.lineup_order = slot + 1;
             athlete.is_pitcher = false;
+            if (slot >= this.lineupMax - 1) {
+                // El puesto 10 es el bateador designado (DH) por definicion.
+                const prevDh = lineup.find(a => a.position === 'DH' && Number(a.id) !== Number(athleteId));
+                if (prevDh) {
+                    prevDh.position = (athlete.position && athlete.position !== 'DH') ? athlete.position : 'LF';
+                }
+                athlete.position = 'DH';
+            } else {
+                athlete.position = (athlete.position && athlete.position !== 'DH')
+                    ? athlete.position
+                    : this.suggestPosition(slot);
+            }
             this.lineupDirty = true;
             this.reindexLineup();
         },
@@ -823,9 +849,8 @@ document.addEventListener('alpine:init', () => {
         async saveLineup() {
             const lineup = this.currentLineup();
             const teamId = this.currentTeamId();
-            const size = this.currentLineupSize();
-            if (lineup.length !== size) {
-                this.toast(`El lineup debe tener exactamente ${size} jugadores. Actual: ${lineup.length}`, 'error');
+            if (!this.lineupIsValid()) {
+                this.toast(`El lineup debe tener entre ${this.lineupMin} y ${this.lineupMax} jugadores. Actual: ${lineup.length}`, 'error');
                 return;
             }
             const pitcherCount = lineup.filter(a => !!a.is_pitcher).length;
@@ -1245,6 +1270,12 @@ document.addEventListener('alpine:init', () => {
         csrf: config.csrf,
         rosterAway: config.rosterAway || [],
         rosterHome: config.rosterHome || [],
+        // Tamano del lineup de bateo: 9 bateadores de posicion (minimo) y 10
+        // con bateador designado (DH) en el puesto 10.
+        lineupMin: 9,
+        lineupMax: 10,
+        lineupSizeAway: config.lineupSizeAway ?? 9,
+        lineupSizeHome: config.lineupSizeHome ?? 9,
         pollInterval: null,
         pollStatus: 'Conectado',
         isPolling: false,
@@ -2109,29 +2140,47 @@ document.addEventListener('alpine:init', () => {
         currentTeamId() {
             return this.lineupTeam === 'away' ? this.awayTeamId : this.homeTeamId;
         },
-        // Tamano del lineup segun el team actual: 9 sin DH, 10 con DH.
+        // Tamano ESPERADO del lineup del equipo activo: 9 sin DH, 10 con DH.
         // lineupSizeAway/Home vienen del backend (ScoreboardController::v2).
         currentLineupSize() {
             const key = this.lineupTeam === 'away' ? 'lineupSizeAway' : 'lineupSizeHome';
             const size = Number(this[key]);
             return (size === 10) ? 10 : 9;
         },
+        // Un lineup es valido con 9 (bateadores de posicion) o 10 (9 + DH).
+        // Ver la nota del componente v2: exigir un numero exacto impedia
+        // re-agregar al bateador designado.
+        lineupIsValid() {
+            const n = this.currentLineup().length;
+            return n >= this.lineupMin && n <= this.lineupMax;
+        },
 
         // DISI-31: gestion del lineup
         addToLineup(athleteId) {
             const all = this.lineupTeam === 'away' ? this.lineupAway : this.lineupHome;
             const lineup = this.currentLineup();
-            const size = this.currentLineupSize();
-            if (lineup.length >= size) {
-                this.toast(`El lineup ya tiene ${size} jugadores. Quita uno antes de agregar otro.`, 'warning');
+            if (lineup.length >= this.lineupMax) {
+                this.toast(`El lineup ya tiene ${this.lineupMax} jugadores (maximo). Quita uno antes de agregar otro.`, 'warning');
                 return;
             }
-            const athlete = all.find(a => a.id === athleteId);
+            const athlete = all.find(a => Number(a.id) === Number(athleteId));
             if (!athlete) return;
             // Asignar al final con defaults sensatos
-            athlete.lineup_order = lineup.length + 1;
-            athlete.position = athlete.position || this.suggestPosition(lineup.length);
+            const slot = lineup.length;
+            athlete.lineup_order = slot + 1;
             athlete.is_pitcher = false;
+            if (slot >= this.lineupMax - 1) {
+                // El puesto 10 es el bateador designado (DH) por definicion.
+                const prevDh = lineup.find(a => a.position === 'DH' && Number(a.id) !== Number(athleteId));
+                if (prevDh) {
+                    prevDh.position = (athlete.position && athlete.position !== 'DH') ? athlete.position : 'LF';
+                }
+                athlete.position = 'DH';
+            } else {
+                athlete.position = (athlete.position && athlete.position !== 'DH')
+                    ? athlete.position
+                    : this.suggestPosition(slot);
+            }
             this.lineupDirty = true;
             // Reordenar todos por lineup_order
             this.reindexLineup();
@@ -2165,7 +2214,8 @@ document.addEventListener('alpine:init', () => {
         },
         suggestPosition(idx) {
             // Sugerir posicion por defecto segun el orden (1=P, 2=C, 3=1B, 4=2B, 5=3B, 6=SS, 7=LF, 8=CF, 9=RF)
-            return ['P','C','1B','2B','3B','SS','LF','CF','RF'][idx] || '';
+            // y DH en el puesto 10 cuando el lineup lleva bateador designado.
+            return ['P','C','1B','2B','3B','SS','LF','CF','RF','DH'][idx] || '';
         },
 
         // Drag & drop heredado (sin cambios en firma)
@@ -2229,9 +2279,8 @@ document.addEventListener('alpine:init', () => {
         async saveLineup() {
             const lineup = this.currentLineup();
             const teamId = this.currentTeamId();
-            const size = this.currentLineupSize();
-            if (lineup.length !== size) {
-                this.toast(`El lineup debe tener exactamente ${size} jugadores. Actual: ${lineup.length}`, 'error');
+            if (!this.lineupIsValid()) {
+                this.toast(`El lineup debe tener entre ${this.lineupMin} y ${this.lineupMax} jugadores. Actual: ${lineup.length}`, 'error');
                 return;
             }
             const pitcherCount = lineup.filter(a => !!a.is_pitcher).length;

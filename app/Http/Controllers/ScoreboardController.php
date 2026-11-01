@@ -179,6 +179,24 @@ class ScoreboardController extends Controller
             return response()->json(['success' => false, 'error' => 'Debe haber exactamente 1 pitcher en el lineup'], 422);
         }
 
+        // Validar el bateador designado (DH). Un lineup es de 9 (solo bateadores
+        // de posicion) o de 10 (9 de posicion + 1 DH en el puesto 10). Un DH
+        // en un lineup de 9 dejaria una posicion defensiva sin cubrir, asi que
+        // se rechaza en ambos sentidos.
+        $dhCount = count(array_filter($data['lineup'], fn ($r) => $r['position'] === 'DH'));
+        if ($lineupCount === 10 && $dhCount !== 1) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Un lineup de 10 bateadores debe tener exactamente 1 bateador designado (DH) en el puesto 10',
+            ], 422);
+        }
+        if ($lineupCount === 9 && $dhCount > 0) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Un lineup de 9 bateadores no puede tener bateador designado: son 9 posiciones de campo',
+            ], 422);
+        }
+
         // Validar athlete_ids pertenecen al roster del equipo
         $athleteIds = array_column($data['lineup'], 'athlete_id');
         $validIds = DB::table('game_athlete')
@@ -205,11 +223,13 @@ class ScoreboardController extends Controller
 
             // Los atletas que estaban en el lineup pero fueron quitados pasan a bench
             // (is_starter=0, lineup_order=null, position=null, is_pitcher=false).
+            // Se detectan por lineup_order (no por is_starter) para que al DH
+            // tambien se le limpie el puesto cuando se lo quita del lineup.
             $currentLineupIds = array_column($data['lineup'], 'athlete_id');
             $benchedIds = DB::table('game_athlete')
                 ->where('game_id', $game->id)
                 ->where('team_id', $teamId)
-                ->where('is_starter', true)
+                ->whereNotNull('lineup_order')
                 ->whereNotIn('athlete_id', $currentLineupIds)
                 ->pluck('athlete_id')
                 ->all();
@@ -256,7 +276,7 @@ class ScoreboardController extends Controller
         $pivots = DB::table('game_athlete')
             ->where('game_id', $game->id)
             ->where('team_id', $teamId)
-            ->where('is_starter', true)
+            ->whereNotNull('lineup_order')
             ->orderBy('lineup_order')
             ->get(['athlete_id', 'lineup_order', 'position', 'is_pitcher'])
             ->map(fn ($r) => [
@@ -571,19 +591,12 @@ class ScoreboardController extends Controller
      * Tamano del lineup de bateo para un equipo en este juego.
      * 9 por defecto (sin DH) o 10 si algun bateador tiene lineup_order >= 10.
      *
-     * FIX: NO se filtra por `is_starter`. El bateador designado (DH) se
-     * guarda con lineup_order=10 pero puede tener is_starter=0 (aparece
-     * como "Suplente" en el roster del juego). Con ese filtro, el max
-     * daba 9 en vez de 10 y el lineup quedaba en "10 / 9 titulares", con
-     * el boton de guardar deshabilitado y el mensaje "Faltan -1 titulares".
+     * La logica vive en Game::lineupSizeFor() porque la usan tambien el
+     * GameplayEngine (rotacion de bateo) y las vistas.
      */
     private function lineupSizeFromRoster(\App\Models\Game $game, int $teamId): int
     {
-        $maxOrder = (int) DB::table('game_athlete')
-            ->where('game_id', $game->id)
-            ->where('team_id', $teamId)
-            ->max('lineup_order');
-        return $maxOrder >= 10 ? 10 : 9;
+        return $game->lineupSizeFor($teamId);
     }
 
     private function athleteToArray(Athlete $a): array
