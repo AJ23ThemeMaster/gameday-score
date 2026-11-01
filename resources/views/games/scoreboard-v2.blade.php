@@ -1484,7 +1484,7 @@
                         :class="lineupTeam === 'home' ? 'border-b-2 border-emerald-500 text-wv-text font-bold' : 'text-wv-text-secondary'"
                         class="px-3 py-2 text-sm" x-text="homeShort"></button>
                 <div class="ml-auto text-xs text-wv-text-secondary px-2">
-                    <span x-text="currentLineup().length"></span> / <span x-text="currentLineupSize()"></span> {{ __('titulares') }}
+                    <span x-text="currentLineup().length"></span> / <span x-text="lineupMin + '-' + lineupMax"></span> {{ __('titulares') }}
                 </div>
             </div>
 
@@ -1562,7 +1562,7 @@
                                 <span class="text-sm font-bold text-wv-text-secondary w-7 flex-shrink-0 text-center" x-text="'#' + (a.number ?? '-')"></span>
                                 <span class="text-sm font-medium text-wv-text flex-1 truncate" x-text="(a.first_name || '') + ' ' + (a.last_name || '')"></span>
                                 <span class="text-[10px] text-wv-text-secondary flex-shrink-0" x-text="a.position || ''"></span>
-                                <button type="button" @click="addToLineup(a.id)" :disabled="currentLineup().length >= currentLineupSize()"
+                                <button type="button" @click="addToLineup(a.id)" :disabled="currentLineup().length >= lineupMax"
                                         title="{{ __('Agregar al lineup') }}"
                                         class="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded flex-shrink-0">
                                     + {{ __('Agregar') }}
@@ -1582,16 +1582,17 @@
                     {{ __('Cancelar') }}
                 </button>
                 <button type="button" @click="saveLineup()"
-                        :disabled="currentLineup().length !== currentLineupSize() || lineupLoading"
+                        :disabled="!lineupIsValid() || lineupLoading"
                         class="flex-1 py-2 bg-[#10b981] hover:bg-[#059669] disabled:opacity-50 text-white text-sm font-bold rounded-lg">
-                    <span x-show="currentLineup().length === currentLineupSize() && !lineupLoading">{{ __('Guardar lineup') }}</span>
-                    {{-- FIX: antes decia siempre "Faltan N titulares", lo que con
-                         10 jugadores y lineupSize=9 producia "Faltan -1 titulares".
-                         Ahora distingue exceso vs faltante. --}}
-                    <span x-show="currentLineup().length !== currentLineupSize() && !lineupLoading"
-                          x-text="currentLineup().length > currentLineupSize()
-                              ? 'Sobran ' + (currentLineup().length - currentLineupSize()) + ' titulares'
-                              : 'Faltan ' + (currentLineupSize() - currentLineup().length) + ' titulares'"></span>
+                    <span x-show="lineupIsValid() && !lineupLoading">{{ __('Guardar lineup') }}</span>
+                    {{-- Un lineup valido tiene entre 9 (bateadores de posicion) y 10
+                         (9 + bateador designado). Antes se comparaba contra un
+                         numero EXACTO, lo que bloqueaba el DH y producia textos
+                         como "Faltan -1 titulares" o "Sobran 1 titulares". --}}
+                    <span x-show="!lineupIsValid() && !lineupLoading"
+                          x-text="currentLineup().length < lineupMin
+                              ? 'Faltan ' + (lineupMin - currentLineup().length) + ' titulares'
+                              : 'Máximo ' + lineupMax + ' titulares'"></span>
                 </button>
             </div>
         </div>

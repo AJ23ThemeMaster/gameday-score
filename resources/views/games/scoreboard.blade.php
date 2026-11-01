@@ -67,10 +67,13 @@
             'homeTeamId' => $game->home_team_id,
             'awayTeamId' => $game->away_team_id,
             'csrf' => csrf_token(),
-            'rosterAway' => $game->athletes()->wherePivot('team_id', $game->away_team_id)->orderBy('game_athlete.lineup_order')->get(['athletes.id', 'athletes.first_name', 'athletes.last_name', 'athletes.number', 'game_athlete.lineup_order', 'game_athlete.position'])->map(fn($a) => ['id' => $a->id, 'first_name' => $a->first_name, 'last_name' => $a->last_name, 'number' => $a->number, 'lineup_order' => $a->pivot->lineup_order, 'position' => $a->pivot->position])->values(),
-            'rosterHome' => $game->athletes()->wherePivot('team_id', $game->home_team_id)->orderBy('game_athlete.lineup_order')->get(['athletes.id', 'athletes.first_name', 'athletes.last_name', 'athletes.number', 'game_athlete.lineup_order', 'game_athlete.position'])->map(fn($a) => ['id' => $a->id, 'first_name' => $a->first_name, 'last_name' => $a->last_name, 'number' => $a->number, 'lineup_order' => $a->pivot->lineup_order, 'position' => $a->pivot->position])->values(),
+            'rosterAway' => $game->athletes()->wherePivot('team_id', $game->away_team_id)->orderBy('game_athlete.lineup_order')->get(['athletes.id', 'athletes.first_name', 'athletes.last_name', 'athletes.number', 'game_athlete.lineup_order', 'game_athlete.position', 'game_athlete.is_pitcher'])->map(fn($a) => ['id' => $a->id, 'first_name' => $a->first_name, 'last_name' => $a->last_name, 'number' => $a->number, 'lineup_order' => $a->pivot->lineup_order, 'position' => $a->pivot->position, 'is_pitcher' => (bool) $a->pivot->is_pitcher])->values(),
+            'rosterHome' => $game->athletes()->wherePivot('team_id', $game->home_team_id)->orderBy('game_athlete.lineup_order')->get(['athletes.id', 'athletes.first_name', 'athletes.last_name', 'athletes.number', 'game_athlete.lineup_order', 'game_athlete.position', 'game_athlete.is_pitcher'])->map(fn($a) => ['id' => $a->id, 'first_name' => $a->first_name, 'last_name' => $a->last_name, 'number' => $a->number, 'lineup_order' => $a->pivot->lineup_order, 'position' => $a->pivot->position, 'is_pitcher' => (bool) $a->pivot->is_pitcher])->values(),
             'statsUrl' => route('games.scoreboard.stats', $game),
             'lineupReorderUrl' => route('games.lineup.reorder', $game),
+            // Tamano esperado del lineup por equipo (9 sin DH, 10 con DH).
+            'lineupSizeAway' => $game->lineupSizeFor($game->away_team_id),
+            'lineupSizeHome' => $game->lineupSizeFor($game->home_team_id),
             // DISI-33: estado inicial reactivo de la finalizacion del juego.
             // Si el juego ya esta finalizado al cargar la vista, isFinalized=true
             // y tab='extra' desde el principio (el render server-side ya puso
@@ -1163,7 +1166,7 @@
                                 :class="lineupTeam === 'home' ? 'border-b-2 border-emerald-600 text-emerald-700 font-bold' : 'text-gray-500'"
                                 class="px-3 py-2 text-sm" x-text="homeShort"></button>
                         <div class="ml-auto text-xs text-gray-500 px-2">
-                            <span x-text="currentLineup().length"></span> / 9 titulares
+                            <span x-text="currentLineup().length"></span> / <span x-text="lineupMin + '-' + lineupMax"></span> titulares
                         </div>
                     </div>
 
@@ -1191,6 +1194,7 @@
                                         <select @change="setLineupPosition(a.id, $event.target.value)"
                                                 :value="a.position || ''"
                                                 class="w-16 text-xs border border-gray-300 rounded px-1 py-0.5 flex-shrink-0">
+                                            <option value="">—</option>
                                             <option value="P">P</option>
                                             <option value="C">C</option>
                                             <option value="1B">1B</option>
@@ -1200,6 +1204,7 @@
                                             <option value="LF">LF</option>
                                             <option value="CF">CF</option>
                                             <option value="RF">RF</option>
+                                            <option value="DH">DH</option>
                                         </select>
                                         {{-- Radio pitcher (solo 1 por equipo) --}}
                                         <label class="flex items-center gap-1 text-xs flex-shrink-0 cursor-pointer" title="Marcar como pitcher">
@@ -1240,7 +1245,7 @@
                                         <span class="text-sm font-bold text-gray-500 w-7 flex-shrink-0 text-center" x-text="'#' + (a.number ?? '-')"></span>
                                         <span class="text-sm font-medium text-gray-700 flex-1 truncate" x-text="a.first_name + ' ' + a.last_name"></span>
                                         <span class="text-[10px] text-gray-400 flex-shrink-0" x-text="a.position || ''"></span>
-                                        <button type="button" @click="addToLineup(a.id)" :disabled="currentLineup().length >= 9"
+                                        <button type="button" @click="addToLineup(a.id)" :disabled="currentLineup().length >= lineupMax"
                                                 title="Agregar al lineup"
                                                 class="px-2 py-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded flex-shrink-0">
                                             + {{ __('Agregar') }}
@@ -1260,10 +1265,13 @@
                             {{ __('Cancelar') }}
                         </button>
                         <button type="button" @click="saveLineup()"
-                                :disabled="!lineupDirty || currentLineup().length !== 9"
+                                :disabled="!lineupDirty || !lineupIsValid()"
                                 class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg">
-                            <span x-show="currentLineup().length === 9">{{ __('Guardar lineup') }}</span>
-                            <span x-show="currentLineup().length !== 9" x-text="'Faltan ' + (9 - currentLineup().length) + ' titulares'"></span>
+                            <span x-show="lineupIsValid()">{{ __('Guardar lineup') }}</span>
+                            <span x-show="!lineupIsValid()"
+                                  x-text="currentLineup().length < lineupMin
+                                      ? 'Faltan ' + (lineupMin - currentLineup().length) + ' titulares'
+                                      : 'Máximo ' + lineupMax + ' titulares'"></span>
                         </button>
                     </div>
                 </div>

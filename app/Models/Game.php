@@ -159,6 +159,27 @@ class Game extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Tamano del lineup de bateo de un equipo en este juego.
+     *
+     * 9 bateadores de posicion (minimo) o 10 cuando hay bateador designado
+     * (DH) en el puesto 10 del orden de bateo.
+     *
+     * La fuente de verdad es `game_athlete.lineup_order` (no `is_starter`):
+     * el DH se sembró historicamente con `is_starter = 0` aunque SI ocupa un
+     * puesto en el orden de bateo, asi que filtrar por `is_starter` excluia al
+     * DH y devolvia 9 en vez de 10.
+     */
+    public function lineupSizeFor(int $teamId): int
+    {
+        $maxOrder = (int) $this->athletes()
+            ->wherePivot('team_id', $teamId)
+            ->whereNotNull('game_athlete.lineup_order')
+            ->max('game_athlete.lineup_order');
+
+        return $maxOrder >= 10 ? 10 : 9;
+    }
+
     public function getPublicUrlAttribute(): ?string
     {
         // DISI-44: solo necesitamos public_token para armar la URL publica;
