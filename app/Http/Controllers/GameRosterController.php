@@ -73,7 +73,17 @@ class GameRosterController extends Controller
         $this->authorizeRosterManage($game);
 
         $data = $request->validated();
-        $data['is_starter'] = $request->boolean('is_starter', true);
+        // is_starter es DERIVADO de lineup_order: tener un puesto en el orden de
+        // bateo significa estar en el lineup. Sin esta derivacion, asignar el
+        // puesto 10 (bateador designado) desde el roster dejaba al DH con
+        // is_starter=0 y el backend lo excluia del tamano del lineup.
+        if ($request->has('lineup_order')) {
+            $order = $request->input('lineup_order');
+            $data['lineup_order'] = ($order === null || $order === '') ? null : (int) $order;
+            $data['is_starter'] = $data['lineup_order'] !== null && $data['lineup_order'] > 0;
+        } else {
+            $data['is_starter'] = $request->boolean('is_starter', true);
+        }
 
         // Si este atleta es pitcher, quitar el flag de cualquier otro pitcher del mismo equipo
         if ($request->boolean('is_pitcher')) {
@@ -120,6 +130,27 @@ class GameRosterController extends Controller
         }
 
         $data = array_filter($request->validated(), fn ($v) => $v !== null);
+
+        // is_starter se deriva de lineup_order (misma regla que en store()).
+        // Precedencia: si el request trae lineup_order, ese manda (tener un
+        // puesto de bateo = estar en el lineup). Si solo trae el checkbox de
+        // titular, se respeta lo que marco el usuario. Si no trae ninguno de
+        // los dos, se conserva el valor actual del pivot (antes el default
+        // era `true`, que convertia a titular a cualquier suplente al
+        // cambiarle la posicion).
+        if ($request->has('lineup_order')) {
+            $order = $request->input('lineup_order');
+            // Se escribe DESPUES del array_filter para poder limpiar el puesto
+            // (null): antes el filtro se comia el null y el orden viejo
+            // sobrevivia en la BDD, dejando al atleta "sin puesto" pero con
+            // lineup_order viejos.
+            $data['lineup_order'] = ($order === null || $order === '') ? null : (int) $order;
+            $data['is_starter'] = $data['lineup_order'] !== null && $data['lineup_order'] > 0;
+        } elseif ($request->has('is_starter')) {
+            $data['is_starter'] = $request->boolean('is_starter');
+        } else {
+            $data['is_starter'] = (bool) $pivot->is_starter;
+        }
 
         // Si lo marca como pitcher, desmarcar el pitcher actual del mismo equipo
         if ($request->boolean('is_pitcher') || (isset($data['is_pitcher']) && $data['is_pitcher'])) {
