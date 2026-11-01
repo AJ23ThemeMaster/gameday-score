@@ -1369,14 +1369,16 @@
             </div>
             <div class="p-5 space-y-4 overflow-y-auto">
                 {{-- Sub-tabs: Pitcher / Bateador / Corredor --}}
+                {{-- Al cambiar de tab se limpia subInId: el atleta elegido en el
+                     tab anterior puede no ser valido en el nuevo (distinto roster). --}}
                 <div class="flex gap-1 border-b border-wv-border">
-                    <button type="button" @click="subKind = 'pitcher'"
+                    <button type="button" @click="subKind = 'pitcher'; subInId = ''"
                             :class="subKind === 'pitcher' ? 'border-b-2 border-sky-500 text-wv-text font-bold' : 'text-wv-text-secondary'"
                             class="px-3 py-2 text-sm">{{ __('Pitcher') }}</button>
-                    <button type="button" @click="subKind = 'batter'"
+                    <button type="button" @click="subKind = 'batter'; subInId = ''"
                             :class="subKind === 'batter' ? 'border-b-2 border-sky-500 text-wv-text font-bold' : 'text-wv-text-secondary'"
                             class="px-3 py-2 text-sm">{{ __('Bateador') }}</button>
-                    <button type="button" @click="subKind = 'pr'"
+                    <button type="button" @click="subKind = 'pr'; subInId = ''"
                             :class="subKind === 'pr' ? 'border-b-2 border-sky-500 text-wv-text font-bold' : 'text-wv-text-secondary'"
                             class="px-3 py-2 text-sm">{{ __('Corredor') }}</button>
                 </div>
@@ -1393,7 +1395,11 @@
                         <select x-model="subInId"
                                 class="w-full mt-1 px-3 py-2 bg-wv-bg border border-wv-border rounded-lg focus:border-sky-500 focus:outline-none text-wv-text">
                             <option value="">{{ __('Selecciona un atleta...') }}</option>
-                            <template x-for="a in rosterForBattingTeam()" :key="a.id">
+                            {{-- FIX: el pitcher saliente/entra del roster del equipo que
+                                 LANZA (no del que bate). substitutionCandidates()
+                                 ya resuelve el roster correcto segun subKind y
+                                 excluye al pitcher actual. --}}
+                            <template x-for="a in substitutionCandidates()" :key="a.id">
                                 <option :value="a.id" x-text="`#${a.lineup_order ?? '-'} ${a.first_name} ${a.last_name}`"></option>
                             </template>
                         </select>
@@ -1412,7 +1418,9 @@
                         <select x-model="subInId"
                                 class="w-full mt-1 px-3 py-2 bg-wv-bg border border-wv-border rounded-lg focus:border-sky-500 focus:outline-none text-wv-text">
                             <option value="">{{ __('Selecciona un atleta...') }}</option>
-                            <template x-for="a in rosterForBattingTeam()" :key="a.id">
+                            {{-- El bateador SI es del equipo que bate. substitutionCandidates()
+                                 excluye al bateador actual. --}}
+                            <template x-for="a in substitutionCandidates()" :key="a.id">
                                 <option :value="a.id" x-text="`#${a.lineup_order ?? '-'} ${a.first_name} ${a.last_name}`"></option>
                             </template>
                         </select>
@@ -1436,7 +1444,10 @@
                         <select x-model="subInId"
                                 class="w-full mt-1 px-3 py-2 bg-wv-bg border border-wv-border rounded-lg focus:border-sky-500 focus:outline-none text-wv-text">
                             <option value="">{{ __('Selecciona un atleta...') }}</option>
-                            <template x-for="a in rosterForBattingTeam()" :key="a.id">
+                            {{-- El corredor en bases es del equipo que bate.
+                                 substitutionCandidates() excluye al corredor
+                                 actual de la base seleccionada. --}}
+                            <template x-for="a in substitutionCandidates()" :key="a.id">
                                 <option :value="a.id" x-text="`${a.first_name} ${a.last_name}`"></option>
                             </template>
                         </select>
