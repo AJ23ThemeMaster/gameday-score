@@ -372,6 +372,17 @@ class ScoreboardController extends Controller
                 ->map(function ($a) {
                     $arr = $this->athleteToArray($a);
                     $arr['lineup_order'] = $a->pivot->lineup_order;
+                    // DISI-31 + fix lineup: la posicion y el flag de pitcher
+                    // que importan son los DEL PIVOT del juego
+                    // (game_athlete.position / game_athlete.is_pitcher), no los
+                    // globales del atleta (athletes.position, que suele venir
+                    // NULL). Sin esto el modal "Gestion de lineup" mostraba
+                    // todas las posiciones como "P" (la primera opcion del
+                    // select, porque el value no matcheaba ninguna) y ningun
+                    // radio de pitcher aparecia marcado.
+                    $arr['position'] = $a->pivot->position ?: $a->position;
+                    $arr['is_pitcher'] = (bool) $a->pivot->is_pitcher;
+                    $arr['is_starter'] = (bool) $a->pivot->is_starter;
                     return $arr;
                 })
                 ->values()
@@ -559,13 +570,18 @@ class ScoreboardController extends Controller
     /**
      * Tamano del lineup de bateo para un equipo en este juego.
      * 9 por defecto (sin DH) o 10 si algun bateador tiene lineup_order >= 10.
+     *
+     * FIX: NO se filtra por `is_starter`. El bateador designado (DH) se
+     * guarda con lineup_order=10 pero puede tener is_starter=0 (aparece
+     * como "Suplente" en el roster del juego). Con ese filtro, el max
+     * daba 9 en vez de 10 y el lineup quedaba en "10 / 9 titulares", con
+     * el boton de guardar deshabilitado y el mensaje "Faltan -1 titulares".
      */
     private function lineupSizeFromRoster(\App\Models\Game $game, int $teamId): int
     {
         $maxOrder = (int) DB::table('game_athlete')
             ->where('game_id', $game->id)
             ->where('team_id', $teamId)
-            ->where('is_starter', true)
             ->max('lineup_order');
         return $maxOrder >= 10 ? 10 : 9;
     }

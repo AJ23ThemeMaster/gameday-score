@@ -1585,7 +1585,13 @@
                         :disabled="currentLineup().length !== currentLineupSize() || lineupLoading"
                         class="flex-1 py-2 bg-[#10b981] hover:bg-[#059669] disabled:opacity-50 text-white text-sm font-bold rounded-lg">
                     <span x-show="currentLineup().length === currentLineupSize() && !lineupLoading">{{ __('Guardar lineup') }}</span>
-                    <span x-show="currentLineup().length !== currentLineupSize()" x-text="'Faltan ' + (currentLineupSize() - currentLineup().length) + ' titulares'"></span>
+                    {{-- FIX: antes decia siempre "Faltan N titulares", lo que con
+                         10 jugadores y lineupSize=9 producia "Faltan -1 titulares".
+                         Ahora distingue exceso vs faltante. --}}
+                    <span x-show="currentLineup().length !== currentLineupSize() && !lineupLoading"
+                          x-text="currentLineup().length > currentLineupSize()
+                              ? 'Sobran ' + (currentLineup().length - currentLineupSize()) + ' titulares'
+                              : 'Faltan ' + (currentLineupSize() - currentLineup().length) + ' titulares'"></span>
                 </button>
             </div>
         </div>
